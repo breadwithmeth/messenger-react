@@ -1,0 +1,144 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: 180px;
+  background: linear-gradient(180deg, #d4e4f7 0%, #c5d9f0 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #003d82;
+  text-decoration: none;
+  text-align: center;
+  padding: 12px 24px;
+  margin-bottom: 16px;
+}
+
+.menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 8px;
+  overflow-y: auto;
+}
+
+.menuItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 8px;
+  color: #003d82;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.menuItemActive {
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.menuLabel {
+  font-size: 11px;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.sidebarFooter {
+  padding: 12px 8px;
+  border-top: 1px solid rgba(0, 61, 130, 0.1);
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.starRating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+}
+
+.starCount {
+  color: #003d82;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.userButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  color: #003d82;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  font-size: 11px;
+}
+
+.userButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.userName {
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.mainWrapper {
+  flex: 1;
+  margin-left: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.mainFluid {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
