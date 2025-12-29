@@ -95,6 +95,13 @@ export function ChatsPage() {
 
   useEffect(() => {
     loadChats();
+
+    // Обновление списка чатов каждые 2 секунды
+    const interval = setInterval(() => {
+      loadChats();
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
