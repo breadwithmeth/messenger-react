@@ -37,6 +37,20 @@ const formatTimeAgo = (iso: string) => {
   return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit' });
 };
 
+const extractPhoneFromJid = (jid: string | null) => {
+  if (!jid) return '';
+  const beforeAt = jid.split('@')[0] ?? '';
+  const beforeColon = beforeAt.split(':')[0] ?? '';
+  const digits = beforeColon.replace(/\D/g, '');
+  return digits || beforeColon || jid;
+};
+
+const formatChannelLabel = (channel: Chat['channel']) => {
+  if (channel === 'whatsapp') return 'WhatsApp';
+  if (channel === 'telegram') return 'Telegram';
+  return channel;
+};
+
 export function ChatsPage() {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
@@ -69,6 +83,8 @@ export function ChatsPage() {
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
+  const chatListScrollTopRef = useRef(0);
+  const shouldRestoreChatListScrollRef = useRef(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const userScrolledUpRef = useRef(false);
@@ -94,15 +110,23 @@ export function ChatsPage() {
   ];
 
   useEffect(() => {
-    loadChats();
+    void loadChats();
 
     // Обновление списка чатов каждые 2 секунды
     const interval = setInterval(() => {
-      loadChats();
+      void loadChats({ silent: true });
     }, 2000);
 
     return () => clearInterval(interval);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!shouldRestoreChatListScrollRef.current) return;
+    const el = chatListRef.current;
+    if (!el) return;
+    el.scrollTop = chatListScrollTopRef.current;
+    shouldRestoreChatListScrollRef.current = false;
+  }, [chats]);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -206,9 +230,20 @@ export function ChatsPage() {
     return () => el.removeEventListener('scroll', handleScroll);
   }, [isLoading, isLoadingMoreChats, activeFilter]);
 
-  const loadChats = async () => {
-    setIsLoading(true);
-    setError('');
+  const loadChats = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    const el = chatListRef.current;
+
+    if (silent && el) {
+      chatListScrollTopRef.current = el.scrollTop;
+      shouldRestoreChatListScrollRef.current = true;
+    }
+
+    if (!silent) {
+      setIsLoading(true);
+      setError('');
+    }
+
     try {
       const response = await chatsApi.getChats({
         includeProfile: true,
@@ -220,13 +255,14 @@ export function ChatsPage() {
       setChats(response.chats || []);
       setPagination(response.pagination);
     } catch (err) {
+      if (silent) return;
       if (err instanceof NetworkError) {
         setError(err.message);
       } else {
         setError('Не удалось загрузить чаты');
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -668,12 +704,12 @@ export function ChatsPage() {
             </div>
             
             <div className={styles.chatList} ref={chatListRef}>
-              {isLoading ? (
+              {isLoading && chats.length === 0 ? (
                 <div className={styles.loading}>Загрузка...</div>
               ) : error ? (
                 <div className={styles.error}>
                   <p className={styles.errorText}>{error}</p>
-                  <Button onClick={loadChats} size="small">
+                  <Button onClick={() => void loadChats()} size="small">
                     Повторить
                   </Button>
                 </div>
@@ -688,6 +724,9 @@ export function ChatsPage() {
                   const displayName = (chat.displayName || chat.name || '').trim() || `Чат #${chat.id}`;
                   const avatarLetter = displayName.charAt(0).toUpperCase();
                   const timeAgo = formatTimeAgo(chat.lastMessageAt);
+                  const clientPhone = extractPhoneFromJid(chat.remoteJid);
+                  const orgPhoneLabel = chat.organizationPhone?.displayName || '';
+                  const orgConnLabel = chat.organizationPhone?.connectionType || '';
                   
                   return (
                     <div
@@ -717,10 +756,10 @@ export function ChatsPage() {
                               </span>
                             )}
                             <span className={styles.chatSubtitle}>
-                              {chat.status === 'new' ? 'хорошо' : 
-                               chat.status === 'active' || chat.status === 'open' ? 'активен' :
-                               chat.status === 'pending' ? 'ожидает' : 
-                               chat.status === 'closed' ? 'закрыт' : 'хорошо'}
+                              {formatChannelLabel(chat.channel)}
+                              {clientPhone ? ` • ${clientPhone}` : ''}
+                              {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
+                              {orgConnLabel ? ` (${orgConnLabel})` : ''}
                             </span>
                           </div>
                           <div className={styles.chatMeta}>
@@ -756,9 +795,25 @@ export function ChatsPage() {
                       {(chats.find((c) => c.id === selectedChatId)?.displayName || 'Ч').charAt(0).toUpperCase()}
                     </div>
                     <div className={styles.chatTopTitleBlock}>
-                      <div className={styles.chatTopTitle}>
-                        {chats.find((c) => c.id === selectedChatId)?.displayName || `Чат #${selectedChatId}`}
-                      </div>
+                      {(() => {
+                        const currentChat = chats.find((c) => c.id === selectedChatId) || null;
+                        const title = currentChat?.displayName || currentChat?.name || `Чат #${selectedChatId}`;
+                        const clientPhone = extractPhoneFromJid(currentChat?.remoteJid ?? null);
+                        const orgPhoneLabel = currentChat?.organizationPhone?.displayName || '';
+                        const orgConnLabel = currentChat?.organizationPhone?.connectionType || '';
+
+                        return (
+                          <>
+                            <div className={styles.chatTopTitle}>{title}</div>
+                            <div className={styles.chatTopSubtitle}>
+                              {currentChat ? formatChannelLabel(currentChat.channel) : ''}
+                              {clientPhone ? ` • ${clientPhone}` : ''}
+                              {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
+                              {orgConnLabel ? ` (${orgConnLabel})` : ''}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
 
