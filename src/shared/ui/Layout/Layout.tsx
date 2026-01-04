@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../features/auth/model/authContext';
 import styles from './Layout.module.css';
@@ -12,6 +12,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isChatsPage = location.pathname.startsWith('/chats');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -32,34 +33,60 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className={styles.layout}>
       {user && (
-        <aside className={styles.sidebar}>
-          <Link to="/" className={styles.logo}>
-            SaaS
-          </Link>
-          
-          <div className={styles.banner}>Бесплатный режим</div>
-          
-          <nav className={styles.menu}>
-            {menuItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`${styles.menuItem} ${location.pathname === item.path ? styles.menuItemActive : ''}`}
+        <>
+          <button
+            type="button"
+            className={styles.burgerButton}
+            aria-label={isMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+            onClick={() => setIsMenuOpen((v) => !v)}
+          >
+            {isMenuOpen ? '×' : '☰'}
+          </button>
+
+          {isMenuOpen && (
+            <button
+              type="button"
+              className={styles.backdrop}
+              aria-label="Закрыть меню"
+              onClick={() => setIsMenuOpen(false)}
+            />
+          )}
+
+          <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarOpen : styles.sidebarClosed}`}>
+            <Link
+              to="/"
+              className={styles.logo}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              SaaS
+            </Link>
+
+            <nav className={styles.menu}>
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`${styles.menuItem} ${location.pathname === item.path ? styles.menuItemActive : ''}`}
+                >
+                  <span className={styles.menuLabel}>{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+
+            <div className={styles.sidebarFooter}>
+              <div className={styles.starRating}>
+                <span className={styles.starCount}>0</span>
+              </div>
+              <button
+                className={styles.userButton}
+                onClick={handleLogout}
               >
-                <span className={styles.menuLabel}>{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-          
-          <div className={styles.sidebarFooter}>
-            <div className={styles.starRating}>
-              <span className={styles.starCount}>0</span>
+                <span className={styles.userName}>Администратор Г.</span>
+              </button>
             </div>
-            <button className={styles.userButton} onClick={handleLogout}>
-              <span className={styles.userName}>Администратор Г.</span>
-            </button>
-          </div>
-        </aside>
+          </aside>
+        </>
       )}
       
       <div className={styles.mainWrapper}>

@@ -20,12 +20,6 @@ interface PendingAttachment {
   previewUrl: string;
 }
 
-interface FavoriteContact {
-  id: number;
-  name: string;
-  avatar: string;
-}
-
 const formatTimeAgo = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
@@ -104,13 +98,6 @@ export function ChatsPage() {
     offset: 0,
     hasMore: false,
   });
-  
-  const favoriteContacts: FavoriteContact[] = [
-    { id: 1, name: 'Настя', avatar: '' },
-    { id: 2, name: 'Алмаз', avatar: '' },
-    { id: 3, name: 'Андрей', avatar: '' },
-    { id: 4, name: 'Алина', avatar: '' },
-  ];
 
   useEffect(() => {
     void loadChats();
@@ -731,23 +718,6 @@ export function ChatsPage() {
                   <Icon name="bell" size={18} color="var(--on-primary)" />
                 </button>
               </div>
-            </div>
-            
-            <div className={styles.favoritesSection}>
-              <button className={styles.addFavorite} type="button" aria-label="Добавить любимый">
-                <span className={styles.addFavoritePlus}>
-                  <Icon name="plus" size={18} color="var(--text-subtle)" />
-                </span>
-                <span className={styles.addFavoriteLabel}>любимый</span>
-              </button>
-              {favoriteContacts.map((contact) => (
-                <div key={contact.id} className={styles.favoriteContact}>
-                  <div className={styles.favoriteAvatar}>
-                    {contact.name.charAt(0)}
-                  </div>
-                  <span className={styles.favoriteName}>{contact.name}</span>
-                </div>
-              ))}
             </div>
             
             <div className={styles.sidebarHeader}>
