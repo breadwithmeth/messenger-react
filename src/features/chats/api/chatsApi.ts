@@ -32,6 +32,7 @@ export const chatsApi = {
     sortOrder?: 'asc' | 'desc';
     limit?: number;
     offset?: number;
+    assignedToMe?: boolean;
   }): Promise<ChatsResponse> => {
     const query = new URLSearchParams();
     if (params?.includeProfile) query.append('includeProfile', 'true');
@@ -39,6 +40,7 @@ export const chatsApi = {
     if (params?.sortOrder) query.append('sortOrder', params.sortOrder);
     if (params?.limit !== undefined) query.append('limit', params.limit.toString());
     if (params?.offset !== undefined) query.append('offset', params.offset.toString());
+    if (params?.assignedToMe) query.append('assignedToMe', 'true');
     
     const queryString = query.toString();
     return apiClient.get<ChatsResponse>(
@@ -103,6 +105,10 @@ export const chatsApi = {
 
   unassignChat: async (params: { chatId: number }): Promise<ChatAssignmentResponse> => {
     return apiClient.post<ChatAssignmentResponse, { chatId: number }>(`/chat-assignment/unassign`, params);
+  },
+
+  markChatRead: async (chatId: number): Promise<unknown> => {
+    return apiClient.post<unknown>(`/unread/${chatId}/mark-chat-read`);
   },
 
   deleteChat: async (id: number): Promise<void> => {

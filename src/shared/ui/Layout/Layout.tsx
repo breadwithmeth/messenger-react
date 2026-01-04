@@ -37,9 +37,7 @@ export function Layout({ children }: LayoutProps) {
             SaaS
           </Link>
           
-          <div className={styles.menuItem} style={{ marginTop: '32px', marginBottom: '12px', color: '#003d82', fontSize: '12px', fontWeight: '600', paddingLeft: '12px' }}>
-            Бесплатный режим
-          </div>
+          <div className={styles.banner}>Бесплатный режим</div>
           
           <nav className={styles.menu}>
             {menuItems.map((item) => (

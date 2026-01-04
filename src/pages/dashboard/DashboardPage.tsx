@@ -51,7 +51,7 @@ export function DashboardPage() {
 
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Быстрые действия</h2>
-            <p style={{ color: '#666666', margin: 0 }}>
+            <p className={styles.note}>
               Функционал находится в разработке. Скоро здесь появятся инструменты для управления чатами.
             </p>
           </section>

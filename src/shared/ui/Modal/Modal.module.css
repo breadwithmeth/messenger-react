@@ -12,10 +12,10 @@
 .modal {
   width: min(720px, 100%);
   max-height: min(80vh, 760px);
-  background: #ffffff;
-  border-radius: 14px;
+  background: var(--surface);
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-md);
 }
 
 .header {
@@ -24,25 +24,29 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--border);
 }
 
 .title {
   font-size: 14px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text);
 }
 
 .close {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
   cursor: pointer;
-  color: #111827;
+  color: var(--text);
   font-size: 18px;
   line-height: 1;
+}
+
+.close:hover {
+  background: var(--surface-2);
 }
 
 .body {

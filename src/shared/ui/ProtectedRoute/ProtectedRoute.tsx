@@ -17,7 +17,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '18px',
-        color: '#666666'
+        color: 'var(--text-muted)'
       }}>
         Загрузка...
       </div>

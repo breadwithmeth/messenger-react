@@ -1,6 +1,9 @@
 export interface User {
   id: number;
   email: string;
+  role?: string;
+  organizationId?: number;
+  createdAt?: string;
 }
 
 export interface LoginCredentials {

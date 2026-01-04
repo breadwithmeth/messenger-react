@@ -7,7 +7,7 @@
 .label {
   font-size: 14px;
   font-weight: 500;
-  color: #333333;
+  color: var(--text);
 }
 
 .inputWrapper {
@@ -16,27 +16,31 @@
 
 .input {
   width: 100%;
-  padding: 14px 16px;
-  font-size: 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   box-sizing: border-box;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .input:focus {
   outline: none;
-  border-color: #003d82;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
 .input:disabled {
-  background-color: #f5f5f5;
+  background-color: var(--surface-2);
   cursor: not-allowed;
+  color: var(--text-muted);
 }
 
 .input::placeholder {
-  color: #999999;
+  color: var(--text-subtle);
 }
 
 .withIcon {
@@ -55,17 +59,17 @@
 }
 
 .error .input {
-  border-color: #d32f2f;
+  border-color: var(--danger);
 }
 
 .errorMessage {
   font-size: 13px;
-  color: #d32f2f;
+  color: var(--danger);
   margin-top: 4px;
 }
 
 .helperText {
   font-size: 13px;
-  color: #666666;
+  color: var(--text-muted);
   margin-top: 4px;
 }

@@ -19,17 +19,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     const userStr = localStorage.getItem(USER_KEY);
 
-    if (token && userStr) {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Быстрый кэш, чтобы UI не мерцал, пока тянем /users/me
+    if (userStr) {
       try {
         const userData = JSON.parse(userStr) as User;
         setUser(userData);
       } catch {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
       }
     }
 
-    setIsLoading(false);
+    void (async () => {
+      try {
+        const me = await authApi.getMe();
+        setUser(me);
+        localStorage.setItem(USER_KEY, JSON.stringify(me));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
   const login = async (credentials: LoginCredentials): Promise<void> => {

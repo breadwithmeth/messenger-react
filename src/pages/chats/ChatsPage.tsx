@@ -55,6 +55,7 @@ export function ChatsPage() {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const selectedChatIdRef = useRef<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
@@ -94,6 +95,8 @@ export function ChatsPage() {
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const messagesPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const pendingScrollAdjustRef = useRef<{ prevScrollHeight: number; prevScrollTop: number } | null>(null);
+  const messagesRefreshInFlightRef = useRef(false);
+  const messagesLoadSeqRef = useRef(0);
 
   const [messagesPagination, setMessagesPagination] = useState({
     total: 0,
@@ -118,7 +121,7 @@ export function ChatsPage() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [activeFilter]);
 
   useLayoutEffect(() => {
     if (!shouldRestoreChatListScrollRef.current) return;
@@ -129,11 +132,26 @@ export function ChatsPage() {
   }, [chats]);
 
   useEffect(() => {
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
+
+  useEffect(() => {
     if (selectedChatId) {
-      loadMessages(selectedChatId);
+      void loadMessages(selectedChatId);
     } else {
       setMessages([]);
     }
+  }, [selectedChatId]);
+
+  useEffect(() => {
+    if (!selectedChatId) return;
+
+    // Периодическое обновление сообщений активного чата
+    const interval = setInterval(() => {
+      void loadMessages(selectedChatId, { silent: true });
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, [selectedChatId]);
 
   useEffect(() => {
@@ -245,15 +263,33 @@ export function ChatsPage() {
     }
 
     try {
-      const response = await chatsApi.getChats({
-        includeProfile: true,
-        sortBy: 'lastMessageAt',
-        sortOrder: 'desc',
-        limit: 50,
-        offset: 0,
-      });
-      setChats(response.chats || []);
-      setPagination(response.pagination);
+      const response =
+        activeFilter === 'my'
+          ? await chatsApi.getChats({
+              includeProfile: true,
+              sortBy: 'lastMessageAt',
+              sortOrder: 'desc',
+              limit: 50,
+              offset: 0,
+              assignedToMe: true,
+            })
+          : await chatsApi.getChats({
+              includeProfile: true,
+              sortBy: 'lastMessageAt',
+              sortOrder: 'desc',
+              limit: 50,
+              offset: 0,
+            });
+      const nextChats = response.chats || [];
+      setChats(nextChats);
+      setPagination(
+        response.pagination || {
+          total: nextChats.length,
+          limit: 50,
+          offset: 0,
+          hasMore: false,
+        }
+      );
     } catch (err) {
       if (silent) return;
       if (err instanceof NetworkError) {
@@ -281,6 +317,7 @@ export function ChatsPage() {
         sortOrder: 'desc',
         limit: chatsPaginationRef.current.limit,
         offset: nextOffset,
+        assignedToMe: activeFilter === 'my',
       });
 
       const incoming = response.chats || [];
@@ -289,7 +326,14 @@ export function ChatsPage() {
         const appended = incoming.filter((c) => !existing.has(c.id));
         return prev.concat(appended);
       });
-      setPagination(response.pagination);
+      setPagination(
+        response.pagination || {
+          total: (response.chats || []).length,
+          limit: chatsPaginationRef.current.limit,
+          offset: chatsPaginationRef.current.offset,
+          hasMore: false,
+        }
+      );
     } catch (err) {
       if (err instanceof NetworkError) {
         setError(err.message);
@@ -301,19 +345,60 @@ export function ChatsPage() {
     }
   };
 
-  const loadMessages = async (chatId: number) => {
-    setIsLoadingMessages(true);
-    setMessagesError('');
+  const loadMessages = async (chatId: number, options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+
+    if (silent && messagesRefreshInFlightRef.current) return;
+    if (silent && (isLoadingMessages || isLoadingMoreMessages)) return;
+
+    const seq = ++messagesLoadSeqRef.current;
+
+    if (silent) {
+      messagesRefreshInFlightRef.current = true;
+    } else {
+      setIsLoadingMessages(true);
+      setMessagesError('');
+    }
+
     try {
       const response = await chatsApi.getMessages(chatId, {
         limit: messagesPaginationRef.current.limit,
         offset: 0,
       });
 
-      const nextMessages = (response.messages || []).slice().sort((a, b) => {
+      if (selectedChatIdRef.current !== chatId) return;
+      if (seq !== messagesLoadSeqRef.current) return;
+
+      const incomingSorted = (response.messages || []).slice().sort((a, b) => {
         return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
       });
-      setMessages(nextMessages);
+
+      if (silent) {
+        setMessagesError('');
+        setMessages((prev) => {
+          const map = new Map<number, Message>();
+          for (const m of prev) map.set(m.id, m);
+          for (const m of incomingSorted) map.set(m.id, m);
+          return Array.from(map.values()).sort((a, b) => {
+            return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+          });
+        });
+
+        setMessagesPagination((prev) => {
+          const total = response.pagination.total;
+          const limit = prev.limit;
+          const offset = prev.offset;
+          return {
+            total,
+            limit,
+            offset,
+            hasMore: offset + limit < total,
+          };
+        });
+        return;
+      }
+
+      setMessages(incomingSorted);
       setMessagesPagination({
         total: response.pagination.total,
         limit: response.pagination.limit,
@@ -321,12 +406,17 @@ export function ChatsPage() {
         hasMore: response.pagination.hasMore,
       });
     } catch (err) {
+      if (silent) return;
       if (err instanceof NetworkError) {
         setMessagesError(err.message);
       } else {
         setMessagesError('Не удалось загрузить сообщения');
       }
     } finally {
+      if (silent) {
+        messagesRefreshInFlightRef.current = false;
+        return;
+      }
       setIsLoadingMessages(false);
     }
   };
@@ -387,7 +477,7 @@ export function ChatsPage() {
       case 'open':
         return chats.filter(chat => chat.status !== 'closed');
       case 'my':
-        return chats.filter(chat => chat.assignedUser !== null);
+        return chats;
       case 'ignored':
         return chats.filter(chat => chat.status === 'closed');
       default:
@@ -399,26 +489,25 @@ export function ChatsPage() {
     setSelectedChatId(chatId);
   };
 
-  const handleDeleteChat = async (chatId: number) => {
-    if (!window.confirm('Удалить чат?')) {
-      return;
-    }
+  const updateChatInState = (updated: Chat) => {
+    setChats((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const handleMarkChatRead = async () => {
+    if (!selectedChatId) return;
 
     try {
-      await chatsApi.deleteChat(chatId);
-      setChats((prev) => prev.filter((chat) => chat.id !== chatId));
-      if (selectedChatId === chatId) {
-        setSelectedChatId(null);
-      }
+      await chatsApi.markChatRead(selectedChatId);
+      setChats((prev) =>
+        prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: 0 } : c))
+      );
     } catch (err) {
       if (err instanceof NetworkError) {
         alert(`Ошибка: ${err.message}`);
+      } else {
+        alert('Не удалось отметить чат прочитанным');
       }
     }
-  };
-
-  const updateChatInState = (updated: Chat) => {
-    setChats((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   };
 
   const handleToggleAssignment = async () => {
@@ -446,7 +535,7 @@ export function ChatsPage() {
     try {
       await chatsApi.sendMessage(selectedChatId, messageInput);
       setMessageInput('');
-      loadMessages(selectedChatId);
+      void loadMessages(selectedChatId, { silent: true });
     } catch (err) {
       if (err instanceof NetworkError) {
         alert(`Ошибка: ${err.message}`);
@@ -553,7 +642,7 @@ export function ChatsPage() {
         caption: previewCaption.trim() ? previewCaption.trim() : undefined,
       });
       closeAttachmentPreview();
-      await loadMessages(selectedChatId);
+      await loadMessages(selectedChatId, { silent: true });
       messageInputRef.current?.focus();
     } catch (err) {
       if (err instanceof NetworkError) {
@@ -636,10 +725,10 @@ export function ChatsPage() {
               <h1 className={styles.chatsTitle}>Чаты</h1>
               <div className={styles.headerIcons}>
                 <button className={styles.iconButton} type="button" aria-label="Поделиться">
-                  <Icon name="upload" size={18} color="#fff" />
+                  <Icon name="upload" size={18} color="var(--on-primary)" />
                 </button>
                 <button className={styles.iconButton} type="button" aria-label="Уведомления">
-                  <Icon name="bell" size={18} color="#fff" />
+                  <Icon name="bell" size={18} color="var(--on-primary)" />
                 </button>
               </div>
             </div>
@@ -647,7 +736,7 @@ export function ChatsPage() {
             <div className={styles.favoritesSection}>
               <button className={styles.addFavorite} type="button" aria-label="Добавить любимый">
                 <span className={styles.addFavoritePlus}>
-                  <Icon name="plus" size={18} color="#8b95a1" />
+                  <Icon name="plus" size={18} color="var(--text-subtle)" />
                 </span>
                 <span className={styles.addFavoriteLabel}>любимый</span>
               </button>
@@ -681,7 +770,14 @@ export function ChatsPage() {
                 className={`${styles.filterTab} ${activeFilter === 'my' ? styles.filterTabActive : ''}`}
                 onClick={() => setActiveFilter('my')}
               >
-                Мои чаты <span className={styles.filterCount}>({chats.filter(c => c.assignedUser !== null).length})</span>
+                Мои чаты{' '}
+                <span className={styles.filterCount}>
+                  (
+                  {activeFilter === 'my'
+                    ? pagination.total
+                    : chats.filter((c) => (user ? c.assignedUser?.id === user.id : c.assignedUser !== null)).length}
+                  )
+                </span>
               </button>
               <button
                 className={`${styles.filterTab} ${activeFilter === 'ignored' ? styles.filterTabActive : ''}`}
@@ -787,7 +883,7 @@ export function ChatsPage() {
               <div className={styles.chatWindow}>
                 <div className={styles.chatTopBar}>
                   <button className={styles.chatTopIcon} type="button" aria-label="Назад">
-                    <Icon name="back" size={20} color="#003d82" />
+                    <Icon name="back" size={20} color="var(--primary)" />
                   </button>
 
                   <div className={styles.chatTopCenter}>
@@ -826,16 +922,12 @@ export function ChatsPage() {
                     >
                       {(chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять')}
                     </button>
-                    <button className={styles.chatTopIcon} type="button" aria-label="Видео">
-                      <Icon name="video" size={20} color="#003d82" />
-                    </button>
                     <button
-                      className={styles.chatTopIcon}
+                      className={styles.chatTopAction}
                       type="button"
-                      aria-label="Удалить чат"
-                      onClick={() => handleDeleteChat(selectedChatId)}
+                      onClick={handleMarkChatRead}
                     >
-                      ×
+                      Прочитать
                     </button>
                   </div>
                 </div>

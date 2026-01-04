@@ -10,6 +10,10 @@ export const authApi = {
     );
   },
 
+  getMe: async (): Promise<AuthResponse['user']> => {
+    return apiClient.get<AuthResponse['user']>('/users/me');
+  },
+
   register: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     return apiClient.post<AuthResponse, LoginCredentials>(
       '/auth/register',
