@@ -27,20 +27,32 @@ interface ChatAssignmentResponse {
 
 export const chatsApi = {
   getChats: async (params?: {
+    status?: 'open' | 'closed' | string;
+    assigned?: 'true' | 'false';
+    assignedUserId?: number;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    channel?: 'whatsapp' | 'telegram';
     includeProfile?: boolean;
-    sortBy?: string;
+    search?: string;
+    searchType?: 'message' | 'phone' | 'all';
+    sortBy?: 'lastMessageAt' | 'createdAt' | 'priority' | 'unreadCount' | 'status' | 'name';
     sortOrder?: 'asc' | 'desc';
     limit?: number;
     offset?: number;
-    assignedToMe?: boolean;
   }): Promise<ChatsResponse> => {
     const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.assigned) query.append('assigned', params.assigned);
+    if (params?.assignedUserId !== undefined) query.append('assignedUserId', params.assignedUserId.toString());
+    if (params?.priority) query.append('priority', params.priority);
+    if (params?.channel) query.append('channel', params.channel);
     if (params?.includeProfile) query.append('includeProfile', 'true');
+    if (params?.search) query.append('search', params.search);
+    if (params?.searchType) query.append('searchType', params.searchType);
     if (params?.sortBy) query.append('sortBy', params.sortBy);
     if (params?.sortOrder) query.append('sortOrder', params.sortOrder);
     if (params?.limit !== undefined) query.append('limit', params.limit.toString());
     if (params?.offset !== undefined) query.append('offset', params.offset.toString());
-    if (params?.assignedToMe) query.append('assignedToMe', 'true');
     
     const queryString = query.toString();
     return apiClient.get<ChatsResponse>(

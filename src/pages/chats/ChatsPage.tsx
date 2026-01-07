@@ -1,6 +1,7 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Layout } from '../../shared/ui/Layout/Layout';
 import { Button } from '../../shared/ui/Button/Button';
+import { Input } from '../../shared/ui/Input/Input';
 import { Icon } from '../../shared/ui/Icon/Icon';
 import { Modal } from '../../shared/ui/Modal/Modal';
 import { chatsApi } from '../../features/chats/api/chatsApi';
@@ -58,6 +59,16 @@ export function ChatsPage() {
   const [isLoadingMoreChats, setIsLoadingMoreChats] = useState(false);
   const [error, setError] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<ChatFilter>('all');
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
+  const [channelFilter, setChannelFilter] = useState<'' | 'whatsapp' | 'telegram'>('');
+  const [priorityFilter, setPriorityFilter] = useState<'' | 'low' | 'normal' | 'high' | 'urgent'>('');
+  const [assignedFilter, setAssignedFilter] = useState<'' | 'true' | 'false'>('');
+  const [sortBy, setSortBy] = useState<
+    '' | 'lastMessageAt' | 'createdAt' | 'priority' | 'unreadCount' | 'status' | 'name'
+  >('lastMessageAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [messageInput, setMessageInput] = useState('');
   const [isSendingMedia, setIsSendingMedia] = useState(false);
   const [mediaError, setMediaError] = useState<string>('');
@@ -86,7 +97,7 @@ export function ChatsPage() {
   const lastAutoScrolledChatIdRef = useRef<number | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const messageInputRef = useRef<HTMLInputElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const pendingScrollAdjustRef = useRef<{ prevScrollHeight: number; prevScrollTop: number } | null>(null);
   const messagesRefreshInFlightRef = useRef(false);
@@ -100,6 +111,43 @@ export function ChatsPage() {
   });
 
   useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchText.trim());
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
+  const buildChatsQuery = (options: { limit: number; offset: number }) => {
+    const { limit, offset } = options;
+
+    const status =
+      activeFilter === 'open'
+        ? 'open'
+        : activeFilter === 'ignored'
+          ? 'closed'
+          : undefined;
+
+    const shouldForceMy = activeFilter === 'my';
+    const assigned = shouldForceMy ? 'true' : assignedFilter || undefined;
+    const assignedUserId = shouldForceMy ? user?.id : undefined;
+
+    return {
+      includeProfile: true,
+      status,
+      assigned,
+      assignedUserId,
+      priority: priorityFilter || undefined,
+      channel: channelFilter || undefined,
+      search: debouncedSearch || undefined,
+      searchType,
+      sortBy: sortBy || undefined,
+      sortOrder,
+      limit,
+      offset,
+    };
+  };
+
+  useEffect(() => {
     void loadChats();
 
     // Обновление списка чатов каждые 2 секунды
@@ -108,7 +156,7 @@ export function ChatsPage() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [activeFilter]);
+  }, [activeFilter, debouncedSearch, searchType, channelFilter, priorityFilter, assignedFilter, sortBy, sortOrder]);
 
   useLayoutEffect(() => {
     if (!shouldRestoreChatListScrollRef.current) return;
@@ -250,23 +298,7 @@ export function ChatsPage() {
     }
 
     try {
-      const response =
-        activeFilter === 'my'
-          ? await chatsApi.getChats({
-              includeProfile: true,
-              sortBy: 'lastMessageAt',
-              sortOrder: 'desc',
-              limit: 50,
-              offset: 0,
-              assignedToMe: true,
-            })
-          : await chatsApi.getChats({
-              includeProfile: true,
-              sortBy: 'lastMessageAt',
-              sortOrder: 'desc',
-              limit: 50,
-              offset: 0,
-            });
+      const response = await chatsApi.getChats(buildChatsQuery({ limit: 50, offset: 0 }));
       const nextChats = response.chats || [];
       setChats(nextChats);
       setPagination(
@@ -298,14 +330,9 @@ export function ChatsPage() {
 
     try {
       const nextOffset = chatsPaginationRef.current.offset + chatsPaginationRef.current.limit;
-      const response = await chatsApi.getChats({
-        includeProfile: true,
-        sortBy: 'lastMessageAt',
-        sortOrder: 'desc',
-        limit: chatsPaginationRef.current.limit,
-        offset: nextOffset,
-        assignedToMe: activeFilter === 'my',
-      });
+      const response = await chatsApi.getChats(
+        buildChatsQuery({ limit: chatsPaginationRef.current.limit, offset: nextOffset })
+      );
 
       const incoming = response.chats || [];
       setChats((prev) => {
@@ -599,7 +626,7 @@ export function ChatsPage() {
     openAttachmentPreview(file);
   };
 
-  const handlePaste: React.ClipboardEventHandler<HTMLInputElement> = (e) => {
+  const handlePaste: React.ClipboardEventHandler<HTMLTextAreaElement> = (e) => {
     const files = Array.from(e.clipboardData.files || []);
     if (files.length === 0) return;
     e.preventDefault();
@@ -609,6 +636,83 @@ export function ChatsPage() {
       return;
     }
     openAttachmentPreview(file);
+  };
+
+  const applyWhatsAppWrap = (left: string, right: string) => {
+    const el = messageInputRef.current;
+    if (!el) return;
+
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const value = messageInput;
+    const selected = value.slice(start, end);
+
+    const next = value.slice(0, start) + left + selected + right + value.slice(end);
+    setMessageInput(next);
+
+    requestAnimationFrame(() => {
+      el.focus();
+      const nextStart = start + left.length;
+      const nextEnd = end + left.length;
+      el.setSelectionRange(nextStart, nextEnd);
+    });
+  };
+
+  const renderWhatsAppInline = (text: string) => {
+    const nodes: ReactNode[] = [];
+    const re = /(\*[^*\n]+\*|_[^_\n]+_|~[^~\n]+~)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let key = 0;
+
+    while ((match = re.exec(text)) !== null) {
+      const idx = match.index;
+      if (idx > lastIndex) nodes.push(text.slice(lastIndex, idx));
+      const token = match[0];
+      const inner = token.slice(1, -1);
+
+      if (token.startsWith('*')) nodes.push(<strong key={`b-${key++}`}>{inner}</strong>);
+      else if (token.startsWith('_')) nodes.push(<em key={`i-${key++}`}>{inner}</em>);
+      else nodes.push(<del key={`s-${key++}`}>{inner}</del>);
+
+      lastIndex = idx + token.length;
+    }
+
+    if (lastIndex < text.length) nodes.push(text.slice(lastIndex));
+    return nodes;
+  };
+
+  const renderWhatsAppText = (text: string) => {
+    const nodes: ReactNode[] = [];
+    let rest = text;
+    let key = 0;
+
+    while (true) {
+      const start = rest.indexOf('```');
+      if (start === -1) break;
+
+      const before = rest.slice(0, start);
+      if (before) nodes.push(...renderWhatsAppInline(before));
+      rest = rest.slice(start + 3);
+
+      const end = rest.indexOf('```');
+      if (end === -1) {
+        nodes.push(...renderWhatsAppInline('```' + rest));
+        rest = '';
+        break;
+      }
+
+      const code = rest.slice(0, end);
+      nodes.push(
+        <code key={`c-${key++}`} className={styles.messageCode}>
+          {code}
+        </code>
+      );
+      rest = rest.slice(end + 3);
+    }
+
+    if (rest) nodes.push(...renderWhatsAppInline(rest));
+    return nodes;
   };
 
   const handleSendPendingAttachment = async () => {
@@ -700,7 +804,7 @@ export function ChatsPage() {
       );
     }
 
-    return <p className={styles.messageText}>{message.content}</p>;
+    return <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>;
   };
 
   return (
@@ -717,6 +821,87 @@ export function ChatsPage() {
                 <button className={styles.iconButton} type="button" aria-label="Уведомления">
                   <Icon name="bell" size={18} color="var(--on-primary)" />
                 </button>
+              </div>
+            </div>
+
+            <div className={styles.searchSection}>
+              <Input
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Поиск по чатам"
+                aria-label="Поиск по чатам"
+              />
+              <div className={styles.searchRow}>
+                <select
+                  className={styles.searchSelect}
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  aria-label="Сортировка"
+                >
+                  <option value="priority">priority</option>
+                  <option value="unreadCount">unreadCount</option>
+                  <option value="lastMessageAt">lastMessageAt</option>
+                  <option value="createdAt">createdAt</option>
+                  <option value="status">status</option>
+                  <option value="name">name</option>
+                </select>
+
+                <select
+                  className={styles.searchSelect}
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                  aria-label="Порядок сортировки"
+                >
+                  <option value="desc">desc</option>
+                  <option value="asc">asc</option>
+                </select>
+
+                <select
+                  className={styles.searchSelect}
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value as 'all' | 'message' | 'phone')}
+                  aria-label="Тип поиска"
+                >
+                  <option value="all">Везде</option>
+                  <option value="message">По сообщениям</option>
+                  <option value="phone">По телефону</option>
+                </select>
+
+                <select
+                  className={styles.searchSelect}
+                  value={channelFilter}
+                  onChange={(e) => setChannelFilter(e.target.value as '' | 'whatsapp' | 'telegram')}
+                  aria-label="Канал"
+                >
+                  <option value="">Все каналы</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="telegram">Telegram</option>
+                </select>
+
+                <select
+                  className={styles.searchSelect}
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value as '' | 'low' | 'normal' | 'high' | 'urgent')}
+                  aria-label="Приоритет"
+                >
+                  <option value="">Любой приоритет</option>
+                  <option value="low">low</option>
+                  <option value="normal">normal</option>
+                  <option value="high">high</option>
+                  <option value="urgent">urgent</option>
+                </select>
+
+                <select
+                  className={styles.searchSelect}
+                  value={activeFilter === 'my' ? '' : assignedFilter}
+                  onChange={(e) => setAssignedFilter(e.target.value as '' | 'true' | 'false')}
+                  aria-label="Назначение"
+                  disabled={activeFilter === 'my'}
+                >
+                  <option value="">Все</option>
+                  <option value="true">Назначенные</option>
+                  <option value="false">Неназначенные</option>
+                </select>
               </div>
             </div>
             
@@ -944,6 +1129,10 @@ export function ChatsPage() {
                           hour: '2-digit',
                           minute: '2-digit',
                         });
+
+                        const senderLabel = message.senderUser
+                          ? (message.senderUser.name || message.senderUser.email).trim()
+                          : '';
                         
                         return (
                           <div
@@ -953,6 +1142,9 @@ export function ChatsPage() {
                             }`}
                           >
                             <div className={styles.messageContent}>
+                              {senderLabel && (
+                                <div className={styles.messageSender}>{senderLabel}</div>
+                              )}
                               {renderMessageBody(message)}
                               <span className={styles.messageTime}>{time}</span>
                             </div>
@@ -1020,15 +1212,61 @@ export function ChatsPage() {
                   >
                     {isSendingMedia ? '…' : '+'}
                   </button>
-                  <input
-                    type="text"
+
+                  <div className={styles.formatBar}>
+                    <button
+                      type="button"
+                      className={styles.formatButton}
+                      onClick={() => applyWhatsAppWrap('*', '*')}
+                      aria-label="Жирный"
+                      title="Жирный (*текст*)"
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.formatButton}
+                      onClick={() => applyWhatsAppWrap('_', '_')}
+                      aria-label="Курсив"
+                      title="Курсив (_текст_)"
+                    >
+                      I
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.formatButton}
+                      onClick={() => applyWhatsAppWrap('~', '~')}
+                      aria-label="Зачёркнутый"
+                      title="Зачёркнутый (~текст~)"
+                    >
+                      S
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.formatButton}
+                      onClick={() => applyWhatsAppWrap('```', '```')}
+                      aria-label="Моноширинный"
+                      title="Моноширинный (```текст```)"
+                    >
+                      {'</>'}
+                    </button>
+                  </div>
+
+                  <textarea
                     className={styles.messageInput}
                     placeholder="Сообщение"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      if (e.shiftKey) return;
+                      if ((e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) return;
+                      e.preventDefault();
+                      void handleSendMessage();
+                    }}
                     onPaste={handlePaste}
                     ref={messageInputRef}
+                    rows={1}
                   />
                   <button
                     type="button"

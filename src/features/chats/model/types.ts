@@ -17,6 +17,12 @@ export interface AssignedUser {
   email: string;
 }
 
+export interface SenderUser {
+  id: number;
+  name: string;
+  email: string;
+}
+
 export interface LastMessage {
   id: number;
   content: string;
@@ -80,7 +86,7 @@ export interface Message {
   status: string;
   isReadByOperator: boolean;
   quotedMessageId: string | null;
-  senderUser: unknown | null;
+  senderUser: SenderUser | null;
 }
 
 export interface MessagesResponse {
