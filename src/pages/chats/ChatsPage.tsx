@@ -85,6 +85,7 @@ export function ChatsPage() {
     offset: 0,
     hasMore: false,
   });
+  const [allChatsTotal, setAllChatsTotal] = useState(0);
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
@@ -306,6 +307,11 @@ export function ChatsPage() {
           hasMore: false,
         }
       );
+      
+      // Сохраняем общее количество всех чатов только когда фильтр "all"
+      if (activeFilter === 'all') {
+        setAllChatsTotal(response.pagination?.total || nextChats.length);
+      }
     } catch (err) {
       if (silent) return;
       if (err instanceof NetworkError) {
@@ -904,7 +910,7 @@ export function ChatsPage() {
                 className={`${styles.filterTab} ${activeFilter === 'all' ? styles.filterTabActive : ''}`}
                 onClick={() => setActiveFilter('all')}
               >
-                Все чаты <span className={styles.filterCount}>({pagination.total})</span>
+                Все чаты <span className={styles.filterCount}>({activeFilter === 'all' ? pagination.total : allChatsTotal})</span>
               </button>
               <button
                 className={`${styles.filterTab} ${activeFilter === 'my' ? styles.filterTabActive : ''}`}
@@ -918,24 +924,6 @@ export function ChatsPage() {
                     : chats.filter((c) => (user ? c.assignedUser?.id === user.id : c.assignedUser !== null)).length}
                   )
                 </span>
-              </button>
-              <button
-                className={`${styles.filterTab} ${activeFilter === 'ignored' ? styles.filterTabActive : ''}`}
-                onClick={() => setActiveFilter('ignored')}
-              >
-                <span className={styles.filterNumber}>1.</span> Проигнорированные <span className={styles.filterCount}>({chats.filter(c => c.status === 'closed').length})</span>
-              </button>
-              <button
-                className={`${styles.filterTab} ${activeFilter === 'open' ? styles.filterTabActive : ''}`}
-                onClick={() => setActiveFilter('open')}
-              >
-                <span className={styles.filterNumber}>2.</span> Открытые <span className={styles.filterCount}>({chats.filter(c => c.status !== 'closed').length})</span>
-              </button>
-              <button
-                className={`${styles.filterTab} ${activeFilter === 'unread' ? styles.filterTabActive : ''}`}
-                onClick={() => setActiveFilter('unread')}
-              >
-                <span className={styles.filterNumber}>3.</span> Непрочитанные <span className={styles.filterCount}>({chats.filter(c => c.unreadCount > 0).length})</span>
               </button>
             </div>
             
