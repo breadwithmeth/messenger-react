@@ -79,6 +79,8 @@ export function ChatsPage() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [pagination, setPagination] = useState({
     total: 0,
     limit: 50,
@@ -547,16 +549,23 @@ export function ChatsPage() {
   };
   
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedChatId) return;
+    if (!messageInput.trim() || !selectedChatId || isSendingMessage) return;
     
+    setIsSendingMessage(true);
+    setSendError('');
     try {
       await chatsApi.sendMessage(selectedChatId, messageInput);
       setMessageInput('');
       void loadMessages(selectedChatId, { silent: true });
     } catch (err) {
       if (err instanceof NetworkError) {
-        alert(`Ошибка: ${err.message}`);
+        setSendError(err.message);
       }
+      if (!(err instanceof NetworkError)) {
+        setSendError('Не удалось отправить сообщение');
+      }
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -750,60 +759,74 @@ export function ChatsPage() {
   };
 
   const renderMessageBody = (message: Message) => {
+    const hasText = Boolean(message.content?.trim());
+
     if (message.type === 'image' && message.mediaUrl) {
       return (
-        <button
-          type="button"
-          className={styles.messageMediaButton}
-          onClick={() => setViewerMessage(message)}
-          aria-label="Открыть изображение"
-          title="Открыть"
-        >
-          <img
-            src={message.mediaUrl}
-            alt={message.filename || 'Изображение'}
-            className={styles.messageMediaImage}
-            loading="lazy"
-          />
-        </button>
+        <>
+          <button
+            type="button"
+            className={styles.messageMediaButton}
+            onClick={() => setViewerMessage(message)}
+            aria-label="Открыть изображение"
+            title="Открыть"
+          >
+            <img
+              src={message.mediaUrl}
+              alt={message.filename || 'Изображение'}
+              className={styles.messageMediaImage}
+              loading="lazy"
+            />
+          </button>
+          {hasText && <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>}
+        </>
       );
     }
 
     if (message.type === 'video' && message.mediaUrl) {
       return (
-        <button
-          type="button"
-          className={styles.messageMediaButton}
-          onClick={() => setViewerMessage(message)}
-          aria-label="Открыть видео"
-          title="Открыть"
-        >
-          <video className={styles.messageMediaVideo} controls preload="metadata" src={message.mediaUrl} />
-        </button>
+        <>
+          <button
+            type="button"
+            className={styles.messageMediaButton}
+            onClick={() => setViewerMessage(message)}
+            aria-label="Открыть видео"
+            title="Открыть"
+          >
+            <video className={styles.messageMediaVideo} controls preload="metadata" src={message.mediaUrl} />
+          </button>
+          {hasText && <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>}
+        </>
       );
     }
 
     if (message.type === 'audio' && message.mediaUrl) {
       return (
-        <audio
-          className={styles.messageMediaAudio}
-          controls
-          preload="metadata"
-          src={message.mediaUrl}
-        />
+        <>
+          <audio
+            className={styles.messageMediaAudio}
+            controls
+            preload="metadata"
+            src={message.mediaUrl}
+          />
+          {hasText && <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>}
+        </>
       );
     }
 
     if (message.type === 'document' && message.mediaUrl) {
       return (
-        <a
-          className={styles.messageMediaDoc}
-          href={message.mediaUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {message.filename || 'Открыть документ'}
-        </a>
+        <>
+          <a
+            className={styles.messageMediaDoc}
+            href={message.mediaUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {message.filename || 'Открыть документ'}
+          </a>
+          {hasText && <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>}
+        </>
       );
     }
 
@@ -815,18 +838,6 @@ export function ChatsPage() {
       <div className={styles.page}>
         <div className={styles.container}>
           <aside className={styles.sidebar}>
-            <div className={styles.chatsHeader}>
-              <h1 className={styles.chatsTitle}>Чаты</h1>
-              <div className={styles.headerIcons}>
-                <button className={styles.iconButton} type="button" aria-label="Поделиться">
-                  <Icon name="upload" size={18} color="var(--on-primary)" />
-                </button>
-                <button className={styles.iconButton} type="button" aria-label="Уведомления">
-                  <Icon name="bell" size={18} color="var(--on-primary)" />
-                </button>
-              </div>
-            </div>
-
             <div className={styles.searchSection}>
               <Input
                 value={searchText}
@@ -1227,13 +1238,16 @@ export function ChatsPage() {
 
                   <textarea
                     className={styles.messageInput}
-                    placeholder="Сообщение"
+                    placeholder="Сообщение (Enter/Ctrl+Enter — отправить, Shift+Enter — новая строка)"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key !== 'Enter') return;
-                      if (e.shiftKey) return;
+                      const isCtrlSend = e.ctrlKey || e.metaKey;
+                      const isShiftNewline = e.shiftKey && !isCtrlSend;
+                      if (isShiftNewline) return;
                       if ((e.nativeEvent as unknown as { isComposing?: boolean }).isComposing) return;
+                      if (isSendingMessage) return;
                       e.preventDefault();
                       void handleSendMessage();
                     }}
@@ -1241,6 +1255,7 @@ export function ChatsPage() {
                     ref={messageInputRef}
                     rows={1}
                   />
+                  {sendError && <div className={styles.toastError}>{sendError}</div>}
                   <button
                     type="button"
                     className={styles.suggestionsButton}
@@ -1252,6 +1267,16 @@ export function ChatsPage() {
                     AI
                   </button>
                   <button className={styles.voiceButton}>🎤</button>
+                  <button
+                    type="button"
+                    className={styles.sendButton}
+                    onClick={() => void handleSendMessage()}
+                    disabled={!selectedChatId || !messageInput.trim() || isSendingMessage}
+                    aria-label="Отправить"
+                    title="Отправить"
+                  >
+                    {isSendingMessage ? <span className={styles.sendSpinner} /> : '➤'}
+                  </button>
                 </div>
 
                 {mediaError && <div className={styles.mediaError}>{mediaError}</div>}

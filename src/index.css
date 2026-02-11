@@ -40,6 +40,29 @@
   --shadow-md: 0 1px 0 rgba(17, 24, 39, 0.04), 0 16px 48px rgba(17, 24, 39, 0.10);
 }
 
+:root[data-theme='dark'] {
+  --bg: #0b1220;
+  --surface: #111827;
+  --surface-2: #0f172a;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --text-subtle: #6b7280;
+  --border: #1f2937;
+
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --on-primary: #0b1220;
+
+  --danger: #f87171;
+  --danger-hover: #ef4444;
+  --on-danger: #0b1220;
+
+  --focus: rgba(59, 130, 246, 0.35);
+
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.45), 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
