@@ -64,7 +64,6 @@ export function ChatsPage() {
   const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
   const [channelFilter, setChannelFilter] = useState<'' | 'whatsapp' | 'telegram'>('');
   const [priorityFilter, setPriorityFilter] = useState<'' | 'low' | 'normal' | 'high' | 'urgent'>('');
-  const [assignedFilter, setAssignedFilter] = useState<'' | 'true' | 'false'>('');
   const [sortBy, setSortBy] = useState<
     '' | 'lastMessageAt' | 'createdAt' | 'priority' | 'unreadCount' | 'status' | 'name'
   >('lastMessageAt');
@@ -128,14 +127,12 @@ export function ChatsPage() {
           : undefined;
 
     const shouldForceMy = activeFilter === 'my';
-    const assigned = shouldForceMy ? 'true' : assignedFilter || undefined;
-    const assignedUserId = shouldForceMy ? user?.id : undefined;
+    const assignedToMe = shouldForceMy ? true : undefined;
 
     return {
       includeProfile: true,
       status,
-      assigned,
-      assignedUserId,
+      assignedToMe,
       priority: priorityFilter || undefined,
       channel: channelFilter || undefined,
       search: debouncedSearch || undefined,
@@ -156,7 +153,7 @@ export function ChatsPage() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [activeFilter, debouncedSearch, searchType, channelFilter, priorityFilter, assignedFilter, sortBy, sortOrder]);
+  }, [activeFilter, debouncedSearch, searchType, channelFilter, priorityFilter, sortBy, sortOrder]);
 
   useLayoutEffect(() => {
     if (!shouldRestoreChatListScrollRef.current) return;
@@ -889,18 +886,6 @@ export function ChatsPage() {
                   <option value="normal">normal</option>
                   <option value="high">high</option>
                   <option value="urgent">urgent</option>
-                </select>
-
-                <select
-                  className={styles.searchSelect}
-                  value={activeFilter === 'my' ? '' : assignedFilter}
-                  onChange={(e) => setAssignedFilter(e.target.value as '' | 'true' | 'false')}
-                  aria-label="Назначение"
-                  disabled={activeFilter === 'my'}
-                >
-                  <option value="">Все</option>
-                  <option value="true">Назначенные</option>
-                  <option value="false">Неназначенные</option>
                 </select>
               </div>
             </div>

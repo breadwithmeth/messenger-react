@@ -28,7 +28,7 @@ interface ChatAssignmentResponse {
 export const chatsApi = {
   getChats: async (params?: {
     status?: 'open' | 'closed' | string;
-    assigned?: 'true' | 'false';
+    assignedToMe?: boolean;
     assignedUserId?: number;
     priority?: 'low' | 'normal' | 'high' | 'urgent';
     channel?: 'whatsapp' | 'telegram';
@@ -42,7 +42,7 @@ export const chatsApi = {
   }): Promise<ChatsResponse> => {
     const query = new URLSearchParams();
     if (params?.status) query.append('status', params.status);
-    if (params?.assigned) query.append('assigned', params.assigned);
+    if (params?.assignedToMe !== undefined) query.append('assignedToMe', params.assignedToMe.toString());
     if (params?.assignedUserId !== undefined) query.append('assignedUserId', params.assignedUserId.toString());
     if (params?.priority) query.append('priority', params.priority);
     if (params?.channel) query.append('channel', params.channel);
