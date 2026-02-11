@@ -8,6 +8,12 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+type MenuItem = {
+  path: string;
+  label: string;
+  icon: 'chat' | 'video' | 'ticket' | 'automation' | 'send' | 'api' | 'gear' | 'question';
+};
+
 export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -32,7 +38,7 @@ export function Layout({ children }: LayoutProps) {
     navigate('/login');
   };
 
-  const menuGroups = [
+  const menuGroups: { title: string; items: MenuItem[] }[] = [
     {
       title: 'Работа',
       items: [
@@ -58,7 +64,7 @@ export function Layout({ children }: LayoutProps) {
     },
   ];
 
-  const flatMenuItems = menuGroups.flatMap((g) => g.items);
+  const flatMenuItems: MenuItem[] = menuGroups.flatMap((g) => g.items);
 
   return (
     <div className={styles.layout}>
@@ -144,7 +150,7 @@ export function Layout({ children }: LayoutProps) {
             </button>
 
             <nav className={styles.topNav} aria-label="Основное меню">
-              {flatMenuItems.map((item) => {
+              {flatMenuItems.map((item: MenuItem) => {
                 const isActive = location.pathname === item.path;
                 return (
                   <Link
