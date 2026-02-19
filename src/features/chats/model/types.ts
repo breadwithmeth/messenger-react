@@ -17,6 +17,8 @@ export interface AssignedUser {
   email: string;
 }
 
+export type ChatPriority = 'low' | 'medium' | 'high' | 'urgent';
+
 export interface SenderUser {
   id: number;
   name: string;
@@ -42,7 +44,7 @@ export interface Chat {
   receivingPhoneJid: string | null;
   isGroup: boolean;
   status: 'new' | 'pending' | 'active' | 'open' | 'closed';
-  priority: 'low' | 'medium' | 'high';
+  priority: ChatPriority;
   unreadCount: number;
   lastMessageAt: string;
   ticketNumber: number;

@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/client';
-import { ChatsResponse, Chat, MessagesResponse } from '../model/types';
+import { ChatsResponse, Chat, MessagesResponse, ChatPriority } from '../model/types';
 
 type MediaType = 'image' | 'document' | 'video' | 'audio';
 
@@ -17,7 +17,7 @@ interface UploadForWabaResponse {
   };
 }
 
-type AssignmentPriority = 'low' | 'normal' | 'high' | 'urgent';
+type AssignmentPriority = ChatPriority;
 
 interface ChatAssignmentResponse {
   success: boolean;
@@ -30,7 +30,7 @@ export const chatsApi = {
     status?: 'open' | 'closed' | string;
     assignedToMe?: boolean;
     assignedUserId?: number;
-    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    priority?: ChatPriority;
     channel?: 'whatsapp' | 'telegram';
     includeProfile?: boolean;
     search?: string;
@@ -111,6 +111,13 @@ export const chatsApi = {
   assignChat: async (params: { chatId: number; operatorId: number; priority?: AssignmentPriority }): Promise<ChatAssignmentResponse> => {
     return apiClient.post<ChatAssignmentResponse, { chatId: number; operatorId: number; priority?: AssignmentPriority }>(
       `/chat-assignment/assign`,
+      params
+    );
+  },
+
+  setChatPriority: async (params: { chatId: number; priority: ChatPriority }): Promise<ChatAssignmentResponse> => {
+    return apiClient.post<ChatAssignmentResponse, { chatId: number; priority: ChatPriority }>(
+      `/chat-assignment/priority`,
       params
     );
   },

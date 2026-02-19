@@ -6,7 +6,7 @@ import { Icon } from '../../shared/ui/Icon/Icon';
 import { Modal } from '../../shared/ui/Modal/Modal';
 import { chatsApi } from '../../features/chats/api/chatsApi';
 import { aiApi } from '../../features/ai/api/aiApi';
-import { Chat, Message } from '../../features/chats/model/types';
+import { Chat, ChatPriority, Message } from '../../features/chats/model/types';
 import { NetworkError } from '../../shared/api/types';
 import { useAuth } from '../../features/auth/model/authContext';
 import styles from './ChatsPage.module.css';
@@ -63,7 +63,7 @@ export function ChatsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
   const [channelFilter, setChannelFilter] = useState<'' | 'whatsapp' | 'telegram'>('');
-  const [priorityFilter, setPriorityFilter] = useState<'' | 'low' | 'normal' | 'high' | 'urgent'>('');
+  const [priorityFilter, setPriorityFilter] = useState<'' | ChatPriority>('');
   const [sortBy, setSortBy] = useState<
     '' | 'lastMessageAt' | 'createdAt' | 'priority' | 'unreadCount' | 'status' | 'name'
   >('lastMessageAt');
@@ -75,6 +75,7 @@ export function ChatsPage() {
   const [previewCaption, setPreviewCaption] = useState('');
   const [viewerMessage, setViewerMessage] = useState<Message | null>(null);
   const [isAssigningChat, setIsAssigningChat] = useState(false);
+  const [isUpdatingPriority, setIsUpdatingPriority] = useState(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState('');
@@ -547,6 +548,24 @@ export function ChatsPage() {
       setIsAssigningChat(false);
     }
   };
+
+  const handleSetChatPriority = async (priority: ChatPriority) => {
+    if (!selectedChatId || isUpdatingPriority) return;
+
+    setIsUpdatingPriority(true);
+    try {
+      const resp = await chatsApi.setChatPriority({ chatId: selectedChatId, priority });
+      updateChatInState(resp.chat);
+    } catch (err) {
+      if (err instanceof NetworkError) {
+        alert(`Ошибка: ${err.message}`);
+      } else {
+        alert('Не удалось изменить приоритет чата');
+      }
+    } finally {
+      setIsUpdatingPriority(false);
+    }
+  };
   
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedChatId || isSendingMessage) return;
@@ -895,14 +914,14 @@ export function ChatsPage() {
                 <select
                   className={styles.searchSelect}
                   value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value as '' | 'low' | 'normal' | 'high' | 'urgent')}
+                  onChange={(e) => setPriorityFilter(e.target.value as '' | ChatPriority)}
                   aria-label="Приоритет"
                 >
                   <option value="">Любой приоритет</option>
                   <option value="low">low</option>
-                  <option value="normal">normal</option>
+                  <option value="medium">medium</option>
                   <option value="high">high</option>
-                  <option value="urgent">urgent</option>
+                  <option value="urgent">Передать Администрации</option>
                 </select>
               </div>
             </div>
@@ -999,6 +1018,9 @@ export function ChatsPage() {
                           </div>
                           <div className={styles.chatMeta}>
                             <span className={styles.chatTime}>{timeAgo}</span>
+                            {chat.priority === 'urgent' && (
+                              <span className={styles.urgentBadge}>URGENT</span>
+                            )}
                             {chat.unreadCount > 0 && (
                               <span className={styles.unreadBubble}>{chat.unreadCount}</span>
                             )}
@@ -1053,6 +1075,18 @@ export function ChatsPage() {
                   </div>
 
                   <div className={styles.chatTopRight}>
+                    <select
+                      className={styles.searchSelect}
+                      value={(chats.find((c) => c.id === selectedChatId)?.priority ?? 'medium') as ChatPriority}
+                      onChange={(e) => void handleSetChatPriority(e.target.value as ChatPriority)}
+                      aria-label="Приоритет чата"
+                      disabled={!selectedChatId || isUpdatingPriority}
+                    >
+                      <option value="low">low</option>
+                      <option value="medium">Нормально</option>
+                      <option value="high">high</option>
+                      <option value="urgent">Передать Администрации</option>
+                    </select>
                     <button
                       className={styles.chatTopAction}
                       type="button"

@@ -474,6 +474,20 @@
   font-weight: 700;
 }
 
+.urgentBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--on-danger);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
 .chatSubtitle {
   font-size: 12px;
   color: var(--text-muted);
