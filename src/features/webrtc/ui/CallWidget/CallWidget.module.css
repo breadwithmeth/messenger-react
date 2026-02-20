@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
@@ -25,14 +25,14 @@
 }
 
 .titleMain {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--text);
   line-height: 1.2;
 }
 
 .status {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-subtle);
   white-space: nowrap;
   overflow: hidden;
@@ -64,22 +64,180 @@
 }
 
 .body {
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
 .row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.toggleRow {
+  display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text);
+  user-select: none;
+}
+
+.toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.selectBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selectLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.select {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.micMeter {
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+}
+
+.micMeterBar {
+  background: var(--primary);
+  height: 100%;
+  width: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.dtmfSection {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dtmfGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.callLogList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.callLogItem {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 8px;
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+
+.callLogMeta {
+  font-size: 10px;
+  color: var(--text-subtle);
+}
+
+.callLogPeer {
+  font-size: 11px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.callLogResult {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.diagLine {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.rangeBlock {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rangeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rangeLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.rangeValue {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.rangeInput {
+  width: 100%;
+  height: 18px;
 }
 
 @media (max-width: 420px) {
@@ -89,29 +247,29 @@
 }
 
 .hint {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-subtle);
   line-height: 1.35;
 }
 
 .error {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--danger);
   background: var(--surface-2);
   border: 1px solid var(--danger);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .callRow {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .badge {
-  font-size: 11px;
+  font-size: 10px;
   padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid var(--border);

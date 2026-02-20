@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
 import { Layout } from '../../shared/ui/Layout/Layout';
 import { Button } from '../../shared/ui/Button/Button';
 import { Input } from '../../shared/ui/Input/Input';
@@ -9,7 +9,7 @@ import { aiApi } from '../../features/ai/api/aiApi';
 import { Chat, ChatPriority, Message } from '../../features/chats/model/types';
 import { NetworkError } from '../../shared/api/types';
 import { useAuth } from '../../features/auth/model/authContext';
-import { CallWidget } from '../../features/webrtc/ui/CallWidget/CallWidget';
+import { CallWidget, type CallWidgetStatus } from '../../features/webrtc/ui/CallWidget/CallWidget';
 import styles from './ChatsPage.module.css';
 
 type ChatFilter = 'all' | 'my' | 'ignored' | 'open' | 'unread';
@@ -91,6 +91,11 @@ export function ChatsPage() {
   });
   const [allChatsTotal, setAllChatsTotal] = useState(0);
   const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(false);
+  const [callWidgetStatus, setCallWidgetStatus] = useState<CallWidgetStatus | null>(null);
+
+  const handleCallWidgetStatus = useCallback((s: CallWidgetStatus) => {
+    setCallWidgetStatus(s);
+  }, []);
 
   const selectedChat = useMemo(() => {
     if (!selectedChatId) return null;
@@ -1422,6 +1427,35 @@ export function ChatsPage() {
           >
             <div className={styles.callPanelHeader}>
               <div className={styles.callPanelTitle}>Звонки</div>
+
+              {callWidgetStatus && callWidgetStatus.callState !== 'idle' && (
+                <div
+                  className={styles.callPanelStatus}
+                  aria-label={`Статус звонка: ${callWidgetStatus.callState}`}
+                  title={`${callWidgetStatus.callText || callWidgetStatus.callState}${
+                    callWidgetStatus.callPeer ? ` • ${callWidgetStatus.callPeer}` : ''
+                  }`}
+                >
+                  <span
+                    className={`${styles.callPanelStatusDot} ${
+                      callWidgetStatus.callState === 'incoming'
+                        ? styles.callPanelStatusDotIncoming
+                        : callWidgetStatus.callState === 'in-call'
+                          ? styles.callPanelStatusDotInCall
+                          : styles.callPanelStatusDotOther
+                    }`}
+                  />
+                  <span className={styles.callPanelStatusText}>
+                    {(callWidgetStatus.callState === 'incoming'
+                      ? 'Входящий'
+                      : callWidgetStatus.callState === 'in-call'
+                        ? 'Разговор'
+                        : callWidgetStatus.callState === 'outgoing'
+                          ? 'Исходящий'
+                          : 'Завершено') + (callWidgetStatus.callPeer ? ` ${callWidgetStatus.callPeer}` : '')}
+                  </span>
+                </div>
+              )}
               <button
                 type="button"
                 className={styles.callPanelToggle}
@@ -1434,7 +1468,7 @@ export function ChatsPage() {
             </div>
 
             <div className={styles.callPanelContent}>
-              <CallWidget defaultCallee={defaultCallee} />
+              <CallWidget defaultCallee={defaultCallee} onStatusChange={handleCallWidgetStatus} />
             </div>
           </aside>
         </div>

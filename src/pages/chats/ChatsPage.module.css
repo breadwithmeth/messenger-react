@@ -219,7 +219,7 @@
 .callPanel {
   background: var(--surface);
   border-left: 1px solid var(--border);
-  padding: 16px;
+  padding: 12px;
   overflow: auto;
   min-height: 0;
 }
@@ -234,7 +234,47 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.callPanelStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.callPanelStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--text-subtle);
+}
+
+.callPanelStatusDotIncoming {
+  background: var(--danger);
+}
+
+.callPanelStatusDotInCall {
+  background: var(--primary);
+}
+
+.callPanelStatusDotOther {
+  background: var(--text-muted);
+}
+
+.callPanelStatusText {
+  display: inline;
+}
+
+.callPanelCollapsed .callPanelStatusText {
+  display: none;
 }
 
 .callPanelTitle {
