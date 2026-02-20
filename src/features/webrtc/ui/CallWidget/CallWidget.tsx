@@ -26,6 +26,21 @@ type SipCredentials = {
 
 const STORAGE_KEY = 'webrtc.sip.credentials.v1';
 
+// Рингтон входящего звонка (меняется здесь)
+const RINGTONE_VOLUME = 0.16;
+const RINGTONE_ON_MS = 2000;
+const RINGTONE_OFF_MS = 4000;
+// Простая “мелодия” (частота Гц, длительность мс). Частота 0 = пауза.
+const RINGTONE_MELODY: Array<[number, number]> = [
+  [659, 120], [0, 80],
+  [659, 120], [0, 80],
+  [659, 120], [0, 220],
+  [523, 120], [0, 80],
+  [659, 140], [0, 220],
+  [784, 180], [0, 460],
+  [392, 200], [0, 0],
+];
+
 // Дефолты (как на ваших скриншотах)
 const DEFAULT_WS_SERVER_URL = 'wss://jasmine.naliv.kz:8089/asterisk/ws';
 const DEFAULT_SIP_DOMAIN = '88.218.70.246';
@@ -109,12 +124,15 @@ export function CallWidget({
 
   const ringtoneCtxRef = useRef<AudioContext | null>(null);
   const ringtoneTimeoutRef = useRef<number | null>(null);
-  const ringtoneNodesRef = useRef<{ oscA: OscillatorNode; oscB: OscillatorNode; gain: GainNode } | null>(null);
+  const ringtoneNodesRef = useRef<{ oscs: OscillatorNode[]; gain: GainNode } | null>(null);
 
   const ensureRingtoneContext = async () => {
     if (!ringtoneCtxRef.current) {
-      // Safari может не иметь window.AudioContext
-      const Ctx = window.AudioContext;
+      const Ctx =
+        window.AudioContext ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((window as any).webkitAudioContext as typeof window.AudioContext | undefined);
+      if (!Ctx) return;
       ringtoneCtxRef.current = new Ctx();
     }
 
@@ -141,19 +159,16 @@ export function CallWidget({
       } catch {
         // ignore
       }
+
+      nodes.oscs.forEach((osc) => {
+        try {
+          osc.stop();
+        } catch {
+          // ignore
+        }
+      });
       try {
-        nodes.oscA.stop();
-      } catch {
-        // ignore
-      }
-      try {
-        nodes.oscB.stop();
-      } catch {
-        // ignore
-      }
-      try {
-        nodes.oscA.disconnect();
-        nodes.oscB.disconnect();
+        nodes.oscs.forEach((osc) => osc.disconnect());
         nodes.gain.disconnect();
       } catch {
         // ignore
@@ -180,45 +195,62 @@ export function CallWidget({
           return;
         }
 
-        // Классическая пара частот для рингтона (US ring) 440 + 480
+        // Мелодичный рингтон (один осциллятор + расписание частоты/громкости)
         const gain = ctx.createGain();
         gain.gain.value = 0;
         gain.connect(ctx.destination);
 
-        const oscA = ctx.createOscillator();
-        oscA.type = 'sine';
-        oscA.frequency.value = 440;
-        oscA.connect(gain);
-
-        const oscB = ctx.createOscillator();
-        oscB.type = 'sine';
-        oscB.frequency.value = 480;
-        oscB.connect(gain);
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.connect(gain);
 
         const now = ctx.currentTime;
-        // мягкий атака/релиз чтобы не щёлкало
+        let t = now;
+
+        // Длительность мелодии ограничиваем RINGTONE_ON_MS
+        const endAt = now + RINGTONE_ON_MS / 1000;
+        const volume = RINGTONE_VOLUME;
+
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
-        gain.gain.setValueAtTime(0.18, now + 1.9);
-        gain.gain.linearRampToValueAtTime(0, now + 2.0);
 
-        oscA.start(now);
-        oscB.start(now);
-        oscA.stop(now + 2.05);
-        oscB.stop(now + 2.05);
+        for (const [freq, ms] of RINGTONE_MELODY) {
+          if (t >= endAt) break;
+          const dur = Math.max(0, ms) / 1000;
+          const nextT = Math.min(endAt, t + dur);
+          if (freq > 0) {
+            osc.frequency.setValueAtTime(freq, t);
+            // мягкая атака/релиз
+            const attackEnd = Math.min(nextT, t + 0.01);
+            const releaseStart = Math.max(t, nextT - 0.01);
+            gain.gain.linearRampToValueAtTime(volume, attackEnd);
+            gain.gain.setValueAtTime(volume, releaseStart);
+            gain.gain.linearRampToValueAtTime(0, nextT);
+          } else {
+            // пауза
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.setValueAtTime(0, nextT);
+          }
+          t = nextT;
+        }
 
-        ringtoneNodesRef.current = { oscA, oscB, gain };
+        // гарантированный ноль на конце
+        gain.gain.setValueAtTime(0, endAt);
+
+        osc.start(now);
+        osc.stop(endAt + 0.05);
+
+        ringtoneNodesRef.current = { oscs: [osc], gain };
 
         const cleanupAfterTone = () => {
           stopRingtone();
-          // Пауза 4 секунды → следующий цикл (2s on / 4s off)
+          // Пауза → следующий цикл
           if (callState === 'incoming') {
-            ringtoneTimeoutRef.current = window.setTimeout(playCycle, 4000);
+            ringtoneTimeoutRef.current = window.setTimeout(playCycle, RINGTONE_OFF_MS);
           }
         };
 
         // гарантированная очистка после тона
-        ringtoneTimeoutRef.current = window.setTimeout(cleanupAfterTone, 2200);
+        ringtoneTimeoutRef.current = window.setTimeout(cleanupAfterTone, RINGTONE_ON_MS + 200);
       });
     };
 
