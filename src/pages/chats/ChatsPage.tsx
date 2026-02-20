@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Layout } from '../../shared/ui/Layout/Layout';
 import { Button } from '../../shared/ui/Button/Button';
 import { Input } from '../../shared/ui/Input/Input';
@@ -9,6 +9,7 @@ import { aiApi } from '../../features/ai/api/aiApi';
 import { Chat, ChatPriority, Message } from '../../features/chats/model/types';
 import { NetworkError } from '../../shared/api/types';
 import { useAuth } from '../../features/auth/model/authContext';
+import { CallWidget } from '../../features/webrtc/ui/CallWidget/CallWidget';
 import styles from './ChatsPage.module.css';
 
 type ChatFilter = 'all' | 'my' | 'ignored' | 'open' | 'unread';
@@ -89,6 +90,16 @@ export function ChatsPage() {
     hasMore: false,
   });
   const [allChatsTotal, setAllChatsTotal] = useState(0);
+  const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(false);
+
+  const selectedChat = useMemo(() => {
+    if (!selectedChatId) return null;
+    return chats.find((c) => c.id === selectedChatId) ?? null;
+  }, [chats, selectedChatId]);
+
+  const defaultCallee = useMemo(() => {
+    return extractPhoneFromJid(selectedChat?.remoteJid ?? null);
+  }, [selectedChat?.remoteJid]);
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
@@ -855,7 +866,7 @@ export function ChatsPage() {
   return (
     <Layout>
       <div className={styles.page}>
-        <div className={styles.container}>
+        <div className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''}`}>
           <aside className={styles.sidebar}>
             <div className={styles.searchSection}>
               <Input
@@ -969,7 +980,9 @@ export function ChatsPage() {
                 </div>
               ) : getFilteredChats().length === 0 ? (
                 <div className={styles.empty}>
-                  <div className={styles.emptyIcon}>💬</div>
+                  <div className={styles.emptyIcon}>
+                    <Icon name="chat" size={56} color="var(--text-muted)" />
+                  </div>
                   <p className={styles.emptyText}>Нет чатов</p>
                 </div>
               ) : (
@@ -1102,6 +1115,15 @@ export function ChatsPage() {
                     >
                       Прочитать
                     </button>
+                    <button
+                      className={styles.chatTopAction}
+                      type="button"
+                      onClick={() => setIsCallPanelCollapsed(false)}
+                      disabled={!defaultCallee}
+                      title={defaultCallee ? `Позвонить: ${defaultCallee}` : 'Нет номера для звонка'}
+                    >
+                      Позвонить
+                    </button>
                   </div>
                 </div>
                 
@@ -1132,7 +1154,9 @@ export function ChatsPage() {
                     </div>
                   ) : messages.length === 0 ? (
                     <div className={styles.empty}>
-                      <div className={styles.emptyIcon}>💬</div>
+                      <div className={styles.emptyIcon}>
+                        <Icon name="chat" size={56} color="var(--text-muted)" />
+                      </div>
                       <p className={styles.emptyText}>Нет сообщений</p>
                     </div>
                   ) : (
@@ -1300,7 +1324,14 @@ export function ChatsPage() {
                   >
                     AI
                   </button>
-                  <button className={styles.voiceButton}>🎤</button>
+                  <button
+                    type="button"
+                    className={styles.voiceButton}
+                    aria-label="Голос"
+                    title="Голос"
+                  >
+                    <Icon name="mic" size={18} />
+                  </button>
                   <button
                     type="button"
                     className={styles.sendButton}
@@ -1309,7 +1340,7 @@ export function ChatsPage() {
                     aria-label="Отправить"
                     title="Отправить"
                   >
-                    {isSendingMessage ? <span className={styles.sendSpinner} /> : '➤'}
+                    {isSendingMessage ? <span className={styles.sendSpinner} /> : <Icon name="send" size={18} />}
                   </button>
                 </div>
 
@@ -1377,11 +1408,33 @@ export function ChatsPage() {
               </div>
             ) : (
               <div className={styles.empty}>
-                <div className={styles.emptyIcon}>💬</div>
+                <div className={styles.emptyIcon}>
+                  <Icon name="chat" size={56} color="var(--text-muted)" />
+                </div>
                 <p className={styles.emptyText}>Выберите чат</p>
               </div>
             )}
           </main>
+
+          <aside
+            className={`${styles.callPanel} ${isCallPanelCollapsed ? styles.callPanelCollapsed : ''}`}
+            aria-label="Звонки"
+          >
+            <div className={styles.callPanelHeader}>
+              <div className={styles.callPanelTitle}>Звонки</div>
+              <button
+                type="button"
+                className={styles.callPanelToggle}
+                onClick={() => setIsCallPanelCollapsed((v) => !v)}
+                aria-label={isCallPanelCollapsed ? 'Развернуть панель звонков' : 'Свернуть панель звонков'}
+                title={isCallPanelCollapsed ? 'Развернуть' : 'Свернуть'}
+              >
+                {isCallPanelCollapsed ? '<' : '>'}
+              </button>
+            </div>
+
+            {!isCallPanelCollapsed ? <CallWidget defaultCallee={defaultCallee} /> : null}
+          </aside>
         </div>
       </div>
     </Layout>

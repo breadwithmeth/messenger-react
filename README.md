@@ -53,6 +53,23 @@ npm run build
 npm run lint
 ```
 
+## Звонки (WebRTC / SIP)
+
+Мини-окно звонка на странице чатов использует SIP over WebSocket (JsSIP). URL-адреса по умолчанию зашиты в код (как в вашем примере), в интерфейсе нужно ввести только **логин** и **пароль** SIP.
+
+Если нужно переопределить (необязательно), добавьте в `.env.local`:
+
+```bash
+VITE_SIP_WS_SERVER_URL=wss://your-host:8089/asterisk/ws
+VITE_SIP_DOMAIN=your-host
+VITE_SIP_URI_PREFIX=sip
+```
+
+После этого в виджете:
+- `Логин SIP` (например `100`)
+- `Пароль`
+- и номер для звонка
+
 ## API
 
 Backend: `https://bm.drawbridge.kz/api`
