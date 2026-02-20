@@ -1433,7 +1433,9 @@ export function ChatsPage() {
               </button>
             </div>
 
-            {!isCallPanelCollapsed ? <CallWidget defaultCallee={defaultCallee} /> : null}
+            <div className={styles.callPanelContent}>
+              <CallWidget defaultCallee={defaultCallee} />
+            </div>
           </aside>
         </div>
       </div>

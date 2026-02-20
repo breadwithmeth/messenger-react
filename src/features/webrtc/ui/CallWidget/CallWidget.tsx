@@ -32,13 +32,12 @@ const RINGTONE_ON_MS = 2000;
 const RINGTONE_OFF_MS = 4000;
 // Простая “мелодия” (частота Гц, длительность мс). Частота 0 = пауза.
 const RINGTONE_MELODY: Array<[number, number]> = [
-  [659, 120], [0, 80],
-  [659, 120], [0, 80],
-  [659, 120], [0, 220],
-  [523, 120], [0, 80],
-  [659, 140], [0, 220],
-  [784, 180], [0, 460],
-  [392, 200], [0, 0],
+  // Нейтральный «цифровой звонок»: короткие аккордовые импульсы + паузы
+  // (без узнаваемых мотивов)
+  [523, 90], [659, 90], [784, 120], [0, 120],
+  [523, 90], [659, 90], [784, 120], [0, 260],
+  [587, 110], [740, 110], [880, 140], [0, 220],
+  [523, 120], [0, 0],
 ];
 
 // Дефолты (как на ваших скриншотах)
@@ -125,6 +124,19 @@ export function CallWidget({
   const ringtoneCtxRef = useRef<AudioContext | null>(null);
   const ringtoneTimeoutRef = useRef<number | null>(null);
   const ringtoneNodesRef = useRef<{ oscs: OscillatorNode[]; gain: GainNode } | null>(null);
+  const ringtoneTestTimeoutRef = useRef<number | null>(null);
+  const [isRingtoneTesting, setIsRingtoneTesting] = useState(false);
+  const isRingtoneTestingRef = useRef(false);
+  const callStateRef = useRef<CallStateUI>(callState);
+  const ringtoneUnlockHandlerRef = useRef<((e: Event) => void) | null>(null);
+
+  useEffect(() => {
+    isRingtoneTestingRef.current = isRingtoneTesting;
+  }, [isRingtoneTesting]);
+
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
 
   const ensureRingtoneContext = async () => {
     if (!ringtoneCtxRef.current) {
@@ -145,12 +157,29 @@ export function CallWidget({
     }
   };
 
-  const stopRingtone = () => {
-    if (ringtoneTimeoutRef.current) {
-      window.clearTimeout(ringtoneTimeoutRef.current);
-      ringtoneTimeoutRef.current = null;
-    }
+  const armRingtoneAudioUnlock = () => {
+    if (ringtoneUnlockHandlerRef.current) return;
 
+    const onGesture = () => {
+      void ensureRingtoneContext().finally(() => {
+        const ctx = ringtoneCtxRef.current;
+        if (ctx?.state === 'running') {
+          const handler = ringtoneUnlockHandlerRef.current;
+          if (handler) {
+            window.removeEventListener('pointerdown', handler);
+            window.removeEventListener('keydown', handler);
+          }
+          ringtoneUnlockHandlerRef.current = null;
+        }
+      });
+    };
+
+    ringtoneUnlockHandlerRef.current = onGesture;
+    window.addEventListener('pointerdown', onGesture);
+    window.addEventListener('keydown', onGesture);
+  };
+
+  const stopRingtoneNodes = () => {
     const nodes = ringtoneNodesRef.current;
     if (nodes) {
       ringtoneNodesRef.current = null;
@@ -176,13 +205,73 @@ export function CallWidget({
     }
   };
 
+  const stopRingtone = () => {
+    if (ringtoneTimeoutRef.current) {
+      window.clearTimeout(ringtoneTimeoutRef.current);
+      ringtoneTimeoutRef.current = null;
+    }
+
+    if (ringtoneTestTimeoutRef.current) {
+      window.clearTimeout(ringtoneTestTimeoutRef.current);
+      ringtoneTestTimeoutRef.current = null;
+    }
+
+    stopRingtoneNodes();
+  };
+
+  const scheduleRingtoneOnce = () => {
+    const ctx = ringtoneCtxRef.current;
+    if (!ctx || ctx.state !== 'running') return;
+    if (ringtoneNodesRef.current) return;
+
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    gain.connect(ctx.destination);
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.connect(gain);
+
+    const now = ctx.currentTime;
+    let t = now;
+    const endAt = now + RINGTONE_ON_MS / 1000;
+    const volume = RINGTONE_VOLUME;
+
+    gain.gain.setValueAtTime(0, now);
+
+    for (const [freq, ms] of RINGTONE_MELODY) {
+      if (t >= endAt) break;
+      const dur = Math.max(0, ms) / 1000;
+      const nextT = Math.min(endAt, t + dur);
+      if (freq > 0) {
+        osc.frequency.setValueAtTime(freq, t);
+        const attackEnd = Math.min(nextT, t + 0.01);
+        const releaseStart = Math.max(t, nextT - 0.015);
+        gain.gain.linearRampToValueAtTime(volume, attackEnd);
+        gain.gain.setValueAtTime(volume, releaseStart);
+        gain.gain.linearRampToValueAtTime(0, nextT);
+      } else {
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.setValueAtTime(0, nextT);
+      }
+      t = nextT;
+    }
+
+    gain.gain.setValueAtTime(0, endAt);
+
+    osc.start(now);
+    osc.stop(endAt + 0.05);
+
+    ringtoneNodesRef.current = { oscs: [osc], gain };
+  };
+
   const startRingtone = () => {
     // Запускаем только если реально входящий вызов
-    if (callState !== 'incoming') return;
+    if (callStateRef.current !== 'incoming') return;
     if (ringtoneTimeoutRef.current || ringtoneNodesRef.current) return;
 
     const playCycle = () => {
-      if (callState !== 'incoming') {
+      if (callStateRef.current !== 'incoming') {
         stopRingtone();
         return;
       }
@@ -195,56 +284,12 @@ export function CallWidget({
           return;
         }
 
-        // Мелодичный рингтон (один осциллятор + расписание частоты/громкости)
-        const gain = ctx.createGain();
-        gain.gain.value = 0;
-        gain.connect(ctx.destination);
-
-        const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.connect(gain);
-
-        const now = ctx.currentTime;
-        let t = now;
-
-        // Длительность мелодии ограничиваем RINGTONE_ON_MS
-        const endAt = now + RINGTONE_ON_MS / 1000;
-        const volume = RINGTONE_VOLUME;
-
-        gain.gain.setValueAtTime(0, now);
-
-        for (const [freq, ms] of RINGTONE_MELODY) {
-          if (t >= endAt) break;
-          const dur = Math.max(0, ms) / 1000;
-          const nextT = Math.min(endAt, t + dur);
-          if (freq > 0) {
-            osc.frequency.setValueAtTime(freq, t);
-            // мягкая атака/релиз
-            const attackEnd = Math.min(nextT, t + 0.01);
-            const releaseStart = Math.max(t, nextT - 0.01);
-            gain.gain.linearRampToValueAtTime(volume, attackEnd);
-            gain.gain.setValueAtTime(volume, releaseStart);
-            gain.gain.linearRampToValueAtTime(0, nextT);
-          } else {
-            // пауза
-            gain.gain.setValueAtTime(0, t);
-            gain.gain.setValueAtTime(0, nextT);
-          }
-          t = nextT;
-        }
-
-        // гарантированный ноль на конце
-        gain.gain.setValueAtTime(0, endAt);
-
-        osc.start(now);
-        osc.stop(endAt + 0.05);
-
-        ringtoneNodesRef.current = { oscs: [osc], gain };
+        scheduleRingtoneOnce();
 
         const cleanupAfterTone = () => {
           stopRingtone();
           // Пауза → следующий цикл
-          if (callState === 'incoming') {
+          if (callStateRef.current === 'incoming') {
             ringtoneTimeoutRef.current = window.setTimeout(playCycle, RINGTONE_OFF_MS);
           }
         };
@@ -255,6 +300,57 @@ export function CallWidget({
     };
 
     playCycle();
+  };
+
+  const startRingtoneTestLoop = () => {
+    const playTestCycle = () => {
+      if (!isRingtoneTestingRef.current) return;
+      if (callStateRef.current === 'incoming') {
+        setIsRingtoneTesting(false);
+        return;
+      }
+
+      void ensureRingtoneContext().finally(() => {
+        const ctx = ringtoneCtxRef.current;
+        if (!ctx || ctx.state !== 'running') {
+          ringtoneTestTimeoutRef.current = window.setTimeout(playTestCycle, 1500);
+          return;
+        }
+
+        scheduleRingtoneOnce();
+
+        // Останавливаем тон и планируем следующий цикл
+        ringtoneTestTimeoutRef.current = window.setTimeout(() => {
+          stopRingtoneNodes();
+          if (!isRingtoneTestingRef.current) return;
+          if (callStateRef.current === 'incoming') {
+            setIsRingtoneTesting(false);
+            return;
+          }
+          ringtoneTestTimeoutRef.current = window.setTimeout(playTestCycle, RINGTONE_OFF_MS);
+        }, RINGTONE_ON_MS + 120);
+      });
+    };
+
+    playTestCycle();
+  };
+
+  const handleTestRingtone = () => {
+    setError('');
+    if (isRingtoneTesting) {
+      setIsRingtoneTesting(false);
+      stopRingtone();
+      return;
+    }
+
+    setIsRingtoneTesting(true);
+    // если в этот момент идёт входящий звонок — тест не мешаем
+    if (callStateRef.current === 'incoming') {
+      setIsRingtoneTesting(false);
+      return;
+    }
+    stopRingtone();
+    startRingtoneTestLoop();
   };
 
   const sipUri = useMemo(() => buildSipUri(credentials.login), [credentials.login]);
@@ -290,6 +386,12 @@ export function CallWidget({
   useEffect(() => {
     return () => {
       stopRingtone();
+      const unlockHandler = ringtoneUnlockHandlerRef.current;
+      if (unlockHandler) {
+        window.removeEventListener('pointerdown', unlockHandler);
+        window.removeEventListener('keydown', unlockHandler);
+      }
+      ringtoneUnlockHandlerRef.current = null;
       try {
         void ringtoneCtxRef.current?.close();
       } catch {
@@ -315,28 +417,30 @@ export function CallWidget({
   }, []);
 
   useEffect(() => {
-    // Разблокировка аудио по первому жесту пользователя
-    const onFirstGesture = () => {
-      void ensureRingtoneContext();
-      window.removeEventListener('pointerdown', onFirstGesture);
-      window.removeEventListener('keydown', onFirstGesture);
-    };
-
-    window.addEventListener('pointerdown', onFirstGesture, { once: true });
-    window.addEventListener('keydown', onFirstGesture, { once: true });
+    // Разблокировка аудио: держим слушатели до реального `AudioContext.state === 'running'`.
+    // Это устойчиво к React StrictMode (двойной маунт/анмаунт в dev).
+    armRingtoneAudioUnlock();
 
     return () => {
-      window.removeEventListener('pointerdown', onFirstGesture);
-      window.removeEventListener('keydown', onFirstGesture);
+      const handler = ringtoneUnlockHandlerRef.current;
+      if (handler) {
+        window.removeEventListener('pointerdown', handler);
+        window.removeEventListener('keydown', handler);
+      }
+      ringtoneUnlockHandlerRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     if (callState === 'incoming') {
-      startRingtone();
-    } else {
+      if (isRingtoneTestingRef.current) setIsRingtoneTesting(false);
       stopRingtone();
+      startRingtone();
+      return;
     }
+
+    // при любом другом состоянии — останавливаем входящий рингтон
+    stopRingtone();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callState]);
 
@@ -349,6 +453,7 @@ export function CallWidget({
     remoteStreamRef.current = null;
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
     stopRingtone();
+    setIsRingtoneTesting(false);
   };
 
   const attachRemoteAudio = (session: Session) => {
@@ -692,6 +797,12 @@ export function CallWidget({
         {error ? <div className={styles.error}>{error}</div> : null}
 
         <audio ref={remoteAudioRef} autoPlay playsInline />
+
+        <div className={styles.row}>
+          <Button onClick={handleTestRingtone}>
+            {isRingtoneTesting ? 'Остановить рингтон' : 'Тест рингтона'}
+          </Button>
+        </div>
 
         <div className={styles.row2}>
           <Input

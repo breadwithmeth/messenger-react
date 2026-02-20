@@ -247,6 +247,14 @@
   display: none;
 }
 
+.callPanelContent {
+  min-height: 0;
+}
+
+.callPanelCollapsed .callPanelContent {
+  display: none;
+}
+
 .callPanelToggle {
   width: 32px;
   height: 32px;
