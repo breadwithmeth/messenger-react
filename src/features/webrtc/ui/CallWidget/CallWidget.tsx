@@ -254,6 +254,7 @@ export function CallWidget({
   const hangupRequestedRef = useRef<boolean>(false);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const holdDirectionsRef = useRef<Map<number, RTCRtpTransceiverDirection>>(new Map());
 
   const [callLog, setCallLog] = useState<CallLogItem[]>([]);
   const activeLogIdRef = useRef<string | null>(null);
@@ -263,6 +264,9 @@ export function CallWidget({
   const micTestRafRef = useRef<number | null>(null);
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [micLevel, setMicLevel] = useState(0);
+  const callMicCtxRef = useRef<AudioContext | null>(null);
+  const callMicRafRef = useRef<number | null>(null);
+  const [callMicLevel, setCallMicLevel] = useState(0);
 
   const uaRef = useRef<UserAgent | null>(null);
   const registererRef = useRef<Registerer | null>(null);
@@ -276,6 +280,8 @@ export function CallWidget({
   const ringbackTimeoutRef = useRef<number | null>(null);
   const ringbackNodesRef = useRef<{ oscs: OscillatorNode[]; gain: GainNode } | null>(null);
   const callStateRef = useRef<CallStateUI>(callState);
+  const isOnLineRef = useRef<boolean>(isOnLine);
+  const canConnectRef = useRef<boolean>(false);
   const ringtoneUnlockHandlerRef = useRef<((e: Event) => void) | null>(null);
 
   useEffect(() => {
@@ -303,9 +309,7 @@ export function CallWidget({
     if (autoConnect) setAutoConnect(false);
     clearReconnectTimeoutIfAny();
     reconnectAttemptRef.current = 0;
-    if (registrationState === 'registered' || registrationState === 'connecting' || Boolean(uaRef.current)) {
-      disconnect();
-    }
+    disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnLine]);
 
@@ -331,6 +335,10 @@ export function CallWidget({
   useEffect(() => {
     callStateRef.current = callState;
   }, [callState]);
+
+  useEffect(() => {
+    isOnLineRef.current = isOnLine;
+  }, [isOnLine]);
 
   const refreshDevices = () => {
     if (!navigator.mediaDevices?.enumerateDevices) return;
@@ -414,8 +422,8 @@ export function CallWidget({
   };
 
   const scheduleReconnect = () => {
-    if (!isOnLine) return;
-    if (!canConnect) return;
+    if (!isOnLineRef.current) return;
+    if (!canConnectRef.current) return;
     if (reconnectTimeoutRef.current) return;
 
     const attempt = reconnectAttemptRef.current;
@@ -427,6 +435,7 @@ export function CallWidget({
 
     reconnectTimeoutRef.current = window.setTimeout(() => {
       reconnectTimeoutRef.current = null;
+      if (!isOnLineRef.current || !canConnectRef.current) return;
       connect();
     }, delayMs);
   };
@@ -705,6 +714,10 @@ export function CallWidget({
     return Boolean(WS_SERVER_URL.trim()) && Boolean(sipUri) && Boolean(credentials.password.trim());
   }, [credentials.password, sipUri]);
 
+  useEffect(() => {
+    canConnectRef.current = canConnect;
+  }, [canConnect]);
+
   const connectBlockedReason = useMemo(() => {
     const missing: string[] = [];
     if (!WS_SERVER_URL.trim()) missing.push('WebSocket URL');
@@ -855,9 +868,24 @@ export function CallWidget({
     setIsMuted(false);
     setIsHeld(false);
     remoteStreamRef.current = null;
-    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.muted = false;
+      remoteAudioRef.current.srcObject = null;
+    }
     stopRingtone();
     stopRingback();
+    holdDirectionsRef.current.clear();
+    setCallMicLevel(0);
+    if (callMicRafRef.current) {
+      cancelAnimationFrame(callMicRafRef.current);
+      callMicRafRef.current = null;
+    }
+    try {
+      void callMicCtxRef.current?.close();
+    } catch {
+      // ignore
+    }
+    callMicCtxRef.current = null;
   };
 
   const attachRemoteAudio = (session: Session) => {
@@ -936,6 +964,12 @@ export function CallWidget({
   const connect = () => {
     setError('');
     clearReconnectTimeoutIfAny();
+
+    if (!isOnLine) {
+      disconnect();
+      setError('Вы сейчас «Ушел с линии». Переключите на «На линии» для подключения.');
+      return;
+    }
 
     if (!canConnect) {
       if (!credentials.login.trim()) {
@@ -1271,39 +1305,166 @@ export function CallWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoConnect, canConnect]);
 
+  useEffect(() => {
+    if (callState !== 'in-call') {
+      setCallMicLevel(0);
+      if (callMicRafRef.current) {
+        cancelAnimationFrame(callMicRafRef.current);
+        callMicRafRef.current = null;
+      }
+      try {
+        void callMicCtxRef.current?.close();
+      } catch {
+        // ignore
+      }
+      callMicCtxRef.current = null;
+      return;
+    }
+
+    const pc = getPeerConnection(sessionRef.current);
+    const track = pc?.getSenders().find((s) => s.track?.kind === 'audio')?.track;
+    if (!track) return;
+
+    const Ctx =
+      window.AudioContext ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((window as any).webkitAudioContext as typeof window.AudioContext | undefined);
+    if (!Ctx) return;
+
+    const ctx = new Ctx();
+    callMicCtxRef.current = ctx;
+
+    const source = ctx.createMediaStreamSource(new MediaStream([track]));
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+
+    const data = new Uint8Array(analyser.fftSize);
+
+    const tick = () => {
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i += 1) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+      setCallMicLevel(rms);
+      callMicRafRef.current = requestAnimationFrame(tick);
+    };
+
+    tick();
+
+    return () => {
+      setCallMicLevel(0);
+      if (callMicRafRef.current) {
+        cancelAnimationFrame(callMicRafRef.current);
+        callMicRafRef.current = null;
+      }
+      try {
+        void callMicCtxRef.current?.close();
+      } catch {
+        // ignore
+      }
+      callMicCtxRef.current = null;
+    };
+  }, [callState]);
+
+  useEffect(() => {
+    if (callState !== 'in-call') return;
+    const pc = getPeerConnection(sessionRef.current);
+    if (!pc) return;
+    const shouldEnableAudioSend = !(isMuted || isHeld);
+
+    pc.getSenders().forEach((sender) => {
+      if (sender.track?.kind !== 'audio') return;
+      sender.track.enabled = shouldEnableAudioSend;
+    });
+  }, [isMuted, isHeld, callState]);
+
   const toggleMute = () => {
     setError('');
     const pc = getPeerConnection(sessionRef.current);
     if (!pc) return;
-    const audioSender = pc.getSenders().find((s) => s.track?.kind === 'audio');
-    if (!audioSender?.track) return;
-
-    audioSender.track.enabled = isMuted;
+    const hasAudioSender = pc.getSenders().some((s) => s.track?.kind === 'audio');
+    if (!hasAudioSender) {
+      setError('Нет аудиодорожки микрофона');
+      return;
+    }
     setIsMuted((v) => !v);
   };
 
   const toggleHold = () => {
     setError('');
+    if (callState !== 'in-call') return;
     const session = sessionRef.current;
     if (!session) return;
+
+    const nextHeld = !isHeld;
+    const applyWebRtcHold = (hold: boolean) => {
+      const pc = getPeerConnection(session);
+      if (!pc) return false;
+
+      let changed = false;
+      pc.getTransceivers().forEach((transceiver, index) => {
+        if (transceiver.sender.track?.kind !== 'audio') return;
+
+        const currentDirection = transceiver.direction;
+        if (!holdDirectionsRef.current.has(index)) {
+          holdDirectionsRef.current.set(index, currentDirection);
+        }
+
+        if (hold) {
+          if (currentDirection === 'sendrecv' || currentDirection === 'sendonly') {
+            transceiver.direction = 'recvonly';
+            changed = true;
+          }
+        } else {
+          const prev = holdDirectionsRef.current.get(index) ?? 'sendrecv';
+          transceiver.direction = prev;
+          changed = true;
+        }
+      });
+
+      if (!hold) {
+        holdDirectionsRef.current.clear();
+      }
+
+      return changed;
+    };
+
+    const applyLocalHoldState = () => {
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.muted = nextHeld;
+      }
+      setIsHeld(nextHeld);
+      setCallText(nextHeld ? 'На удержании' : 'Разговор');
+    };
+
+    const webRtcChanged = applyWebRtcHold(nextHeld);
+    applyLocalHoldState();
 
     // hold/unhold через re-INVITE
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const reinvite = (session as any).invite as undefined | ((options?: any) => Promise<void>);
     if (!reinvite) {
-      setError('Удержание не поддерживается');
+      if (!webRtcChanged && nextHeld) {
+        setError('Удержание: SIP не поддерживается, включен локальный режим');
+      }
       return;
     }
 
-    if (isHeld) {
-      void reinvite({ sessionDescriptionHandlerModifiers: [] })
-        .then(() => setIsHeld(false))
-        .catch((e) => setError(e instanceof Error ? e.message : 'Не удалось снять удержание'));
-    } else {
-      void reinvite({ sessionDescriptionHandlerModifiers: [holdModifier] })
-        .then(() => setIsHeld(true))
-        .catch((e) => setError(e instanceof Error ? e.message : 'Не удалось поставить на удержание'));
-    }
+    const modifiers = nextHeld ? [holdModifier] : [];
+
+    void reinvite({ sessionDescriptionHandlerModifiers: modifiers })
+      .then(() => {
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.muted = false;
+        }
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? `${e.message}. Удержание работает в локальном режиме.` : 'Удержание работает в локальном режиме.');
+      });
   };
 
   const onSaveSettings = () => {
@@ -1549,7 +1710,9 @@ export function CallWidget({
               Отключить
             </Button>
           ) : (
-            <Button onClick={connect}>Подключить</Button>
+            <Button onClick={connect} disabled={!isOnLine}>
+              Подключить
+            </Button>
           )}
         </div>
 
@@ -1586,6 +1749,18 @@ export function CallWidget({
               {isHeld ? 'Снять удержание' : 'Удержание'}
             </Button>
             <span className={styles.badge}>{callState === 'in-call' ? 'В разговоре' : 'Аудио'}</span>
+          </div>
+        ) : null}
+
+        {callState === 'in-call' ? (
+          <div className={styles.row2}>
+            <div className={styles.selectLabel}>Микрофон в звонке</div>
+            <div className={styles.micMeter} aria-label="Уровень микрофона в звонке">
+              <div
+                className={styles.micMeterBarCall}
+                style={{ width: `${Math.min(100, Math.round(callMicLevel * 220))}%` }}
+              />
+            </div>
           </div>
         ) : null}
 
