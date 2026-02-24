@@ -32,11 +32,41 @@
 }
 
 .status {
-  font-size: 10px;
-  color: var(--text-subtle);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.25;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.statusCall {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+
+.statusReady {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.statusError {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--surface-2);
+}
+
+.statusIdle {
+  color: var(--text-subtle);
+  border-color: var(--border);
+  background: var(--surface);
 }
 
 .headerActions {

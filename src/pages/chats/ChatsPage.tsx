@@ -92,6 +92,8 @@ export function ChatsPage() {
   const [allChatsTotal, setAllChatsTotal] = useState(0);
   const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(false);
   const [callWidgetStatus, setCallWidgetStatus] = useState<CallWidgetStatus | null>(null);
+  const [callWidgetCallee, setCallWidgetCallee] = useState('');
+  const [callWidgetCalleeVersion, setCallWidgetCalleeVersion] = useState(0);
 
   const handleCallWidgetStatus = useCallback((s: CallWidgetStatus) => {
     setCallWidgetStatus(s);
@@ -102,9 +104,16 @@ export function ChatsPage() {
     return chats.find((c) => c.id === selectedChatId) ?? null;
   }, [chats, selectedChatId]);
 
-  const defaultCallee = useMemo(() => {
+  const selectedChatPhone = useMemo(() => {
     return extractPhoneFromJid(selectedChat?.remoteJid ?? null);
   }, [selectedChat?.remoteJid]);
+
+  const handleOpenCallPanel = useCallback(() => {
+    setIsCallPanelCollapsed(false);
+    if (!selectedChatPhone) return;
+    setCallWidgetCallee(selectedChatPhone);
+    setCallWidgetCalleeVersion((v) => v + 1);
+  }, [selectedChatPhone]);
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
@@ -1123,9 +1132,9 @@ export function ChatsPage() {
                     <button
                       className={styles.chatTopAction}
                       type="button"
-                      onClick={() => setIsCallPanelCollapsed(false)}
-                      disabled={!defaultCallee}
-                      title={defaultCallee ? `Позвонить: ${defaultCallee}` : 'Нет номера для звонка'}
+                      onClick={handleOpenCallPanel}
+                      disabled={!selectedChatPhone}
+                      title={selectedChatPhone ? `Позвонить: ${selectedChatPhone}` : 'Нет номера для звонка'}
                     >
                       Позвонить
                     </button>
@@ -1468,7 +1477,11 @@ export function ChatsPage() {
             </div>
 
             <div className={styles.callPanelContent}>
-              <CallWidget defaultCallee={defaultCallee} onStatusChange={handleCallWidgetStatus} />
+              <CallWidget
+                defaultCallee={callWidgetCallee}
+                defaultCalleeVersion={callWidgetCalleeVersion}
+                onStatusChange={handleCallWidgetStatus}
+              />
             </div>
           </aside>
         </div>

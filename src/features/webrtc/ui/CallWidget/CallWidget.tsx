@@ -37,9 +37,10 @@ type SipCredentials = {
 
 const STORAGE_KEY = 'webrtc.sip.credentials.v1';
 const AUTO_CONNECT_KEY = 'webrtc.sip.autoConnect.v1';
-const DND_KEY = 'webrtc.sip.dnd.v1';
+const LINE_STATUS_KEY = 'webrtc.sip.lineStatus.v1';
 const DEVICES_KEY = 'webrtc.sip.devices.v1';
 const VOLUMES_KEY = 'webrtc.sip.volumes.v1';
+const RECONNECT_BACKOFF_MS = [1000, 2000, 5000] as const;
 
 // Рингтон входящего звонка (меняется здесь)
 const DEFAULT_RINGTONE_VOLUME = 0.16;
@@ -210,15 +211,17 @@ const formatDuration = (sec: number) => {
 
 export function CallWidget({
   defaultCallee,
+  defaultCalleeVersion,
   onStatusChange,
 }: {
   defaultCallee?: string;
+  defaultCalleeVersion?: number;
   onStatusChange?: (status: CallWidgetStatus) => void;
 }) {
   const [credentials, setCredentials] = useState<SipCredentials>(() => loadCredentials());
 
   const [autoConnect, setAutoConnect] = useState<boolean>(() => loadBool(AUTO_CONNECT_KEY, false));
-  const [dndEnabled, setDndEnabled] = useState<boolean>(() => loadBool(DND_KEY, false));
+  const [isOnLine, setIsOnLine] = useState<boolean>(() => loadBool(LINE_STATUS_KEY, false));
 
   const [registrationState, setRegistrationState] = useState<RegistrationStateUI>('idle');
   const [registrationText, setRegistrationText] = useState('Отключено');
@@ -230,6 +233,7 @@ export function CallWidget({
   const [saveFeedback, setSaveFeedback] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [isHeld, setIsHeld] = useState(false);
+  const [isDialing, setIsDialing] = useState(false);
 
   const storedDevices = useMemo(() => loadDevices(), []);
   const storedVolumes = useMemo(() => loadVolumes(), []);
@@ -246,9 +250,10 @@ export function CallWidget({
   const [callVolume, setCallVolume] = useState<number>(storedVolumes.call);
   const ringtoneVolumeRef = useRef<number>(ringtoneVolume);
 
-  const dndRef = useRef<boolean>(dndEnabled);
   const outgoingTimeoutRef = useRef<number | null>(null);
   const hangupRequestedRef = useRef<boolean>(false);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const reconnectAttemptRef = useRef(0);
 
   const [callLog, setCallLog] = useState<CallLogItem[]>([]);
   const activeLogIdRef = useRef<string | null>(null);
@@ -274,21 +279,35 @@ export function CallWidget({
   const ringtoneUnlockHandlerRef = useRef<((e: Event) => void) | null>(null);
 
   useEffect(() => {
-    dndRef.current = dndEnabled;
-    try {
-      saveBool(DND_KEY, dndEnabled);
-    } catch {
-      // ignore
-    }
-  }, [dndEnabled]);
-
-  useEffect(() => {
     try {
       saveBool(AUTO_CONNECT_KEY, autoConnect);
     } catch {
       // ignore
     }
   }, [autoConnect]);
+
+  useEffect(() => {
+    try {
+      saveBool(LINE_STATUS_KEY, isOnLine);
+    } catch {
+      // ignore
+    }
+  }, [isOnLine]);
+
+  useEffect(() => {
+    if (isOnLine) {
+      if (!autoConnect) setAutoConnect(true);
+      return;
+    }
+
+    if (autoConnect) setAutoConnect(false);
+    clearReconnectTimeoutIfAny();
+    reconnectAttemptRef.current = 0;
+    if (registrationState === 'registered' || registrationState === 'connecting' || Boolean(uaRef.current)) {
+      disconnect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnLine]);
 
   useEffect(() => {
     selectedSpeakerIdRef.current = selectedSpeakerId;
@@ -381,6 +400,35 @@ export function CallWidget({
     if (!outgoingTimeoutRef.current) return;
     window.clearTimeout(outgoingTimeoutRef.current);
     outgoingTimeoutRef.current = null;
+  };
+
+  const clearReconnectTimeoutIfAny = () => {
+    if (!reconnectTimeoutRef.current) return;
+    window.clearTimeout(reconnectTimeoutRef.current);
+    reconnectTimeoutRef.current = null;
+  };
+
+  const getReconnectDelayMs = (attempt: number) => {
+    const idx = Math.max(0, Math.min(RECONNECT_BACKOFF_MS.length - 1, attempt));
+    return RECONNECT_BACKOFF_MS[idx];
+  };
+
+  const scheduleReconnect = () => {
+    if (!isOnLine) return;
+    if (!canConnect) return;
+    if (reconnectTimeoutRef.current) return;
+
+    const attempt = reconnectAttemptRef.current;
+    const delayMs = getReconnectDelayMs(attempt);
+    reconnectAttemptRef.current = attempt + 1;
+
+    setRegistrationState('connecting');
+    setRegistrationText(delayMs <= 1000 ? 'Переподключение…' : `Переподключение через ${Math.ceil(delayMs / 1000)}с…`);
+
+    reconnectTimeoutRef.current = window.setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      connect();
+    }, delayMs);
   };
 
   const armOutgoingTimeout = () => {
@@ -672,6 +720,14 @@ export function CallWidget({
   const statusLine =
     saveFeedback ||
     (callState !== 'idle' ? `${callText}${callPeer ? ` • ${callPeer}` : ''}` : registrationText);
+  const statusClassName =
+    callState === 'incoming' || callState === 'outgoing' || callState === 'in-call'
+      ? styles.statusCall
+      : registrationState === 'error'
+        ? styles.statusError
+        : registrationState === 'registered'
+          ? styles.statusReady
+          : styles.statusIdle;
 
   useEffect(() => {
     onStatusChange?.({
@@ -687,10 +743,10 @@ export function CallWidget({
   }, [onStatusChange, registrationState, registrationText, callState, callText, callPeer, isMuted, isHeld, error]);
 
   useEffect(() => {
-    if (defaultCallee && defaultCallee.trim() && callState === 'idle') {
+    if (defaultCallee && defaultCallee.trim()) {
       setCallee(normalizeDialInput(defaultCallee));
     }
-  }, [defaultCallee, callState]);
+  }, [defaultCallee, defaultCalleeVersion]);
 
   useEffect(() => {
     return () => {
@@ -709,6 +765,7 @@ export function CallWidget({
       ringtoneCtxRef.current = null;
 
       clearOutgoingTimeoutIfAny();
+      clearReconnectTimeoutIfAny();
 
       if (micTestRafRef.current) {
         cancelAnimationFrame(micTestRafRef.current);
@@ -794,6 +851,7 @@ export function CallWidget({
     setCallState('idle');
     setCallText('');
     setCallPeer('');
+    setIsDialing(false);
     setIsMuted(false);
     setIsHeld(false);
     remoteStreamRef.current = null;
@@ -853,6 +911,7 @@ export function CallWidget({
 
   const disconnect = () => {
     setError('');
+    clearReconnectTimeoutIfAny();
     setRegistrationState('idle');
     setRegistrationText('Отключено');
 
@@ -876,6 +935,7 @@ export function CallWidget({
 
   const connect = () => {
     setError('');
+    clearReconnectTimeoutIfAny();
 
     if (!canConnect) {
       if (!credentials.login.trim()) {
@@ -914,24 +974,6 @@ export function CallWidget({
           const peer = invitation.remoteIdentity.uri?.toString?.() ?? 'Неизвестно';
           const logId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
           activeLogIdRef.current = logId;
-
-          if (dndRef.current) {
-            addLog({
-              id: logId,
-              direction: 'incoming',
-              peer,
-              startedAt: Date.now(),
-              endedAt: Date.now(),
-              result: 'rejected',
-              durationSec: 0,
-            });
-            try {
-              void invitation.reject();
-            } catch {
-              // ignore
-            }
-            return;
-          }
 
           if (sessionRef.current && sessionRef.current !== invitation) {
             try {
@@ -998,32 +1040,50 @@ export function CallWidget({
 
           registerer.stateChange.addListener((state) => {
             if (state === RegistererState.Registered) {
+              reconnectAttemptRef.current = 0;
+              clearReconnectTimeoutIfAny();
               setRegistrationState('registered');
               setRegistrationText('Зарегистрирован');
             } else if (state === RegistererState.Unregistered) {
-              setRegistrationState('idle');
-              setRegistrationText('Отключено');
+              if (isOnLine) {
+                disconnect();
+                scheduleReconnect();
+              } else {
+                setRegistrationState('idle');
+                setRegistrationText('Отключено');
+              }
             } else if (state === RegistererState.Terminated) {
-              setRegistrationState('idle');
-              setRegistrationText('Отключено');
+              if (isOnLine) {
+                disconnect();
+                scheduleReconnect();
+              } else {
+                setRegistrationState('idle');
+                setRegistrationText('Отключено');
+              }
             }
           });
 
           void registerer.register().catch((e) => {
+            disconnect();
             setRegistrationState('error');
             setRegistrationText('Ошибка регистрации');
             setError(e instanceof Error ? e.message : 'Ошибка регистрации');
+            scheduleReconnect();
           });
         })
         .catch((e) => {
+          disconnect();
           setRegistrationState('error');
           setRegistrationText('Ошибка');
           setError(e instanceof Error ? e.message : 'Ошибка подключения');
+          scheduleReconnect();
         });
     } catch (e) {
+      disconnect();
       setRegistrationState('error');
       setRegistrationText('Ошибка');
       setError(e instanceof Error ? e.message : 'Ошибка подключения');
+      scheduleReconnect();
     }
   };
 
@@ -1047,6 +1107,7 @@ export function CallWidget({
 
   const startCall = () => {
     setError('');
+    if (isDialing) return;
     const ua = uaRef.current;
     if (!ua || registrationState !== 'registered') {
       setError('Сначала подключитесь и дождитесь статуса "Зарегистрирован".');
@@ -1067,6 +1128,7 @@ export function CallWidget({
 
     sessionRef.current = inviter;
     hangupRequestedRef.current = false;
+    setIsDialing(true);
     setCallState('outgoing');
     setCallText('Исходящий звонок…');
     setCallPeer(peerFromUri(targetUri));
@@ -1089,6 +1151,7 @@ export function CallWidget({
     inviter.stateChange.addListener((state) => {
       if (state === SessionState.Establishing) setCallText('Соединение…');
       if (state === SessionState.Established) {
+        setIsDialing(false);
         setCallState('in-call');
         setCallText('Разговор');
         finalizeActiveLog({ establishedAt: Date.now(), result: 'in-call' });
@@ -1123,6 +1186,7 @@ export function CallWidget({
     void inviter.invite().catch((e) => {
       setCallState('ended');
       setCallText('Не удалось');
+      setIsDialing(false);
       setError(e instanceof Error ? e.message : 'Звонок не удался');
       clearOutgoingTimeoutIfAny();
       finalizeActiveLog({ endedAt: Date.now(), result: 'failed', durationSec: 0 });
@@ -1347,7 +1411,7 @@ export function CallWidget({
       <div className={styles.header}>
         <div className={styles.title}>
           <div className={styles.titleMain}>Звонок (WebRTC)</div>
-          <div className={styles.status}>{statusLine || '—'}</div>
+          <div className={`${styles.status} ${statusClassName}`}>{statusLine || '—'}</div>
         </div>
       </div>
 
@@ -1360,18 +1424,10 @@ export function CallWidget({
           <label className={styles.toggle}>
             <input
               type="checkbox"
-              checked={autoConnect}
-              onChange={(e) => setAutoConnect(e.target.checked)}
+              checked={isOnLine}
+              onChange={(e) => setIsOnLine(e.target.checked)}
             />
-            <span>Автоподключение</span>
-          </label>
-          <label className={styles.toggle}>
-            <input
-              type="checkbox"
-              checked={dndEnabled}
-              onChange={(e) => setDndEnabled(e.target.checked)}
-            />
-            <span>Не беспокоить</span>
+            <span>{isOnLine ? 'На линии' : 'Ушел с линии'}</span>
           </label>
         </div>
 
@@ -1483,13 +1539,24 @@ export function CallWidget({
 
         <div className={styles.row2}>
           <Button onClick={onSaveSettings}>{saveFeedback ? saveFeedback : 'Сохранить'}</Button>
-          {isConnectedLike ? <Button onClick={disconnect}>Отключить</Button> : <Button onClick={connect}>Подключить</Button>}
+          {isConnectedLike ? (
+            <Button
+              onClick={() => {
+                reconnectAttemptRef.current = 0;
+                disconnect();
+              }}
+            >
+              Отключить
+            </Button>
+          ) : (
+            <Button onClick={connect}>Подключить</Button>
+          )}
         </div>
 
         <div className={styles.row2}>
           {callState === 'idle' ? (
-            <Button onClick={startCall} disabled={registrationState !== 'registered'}>
-              Позвонить
+            <Button onClick={startCall} disabled={registrationState !== 'registered' || isDialing}>
+              {isDialing ? 'Набор…' : 'Позвонить'}
             </Button>
           ) : (
             <Button onClick={hangup}>Завершить</Button>
@@ -1585,7 +1652,7 @@ export function CallWidget({
           <div className={styles.sectionTitle}>Состояние</div>
           <div className={styles.diagLine}>Регистрация: {registrationState}</div>
           <div className={styles.diagLine}>Звонок: {callState}</div>
-          <div className={styles.diagLine}>DND: {dndEnabled ? 'вкл' : 'выкл'} · Авто: {autoConnect ? 'вкл' : 'выкл'}</div>
+          <div className={styles.diagLine}>Авто: {autoConnect ? 'вкл' : 'выкл'}</div>
           <div className={styles.diagLine}>AudioContext: {ringtoneCtxRef.current?.state ?? 'n/a'}</div>
           <div className={styles.diagLine}>SinkId: {typeof (remoteAudioRef.current as any)?.setSinkId === 'function' ? 'да' : 'нет'}</div>
         </div>
