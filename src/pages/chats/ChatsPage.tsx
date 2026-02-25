@@ -22,6 +22,12 @@ interface PendingAttachment {
   previewUrl: string;
 }
 
+type TranslationState = {
+  status: 'loading' | 'done' | 'error';
+  text?: string;
+  error?: string;
+};
+
 const formatTimeAgo = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
@@ -83,6 +89,8 @@ export function ChatsPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [sendError, setSendError] = useState('');
+  const [autoTranslateIncoming, setAutoTranslateIncoming] = useState(true);
+  const [translationsByMessageId, setTranslationsByMessageId] = useState<Record<number, TranslationState>>({});
   const [pagination, setPagination] = useState({
     total: 0,
     limit: 50,
@@ -130,6 +138,7 @@ export function ChatsPage() {
   const pendingScrollAdjustRef = useRef<{ prevScrollHeight: number; prevScrollTop: number } | null>(null);
   const messagesRefreshInFlightRef = useRef(false);
   const messagesLoadSeqRef = useRef(0);
+  const translationsRef = useRef<Record<number, TranslationState>>({});
 
   const [messagesPagination, setMessagesPagination] = useState({
     total: 0,
@@ -197,11 +206,19 @@ export function ChatsPage() {
   }, [selectedChatId]);
 
   useEffect(() => {
+    translationsRef.current = translationsByMessageId;
+  }, [translationsByMessageId]);
+
+  useEffect(() => {
     if (selectedChatId) {
       void loadMessages(selectedChatId);
     } else {
       setMessages([]);
     }
+  }, [selectedChatId]);
+
+  useEffect(() => {
+    setTranslationsByMessageId({});
   }, [selectedChatId]);
 
   useEffect(() => {
@@ -640,6 +657,60 @@ export function ChatsPage() {
     messageInputRef.current?.focus();
   };
 
+  const translateIncomingMessage = useCallback(async (message: Message) => {
+    if (message.fromMe) return;
+    const sourceText = message.content?.trim() ?? '';
+    if (!sourceText) return;
+
+    const current = translationsRef.current[message.id];
+    if (current?.status === 'loading' || current?.status === 'done') return;
+
+    setTranslationsByMessageId((prev) => ({
+      ...prev,
+      [message.id]: { status: 'loading' },
+    }));
+
+    try {
+      const translated = await aiApi.translateText(sourceText, 'ru', 'auto');
+      setTranslationsByMessageId((prev) => ({
+        ...prev,
+        [message.id]: { status: 'done', text: translated },
+      }));
+    } catch (err) {
+      setTranslationsByMessageId((prev) => ({
+        ...prev,
+        [message.id]: {
+          status: 'error',
+          error: err instanceof NetworkError ? err.message : 'Не удалось перевести',
+        },
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!autoTranslateIncoming) return;
+
+    let cancelled = false;
+
+    const run = async () => {
+      for (const message of messages) {
+        if (cancelled) return;
+        if (message.fromMe) continue;
+        const sourceText = message.content?.trim() ?? '';
+        if (!sourceText) continue;
+        const current = translationsRef.current[message.id];
+        if (current?.status === 'loading' || current?.status === 'done') continue;
+        await translateIncomingMessage(message);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, autoTranslateIncoming, translateIncomingMessage]);
+
   const getMediaTypeFromFile = (file: File): 'image' | 'document' | 'video' | 'audio' => {
     const mime = file.type;
     if (mime.startsWith('image/')) return 'image';
@@ -875,6 +946,55 @@ export function ChatsPage() {
     }
 
     return <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>;
+  };
+
+  const renderTranslation = (message: Message) => {
+    if (message.fromMe) return null;
+    const sourceText = message.content?.trim() ?? '';
+    if (!sourceText) return null;
+
+    const state = translationsByMessageId[message.id];
+
+    if (!state) {
+      return (
+        <button
+          type="button"
+          className={styles.translateRetry}
+          onClick={() => void translateIncomingMessage(message)}
+        >
+          Перевести
+        </button>
+      );
+    }
+
+    if (state.status === 'loading') {
+      return <div className={styles.translationHint}>Перевод…</div>;
+    }
+
+    if (state.status === 'error') {
+      return (
+        <div className={styles.translationErrorWrap}>
+          <span className={styles.translationError}>{state.error || 'Ошибка перевода'}</span>
+          <button
+            type="button"
+            className={styles.translateRetry}
+            onClick={() => void translateIncomingMessage(message)}
+          >
+            Повторить
+          </button>
+        </div>
+      );
+    }
+
+    const translatedText = state.text?.trim() ?? '';
+    if (!translatedText || translatedText.toLowerCase() === sourceText.toLowerCase()) return null;
+
+    return (
+      <div className={styles.translationBox}>
+        <div className={styles.translationTitle}>Перевод</div>
+        <div className={styles.translationText}>{translatedText}</div>
+      </div>
+    );
   };
 
   return (
@@ -1202,6 +1322,7 @@ export function ChatsPage() {
                                 <div className={styles.messageSender}>{senderLabel}</div>
                               )}
                               {renderMessageBody(message)}
+                              {renderTranslation(message)}
                               <span className={styles.messageTime}>{time}</span>
                             </div>
                           </div>
@@ -1337,6 +1458,16 @@ export function ChatsPage() {
                     title="Подсказки"
                   >
                     AI
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.suggestionsButton}
+                    onClick={() => setAutoTranslateIncoming((v) => !v)}
+                    disabled={!selectedChatId}
+                    aria-label="Автоперевод входящих сообщений"
+                    title="Автоперевод входящих сообщений"
+                  >
+                    {autoTranslateIncoming ? 'Перевод ON' : 'Перевод OFF'}
                   </button>
                   <button
                     type="button"
