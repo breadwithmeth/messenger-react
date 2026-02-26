@@ -250,6 +250,23 @@
   border-color: var(--primary);
 }
 
+.simulateErrorButton {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--danger);
+  background: var(--surface-2);
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.simulateErrorButton:hover {
+  background: var(--surface);
+  border-color: var(--danger-hover);
+}
+
 .starRating {
   display: flex;
   align-items: center;
@@ -315,6 +332,28 @@
   max-width: none;
   margin: 0;
   padding: 0;
+}
+
+.toastContainer {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+.toastError {
+  border: 1px solid var(--danger);
+  background: var(--surface-2);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 @media (max-width: 900px) {

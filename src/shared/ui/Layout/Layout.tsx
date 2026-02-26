@@ -1,12 +1,19 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../features/auth/model/authContext';
+import { apiClient } from '../../../shared/api/client';
+import { NetworkError } from '../../../shared/api/types';
 import { Icon } from '../Icon/Icon';
 import styles from './Layout.module.css';
 
 interface LayoutProps {
   children: ReactNode;
 }
+
+type ToastItem = {
+  id: number;
+  message: string;
+};
 
 type MenuItem = {
   path: string;
@@ -20,6 +27,8 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isChatsPage = location.pathname.startsWith('/chats');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const toastTimeoutsRef = useRef<number[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem('theme');
@@ -31,7 +40,39 @@ export function Layout({ children }: LayoutProps) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    return () => {
+      toastTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      toastTimeoutsRef.current = [];
+    };
+  }, []);
+
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+
+  const showToast = (message: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, message }]);
+
+    const timeoutId = window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+      toastTimeoutsRef.current = toastTimeoutsRef.current.filter((t) => t !== timeoutId);
+    }, 4000);
+
+    toastTimeoutsRef.current.push(timeoutId);
+  };
+
+  const handleSimulateError = async () => {
+    try {
+      await apiClient.get('/__simulate_error__', { requiresAuth: false });
+    } catch (error) {
+      if (error instanceof NetworkError) {
+        showToast(`Ошибка ${error.status}: ${error.message}`);
+        return;
+      }
+
+      showToast(error instanceof Error ? error.message : 'Симулированная ошибка');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -127,6 +168,15 @@ export function Layout({ children }: LayoutProps) {
                 {theme === 'light' ? '🌙 Тёмная' : '☀️ Светлая'}
               </button>
               <button
+                type="button"
+                className={styles.simulateErrorButton}
+                onClick={() => {
+                  void handleSimulateError();
+                }}
+              >
+                Симулировать ошибку
+              </button>
+              <button
                 className={styles.userButton}
                 onClick={handleLogout}
               >
@@ -168,6 +218,16 @@ export function Layout({ children }: LayoutProps) {
         )}
         <main className={isChatsPage ? styles.mainFluid : styles.main}>{children}</main>
       </div>
+
+      {toasts.length > 0 ? (
+        <div className={styles.toastContainer} aria-live="polite" aria-atomic="true">
+          {toasts.map((toast) => (
+            <div key={toast.id} className={styles.toastError} role="status">
+              {toast.message}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

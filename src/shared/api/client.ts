@@ -28,9 +28,53 @@ class ApiClient {
     return headers;
   }
 
+  private async parseResponseBody(response: Response): Promise<unknown> {
+    if (response.status === 204 || response.status === 205) {
+      return undefined;
+    }
+
+    const contentType = response.headers.get('content-type') ?? '';
+
+    if (contentType.includes('application/json')) {
+      return response.json().catch(() => undefined);
+    }
+
+    const text = await response.text().catch(() => '');
+    return text || undefined;
+  }
+
+  private extractErrorMessage(payload: unknown): string {
+    if (typeof payload === 'string' && payload.trim()) {
+      return payload;
+    }
+
+    if (payload && typeof payload === 'object') {
+      const maybeMessage = (payload as { message?: unknown }).message;
+      if (typeof maybeMessage === 'string' && maybeMessage.trim()) {
+        return maybeMessage;
+      }
+
+      const maybeError = (payload as { error?: unknown }).error;
+      if (typeof maybeError === 'string' && maybeError.trim()) {
+        return maybeError;
+      }
+
+      const maybeDetail = (payload as { detail?: unknown }).detail;
+      if (typeof maybeDetail === 'string' && maybeDetail.trim()) {
+        return maybeDetail;
+      }
+    }
+
+    return 'Request failed';
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
+    const responseData = await this.parseResponseBody(response);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = responseData && typeof responseData === 'object'
+        ? (responseData as Record<string, unknown>)
+        : undefined;
       
       if (response.status === 401) {
         localStorage.removeItem('auth_token');
@@ -39,25 +83,39 @@ class ApiClient {
       }
 
       throw new NetworkError(
-        errorData.message || 'Request failed',
+        this.extractErrorMessage(responseData),
         response.status,
-        errorData.errors
+        errorData?.errors as Record<string, string[]> | undefined
       );
     }
 
-    return response.json();
+    return responseData as T;
+  }
+
+  private async request<T>(endpoint: string, config: RequestInit): Promise<T> {
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      if (error instanceof NetworkError) {
+        throw error;
+      }
+
+      throw new NetworkError(
+        error instanceof Error ? error.message : 'Network request failed',
+        0
+      );
+    }
   }
 
   async get<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const { requiresAuth = true, ...restConfig } = config;
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    return this.request<T>(endpoint, {
       method: 'GET',
       headers: this.getHeaders(requiresAuth),
       ...restConfig,
     });
-
-    return this.handleResponse<T>(response);
   }
 
   async post<T, D = unknown>(
@@ -67,14 +125,12 @@ class ApiClient {
   ): Promise<T> {
     const { requiresAuth = true, ...restConfig } = config;
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    return this.request<T>(endpoint, {
       method: 'POST',
       headers: this.getHeaders(requiresAuth),
       body: data ? JSON.stringify(data) : undefined,
       ...restConfig,
     });
-
-    return this.handleResponse<T>(response);
   }
 
   async postFormData<T>(
@@ -92,14 +148,12 @@ class ApiClient {
       }
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    return this.request<T>(endpoint, {
       method: 'POST',
       headers,
       body: formData,
       ...restConfig,
     });
-
-    return this.handleResponse<T>(response);
   }
 
   async put<T, D = unknown>(
@@ -109,26 +163,22 @@ class ApiClient {
   ): Promise<T> {
     const { requiresAuth = true, ...restConfig } = config;
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    return this.request<T>(endpoint, {
       method: 'PUT',
       headers: this.getHeaders(requiresAuth),
       body: data ? JSON.stringify(data) : undefined,
       ...restConfig,
     });
-
-    return this.handleResponse<T>(response);
   }
 
   async delete<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
     const { requiresAuth = true, ...restConfig } = config;
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    return this.request<T>(endpoint, {
       method: 'DELETE',
       headers: this.getHeaders(requiresAuth),
       ...restConfig,
     });
-
-    return this.handleResponse<T>(response);
   }
 }
 
