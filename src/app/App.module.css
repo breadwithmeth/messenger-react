@@ -1,0 +1,11 @@
+.browserWarning {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--danger);
+  background: var(--surface-2);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
