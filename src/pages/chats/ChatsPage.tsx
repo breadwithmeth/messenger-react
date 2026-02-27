@@ -53,6 +53,11 @@ const formatChannelLabel = (channel: Chat['channel']) => {
   return channel;
 };
 
+const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
+
+const isFirefoxBrowser = () =>
+  typeof navigator !== 'undefined' && /firefox|fxios/i.test(navigator.userAgent);
+
 export function ChatsPage() {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
@@ -611,19 +616,27 @@ export function ChatsPage() {
   
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedChatId || isSendingMessage) return;
+    const firefoxSendWarning = isFirefoxBrowser();
     
     setIsSendingMessage(true);
     setSendError('');
     try {
       await chatsApi.sendMessage(selectedChatId, messageInput);
       setMessageInput('');
+      if (firefoxSendWarning) {
+        setSendError(FIREFOX_SEND_WARNING);
+      }
       void loadMessages(selectedChatId, { silent: true });
     } catch (err) {
       if (err instanceof NetworkError) {
-        setSendError(err.message);
+        setSendError(firefoxSendWarning ? `${err.message}. ${FIREFOX_SEND_WARNING}` : err.message);
       }
       if (!(err instanceof NetworkError)) {
-        setSendError('Не удалось отправить сообщение');
+        setSendError(
+          firefoxSendWarning
+            ? `Не удалось отправить сообщение. ${FIREFOX_SEND_WARNING}`
+            : 'Не удалось отправить сообщение'
+        );
       }
     } finally {
       setIsSendingMessage(false);
@@ -844,6 +857,7 @@ export function ChatsPage() {
 
   const handleSendPendingAttachment = async () => {
     if (!pendingAttachment || !selectedChatId) return;
+    const firefoxSendWarning = isFirefoxBrowser();
     setIsSendingMedia(true);
     setMediaError('');
 
@@ -862,11 +876,18 @@ export function ChatsPage() {
       closeAttachmentPreview();
       await loadMessages(selectedChatId, { silent: true });
       messageInputRef.current?.focus();
+      if (firefoxSendWarning) {
+        setMediaError(FIREFOX_SEND_WARNING);
+      }
     } catch (err) {
       if (err instanceof NetworkError) {
-        setMediaError(err.message);
+        setMediaError(firefoxSendWarning ? `${err.message}. ${FIREFOX_SEND_WARNING}` : err.message);
       } else {
-        setMediaError('Не удалось отправить медиа');
+        setMediaError(
+          firefoxSendWarning
+            ? `Не удалось отправить медиа. ${FIREFOX_SEND_WARNING}`
+            : 'Не удалось отправить медиа'
+        );
       }
     } finally {
       setIsSendingMedia(false);
