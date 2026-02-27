@@ -63,6 +63,29 @@
   --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.45), 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
+:root[data-firefox-mode='on'] {
+  --bg: #ff1f1f;
+  --surface: #ff3838;
+  --surface-2: #ff5454;
+  --text: #fff5f5;
+  --text-muted: #ffd4d4;
+  --text-subtle: #ffb0b0;
+  --border: #ff8f8f;
+
+  --primary: #8c0000;
+  --primary-hover: #760000;
+  --on-primary: #fff5f5;
+
+  --danger: #7a0000;
+  --danger-hover: #640000;
+  --on-danger: #fff5f5;
+
+  --focus: rgba(255, 255, 255, 0.45);
+
+  --shadow-sm: 0 1px 0 rgba(122, 0, 0, 0.35), 0 8px 24px rgba(122, 0, 0, 0.25);
+  --shadow-md: 0 1px 0 rgba(122, 0, 0, 0.45), 0 16px 48px rgba(122, 0, 0, 0.35);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',

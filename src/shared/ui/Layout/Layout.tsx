@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../features/auth/model/authContext';
 import { apiClient } from '../../../shared/api/client';
 import { NetworkError } from '../../../shared/api/types';
+import { getFirefoxModeEnabled, setFirefoxModeEnabled } from '../../utils/firefoxMode';
 import { Icon } from '../Icon/Icon';
 import styles from './Layout.module.css';
 
@@ -29,6 +30,7 @@ export function Layout({ children }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastTimeoutsRef = useRef<number[]>([]);
+  const [isFirefoxModeEnabled, setIsFirefoxModeEnabledState] = useState<boolean>(() => getFirefoxModeEnabled());
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem('theme');
@@ -48,6 +50,15 @@ export function Layout({ children }: LayoutProps) {
   }, []);
 
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+
+  const toggleFirefoxMode = () => {
+    setIsFirefoxModeEnabledState((prev) => {
+      const next = !prev;
+      setFirefoxModeEnabled(next);
+      showToast(next ? 'Режим фаерфокса включен' : 'Режим фаерфокса выключен');
+      return next;
+    });
+  };
 
   const showToast = (message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -166,6 +177,14 @@ export function Layout({ children }: LayoutProps) {
                 aria-label="Сменить тему"
               >
                 {theme === 'light' ? '🌙 Тёмная' : '☀️ Светлая'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.firefoxModeButton} ${isFirefoxModeEnabled ? styles.firefoxModeButtonActive : ''}`}
+                onClick={toggleFirefoxMode}
+                aria-label="Переключить режим фаерфокса"
+              >
+                Режим фаерфокса: {isFirefoxModeEnabled ? 'ON' : 'OFF'}
               </button>
               <button
                 type="button"

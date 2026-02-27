@@ -250,6 +250,29 @@
   border-color: var(--primary);
 }
 
+.firefoxModeButton {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.firefoxModeButton:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+}
+
+.firefoxModeButtonActive {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--surface);
+}
+
 .simulateErrorButton {
   width: 100%;
   padding: 8px 10px;

@@ -8,6 +8,7 @@ import { chatsApi } from '../../features/chats/api/chatsApi';
 import { aiApi } from '../../features/ai/api/aiApi';
 import { Chat, ChatPriority, Message } from '../../features/chats/model/types';
 import { NetworkError } from '../../shared/api/types';
+import { isFirefoxLikeBrowser } from '../../shared/utils/firefoxMode';
 import { useAuth } from '../../features/auth/model/authContext';
 import { CallWidget, type CallWidgetStatus } from '../../features/webrtc/ui/CallWidget/CallWidget';
 import styles from './ChatsPage.module.css';
@@ -54,9 +55,6 @@ const formatChannelLabel = (channel: Chat['channel']) => {
 };
 
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
-
-const isFirefoxBrowser = () =>
-  typeof navigator !== 'undefined' && /firefox|fxios/i.test(navigator.userAgent);
 
 export function ChatsPage() {
   const { user } = useAuth();
@@ -616,7 +614,7 @@ export function ChatsPage() {
   
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedChatId || isSendingMessage) return;
-    const firefoxSendWarning = isFirefoxBrowser();
+    const firefoxSendWarning = isFirefoxLikeBrowser();
     
     setIsSendingMessage(true);
     setSendError('');
@@ -857,7 +855,7 @@ export function ChatsPage() {
 
   const handleSendPendingAttachment = async () => {
     if (!pendingAttachment || !selectedChatId) return;
-    const firefoxSendWarning = isFirefoxBrowser();
+    const firefoxSendWarning = isFirefoxLikeBrowser();
     setIsSendingMedia(true);
     setMediaError('');
 
