@@ -15,6 +15,7 @@ import type { Ticket, TicketPriority, TicketStatus } from '../../features/ticket
 import { NetworkError } from '../../shared/api/types';
 import { isFirefoxLikeBrowser } from '../../shared/utils/firefoxMode';
 import { toggleLayoutMenu } from '../../shared/utils/layoutMenu';
+import { emitToast } from '../../shared/utils/toast';
 import { useAuth } from '@/auth/useAuth';
 import { CallWidget, type CallWidgetStatus } from '../../features/webrtc/ui/CallWidget/CallWidget';
 import styles from './ChatsPage.module.css';
@@ -821,9 +822,12 @@ export function ChatsPage() {
       });
     } catch (err) {
       if (err instanceof NetworkError) {
-        alert(`Ошибка: ${err.message}`);
+        setMessagesError(err.message);
+        emitToast(err.message);
       } else {
-        alert('Не удалось отметить чат прочитанным');
+        const msg = 'Не удалось загрузить сообщения';
+        setMessagesError(msg);
+        emitToast(msg);
       }
     } finally {
       if (silent) {
@@ -883,9 +887,12 @@ export function ChatsPage() {
       updateChatInState(resp.chat);
     } catch (err) {
       if (err instanceof NetworkError) {
-        alert(`Ошибка: ${err.message}`);
+        setError(err.message);
+        emitToast(err.message);
       } else {
-        alert('Не удалось изменить назначение чата');
+        const msg = 'Не удалось изменить назначение чата';
+        setError(msg);
+        emitToast(msg);
       }
     } finally {
       setIsAssigningChat(false);
@@ -899,9 +906,12 @@ export function ChatsPage() {
       setChats((prev) => prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: 0 } : c)));
     } catch (err) {
       if (err instanceof NetworkError) {
-        alert(`Ошибка: ${err.message}`);
+        setError(err.message);
+        emitToast(err.message);
       } else {
-        alert('Не удалось отметить чат прочитанным');
+        const msg = 'Не удалось отметить чат прочитанным';
+        setError(msg);
+        emitToast(msg);
       }
     }
   }, [selectedChatId]);

@@ -4,6 +4,7 @@ import { useAuth } from '@/auth/useAuth';
 import { apiClient } from '../../../shared/api/client';
 import { NetworkError } from '../../../shared/api/types';
 import { workforceApi } from '@/features/workforce/api/workforceApi';
+import { toastEvents } from '@/shared/utils/toast';
 import { getFirefoxModeEnabled, setFirefoxModeEnabled } from '../../utils/firefoxMode';
 import { LAYOUT_TOGGLE_MENU_EVENT } from '../../utils/layoutMenu';
 import { Icon } from '../Icon/Icon';
@@ -49,9 +50,16 @@ export function Layout({ children }: LayoutProps) {
     };
 
     window.addEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
+    const handleToast = (event: Event) => {
+      const custom = event as CustomEvent<{ message?: string }>;
+      const message = custom.detail?.message;
+      if (message) showToast(message);
+    };
+    window.addEventListener(toastEvents.name, handleToast);
 
     return () => {
       window.removeEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
+      window.removeEventListener(toastEvents.name, handleToast);
       toastTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       toastTimeoutsRef.current = [];
     };
