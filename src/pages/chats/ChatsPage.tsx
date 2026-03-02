@@ -163,7 +163,6 @@ export function ChatsPage() {
     offset: 0,
     hasMore: false,
   });
-  const [allChatsTotal, setAllChatsTotal] = useState(0);
   const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(false);
   const [callWidgetStatus, setCallWidgetStatus] = useState<CallWidgetStatus | null>(null);
   const [callWidgetCallee, setCallWidgetCallee] = useState('');
@@ -706,7 +705,6 @@ export function ChatsPage() {
       
       // Сохраняем общее количество всех чатов только когда фильтр "all"
       if (activeFilter === 'all') {
-        setAllChatsTotal(response.pagination?.total || nextChats.length);
       }
     } catch (err) {
       if (silent) return;
