@@ -289,7 +289,8 @@ export function ChatsPage() {
     let result = chats;
 
     if (activeFilter === 'my' && user) {
-      result = result.filter((c) => c.assignedUser?.id === user.id);
+      // Сервер уже возвращает assignedToMe, не фильтруем повторно чтобы не терять чаты из-за несовпадения id
+      return result;
     } else if (activeFilter === 'ignored') {
       result = result.filter((c) => c.status === 'closed');
     } else if (activeFilter === 'open') {
@@ -1406,20 +1407,13 @@ export function ChatsPage() {
                 className={`${styles.filterTab} ${activeFilter === 'all' ? styles.filterTabActive : ''}`}
                 onClick={() => setActiveFilter('all')}
               >
-                Все чаты <span className={styles.filterCount}>({activeFilter === 'all' ? pagination.total : allChatsTotal})</span>
+                Все чаты
               </button>
               <button
                 className={`${styles.filterTab} ${activeFilter === 'my' ? styles.filterTabActive : ''}`}
                 onClick={() => setActiveFilter('my')}
               >
-                Мои чаты{' '}
-                <span className={styles.filterCount}>
-                  (
-                  {activeFilter === 'my'
-                    ? pagination.total
-                    : chats.filter((c) => (user ? c.assignedUser?.id === user.id : c.assignedUser !== null)).length}
-                  )
-                </span>
+                Мои чаты
               </button>
             </div>
 
