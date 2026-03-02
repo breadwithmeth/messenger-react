@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { AuthProvider } from '@/features/auth/model/authContext';
+import { AuthProvider } from '@/auth/AuthProvider';
 
 interface ProvidersProps {
   children: ReactNode;

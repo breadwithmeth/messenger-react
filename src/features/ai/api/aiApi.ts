@@ -1,3 +1,4 @@
+import { apiClient } from '@/shared/api/client';
 import { NetworkError } from '@/shared/api/types';
 
 export interface AiSuggestionsResponse {
@@ -14,57 +15,31 @@ type AiTranslateResponse = {
   text?: string;
 };
 
-const getAiBaseUrl = () => {
-  const fromEnv = (import.meta.env as unknown as { VITE_AI_API_BASE_URL?: string }).VITE_AI_API_BASE_URL;
-  return (fromEnv && fromEnv.trim()) || 'https://bm.drawbridge.kz';
-};
-
 export const aiApi = {
   getSuggestions: async (chatId: number, limit = 3): Promise<AiSuggestionsResponse> => {
-    const token = localStorage.getItem('auth_token');
-
-    const url = new URL(`/api/ai/suggestions/${chatId}`, getAiBaseUrl());
-    url.searchParams.set('limit', String(limit));
-
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({} as { message?: string }));
-      throw new NetworkError(errorData?.message || 'Не удалось получить подсказки', res.status);
-    }
-
-    return res.json();
+    const query = new URLSearchParams();
+    query.set('limit', String(limit));
+    return apiClient.get<AiSuggestionsResponse>(`/ai/suggestions/${chatId}?${query.toString()}`);
   },
 
   translateText: async (text: string, targetLang = 'ru', sourceLang = 'auto'): Promise<string> => {
     const cleanText = text.trim();
     if (!cleanText) return '';
 
-    const token = localStorage.getItem('auth_token');
-    const base = getAiBaseUrl();
-
-    const aiEndpoints = ['/api/ai/translate', '/api/ai/translate-text'];
+    const aiEndpoints = ['/ai/translate', '/ai/translate-text'];
 
     for (const endpoint of aiEndpoints) {
       try {
-        const url = new URL(endpoint, base);
-        const res = await fetch(url.toString(), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ text: cleanText, targetLang, sourceLang }),
+        const data = await apiClient.post<AiTranslateResponse, {
+          text: string;
+          targetLang: string;
+          sourceLang: string;
+        }>(endpoint, {
+          text: cleanText,
+          targetLang,
+          sourceLang,
         });
 
-        if (!res.ok) continue;
-
-        const data = (await res.json().catch(() => ({}))) as AiTranslateResponse;
         const translated = (data.translatedText || data.translation || data.text || '').trim();
         if (translated) return translated;
       } catch {

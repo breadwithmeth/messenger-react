@@ -1,46 +1,24 @@
+import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import { apiAxios } from '@/api/axios';
 import { NetworkError } from './types';
 
-const API_BASE_URL = 'https://bm.drawbridge.kz/api';
-
-interface RequestConfig extends RequestInit {
+interface RequestConfig extends AxiosRequestConfig {
   requiresAuth?: boolean;
 }
 
 class ApiClient {
-  private baseUrl: string;
-
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
-  }
-
-  private getHeaders(requiresAuth: boolean): HeadersInit {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (requiresAuth) {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+  private normalizeEndpoint(endpoint: string): string {
+    if (/^https?:\/\//i.test(endpoint)) {
+      return endpoint;
     }
 
-    return headers;
-  }
+    const normalized = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
-  private async parseResponseBody(response: Response): Promise<unknown> {
-    if (response.status === 204 || response.status === 205) {
-      return undefined;
+    if (normalized.startsWith('/api/')) {
+      return normalized;
     }
 
-    const contentType = response.headers.get('content-type') ?? '';
-
-    if (contentType.includes('application/json')) {
-      return response.json().catch(() => undefined);
-    }
-
-    const text = await response.text().catch(() => '');
-    return text || undefined;
+    return `/api${normalized}`;
   }
 
   private extractErrorMessage(payload: unknown): string {
@@ -68,35 +46,35 @@ class ApiClient {
     return 'Request failed';
   }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
-    const responseData = await this.parseResponseBody(response);
+  private async request<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
+    const { requiresAuth = true, headers, ...restConfig } = config;
+    const normalizedEndpoint = this.normalizeEndpoint(endpoint);
 
-    if (!response.ok) {
-      const errorData = responseData && typeof responseData === 'object'
-        ? (responseData as Record<string, unknown>)
-        : undefined;
-      
-      if (response.status === 401) {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+    try {
+      const response = await apiAxios.request<T, AxiosResponse<T>>({
+        url: normalizedEndpoint,
+        headers,
+        skipAuth: !requiresAuth,
+        ...restConfig,
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        const payload = axiosError.response?.data;
+        const status = axiosError.response?.status ?? 0;
+        const errorData = payload && typeof payload === 'object'
+          ? (payload as Record<string, unknown>)
+          : undefined;
+
+        throw new NetworkError(
+          this.extractErrorMessage(payload),
+          status,
+          errorData?.errors as Record<string, string[]> | undefined
+        );
       }
 
-      throw new NetworkError(
-        this.extractErrorMessage(responseData),
-        response.status,
-        errorData?.errors as Record<string, string[]> | undefined
-      );
-    }
-
-    return responseData as T;
-  }
-
-  private async request<T>(endpoint: string, config: RequestInit): Promise<T> {
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, config);
-      return this.handleResponse<T>(response);
-    } catch (error) {
       if (error instanceof NetworkError) {
         throw error;
       }
@@ -109,12 +87,9 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-    const { requiresAuth = true, ...restConfig } = config;
-
     return this.request<T>(endpoint, {
       method: 'GET',
-      headers: this.getHeaders(requiresAuth),
-      ...restConfig,
+      ...config,
     });
   }
 
@@ -123,13 +98,10 @@ class ApiClient {
     data?: D,
     config: RequestConfig = {}
   ): Promise<T> {
-    const { requiresAuth = true, ...restConfig } = config;
-
     return this.request<T>(endpoint, {
       method: 'POST',
-      headers: this.getHeaders(requiresAuth),
-      body: data ? JSON.stringify(data) : undefined,
-      ...restConfig,
+      data,
+      ...config,
     });
   }
 
@@ -138,21 +110,13 @@ class ApiClient {
     formData: FormData,
     config: RequestConfig = {}
   ): Promise<T> {
-    const { requiresAuth = true, ...restConfig } = config;
-    const headers: HeadersInit = {};
-
-    if (requiresAuth) {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    }
-
     return this.request<T>(endpoint, {
       method: 'POST',
-      headers,
-      body: formData,
-      ...restConfig,
+      data: formData,
+      headers: {
+        ...(config.headers ?? {}),
+      },
+      ...config,
     });
   }
 
@@ -161,25 +125,19 @@ class ApiClient {
     data?: D,
     config: RequestConfig = {}
   ): Promise<T> {
-    const { requiresAuth = true, ...restConfig } = config;
-
     return this.request<T>(endpoint, {
       method: 'PUT',
-      headers: this.getHeaders(requiresAuth),
-      body: data ? JSON.stringify(data) : undefined,
-      ...restConfig,
+      data,
+      ...config,
     });
   }
 
   async delete<T>(endpoint: string, config: RequestConfig = {}): Promise<T> {
-    const { requiresAuth = true, ...restConfig } = config;
-
     return this.request<T>(endpoint, {
       method: 'DELETE',
-      headers: this.getHeaders(requiresAuth),
-      ...restConfig,
+      ...config,
     });
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient();

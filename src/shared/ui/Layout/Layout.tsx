@@ -1,9 +1,11 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../../features/auth/model/authContext';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/auth/useAuth';
 import { apiClient } from '../../../shared/api/client';
 import { NetworkError } from '../../../shared/api/types';
+import { workforceApi } from '@/features/workforce/api/workforceApi';
 import { getFirefoxModeEnabled, setFirefoxModeEnabled } from '../../utils/firefoxMode';
+import { LAYOUT_TOGGLE_MENU_EVENT } from '../../utils/layoutMenu';
 import { Icon } from '../Icon/Icon';
 import styles from './Layout.module.css';
 
@@ -24,7 +26,6 @@ type MenuItem = {
 
 export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const isChatsPage = location.pathname.startsWith('/chats');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,11 +44,40 @@ export function Layout({ children }: LayoutProps) {
   }, [theme]);
 
   useEffect(() => {
+    const toggleFromOutside = () => {
+      setIsMenuOpen((prev) => !prev);
+    };
+
+    window.addEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
+
     return () => {
+      window.removeEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
       toastTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       toastTimeoutsRef.current = [];
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const send = async () => {
+      try {
+        await workforceApi.sendHeartbeat();
+      } catch (e) {
+        // тихо глотаем, хардбит не блокирует UI
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('heartbeat failed', e);
+        }
+      }
+    };
+
+    void send();
+    const intervalId = window.setInterval(send, 30000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [user]);
 
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
 
@@ -86,8 +116,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    void logout();
   };
 
   const menuGroups: { title: string; items: MenuItem[] }[] = [
@@ -110,13 +139,14 @@ export function Layout({ children }: LayoutProps) {
     {
       title: 'Система',
       items: [
+        { path: '/employees', label: 'Сотрудники', icon: 'gear' as const },
         { path: '/settings', label: 'Настройки', icon: 'gear' as const },
         { path: '/help', label: 'Новости и справка', icon: 'question' as const },
       ],
     },
   ];
 
-  const flatMenuItems: MenuItem[] = menuGroups.flatMap((g) => g.items);
+  const userName = user?.displayName || user?.username || user?.email || 'Пользователь';
 
   return (
     <div className={styles.layout}>
@@ -199,7 +229,7 @@ export function Layout({ children }: LayoutProps) {
                 className={styles.userButton}
                 onClick={handleLogout}
               >
-                <span className={styles.userName}>Администратор Г.</span>
+                <span className={styles.userName}>{userName}</span>
               </button>
             </div>
           </aside>
@@ -207,7 +237,7 @@ export function Layout({ children }: LayoutProps) {
       )}
       
       <div className={styles.mainWrapper}>
-        {user && (
+        {user && !isChatsPage && (
           <div className={styles.topBar}>
             <button
               type="button"
@@ -217,22 +247,6 @@ export function Layout({ children }: LayoutProps) {
             >
               {isMenuOpen ? '×' : '☰'}
             </button>
-
-            <nav className={styles.topNav} aria-label="Основное меню">
-              {flatMenuItems.map((item: MenuItem) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`${styles.topNavItem} ${isActive ? styles.topNavItemActive : ''}`}
-                  >
-                    <Icon name={item.icon} size={16} />
-                    <span className={styles.topNavLabel}>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
         )}
         <main className={isChatsPage ? styles.mainFluid : styles.main}>{children}</main>

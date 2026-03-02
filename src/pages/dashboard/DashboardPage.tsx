@@ -1,4 +1,4 @@
-import { useAuth } from '../../features/auth/model/authContext';
+import { useAuth } from '@/auth/useAuth';
 import { Layout } from '../../shared/ui/Layout/Layout';
 import styles from './DashboardPage.module.css';
 

@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/client';
-import { ChatsResponse, Chat, MessagesResponse, ChatPriority } from '../model/types';
+import { ChatsResponse, Chat, MessagesResponse, ChatPriority, Message } from '../model/types';
 
 type MediaType = 'image' | 'document' | 'video' | 'audio';
 
@@ -24,6 +24,65 @@ interface ChatAssignmentResponse {
   chat: Chat;
   message?: string;
 }
+
+const parseNumber = (value: unknown, fallback: number): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const normalizeMessagesResponse = (
+  payload: unknown,
+  limitFallback: number,
+  offsetFallback: number
+): MessagesResponse => {
+  const source = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : {};
+
+  const rawMessages =
+    source.messages ??
+    source.messeges ??
+    source.items ??
+    ((source.data as Record<string, unknown> | undefined)?.messages ??
+      (source.data as Record<string, unknown> | undefined)?.messeges) ??
+    [];
+
+  const messages = Array.isArray(rawMessages) ? (rawMessages as Message[]) : [];
+
+  const rawPagination =
+    source.pagination ??
+    source.meta ??
+    source.pageInfo ??
+    (source.data as Record<string, unknown> | undefined)?.pagination;
+
+  const paginationSource =
+    rawPagination && typeof rawPagination === 'object'
+      ? (rawPagination as Record<string, unknown>)
+      : {};
+
+  const total = parseNumber(paginationSource.total, messages.length);
+  const limit = parseNumber(paginationSource.limit, limitFallback);
+  const offset = parseNumber(paginationSource.offset, offsetFallback);
+  const hasMoreFromApi = paginationSource.hasMore;
+  const hasMore =
+    typeof hasMoreFromApi === 'boolean' ? hasMoreFromApi : offset + limit < total;
+
+  return {
+    messages,
+    pagination: {
+      total,
+      limit,
+      offset,
+      hasMore,
+      oldestTimestamp:
+        typeof paginationSource.oldestTimestamp === 'string' ? paginationSource.oldestTimestamp : '',
+      newestTimestamp:
+        typeof paginationSource.newestTimestamp === 'string' ? paginationSource.newestTimestamp : '',
+    },
+  };
+};
 
 export const chatsApi = {
   getChats: async (params?: {
@@ -73,9 +132,11 @@ export const chatsApi = {
     if (params?.offset !== undefined) query.append('offset', params.offset.toString());
     
     const queryString = query.toString();
-    return apiClient.get<MessagesResponse>(
+    const response = await apiClient.get<unknown>(
       `/chats/${chatId}/messages${queryString ? `?${queryString}` : ''}`
     );
+
+    return normalizeMessagesResponse(response, params?.limit ?? 50, params?.offset ?? 0);
   },
 
   sendMessage: async (chatId: number, text: string): Promise<unknown> => {

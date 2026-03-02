@@ -1,15 +1,21 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../shared/ui/Layout/Layout';
 import { Button } from '../../shared/ui/Button/Button';
 import { Input } from '../../shared/ui/Input/Input';
 import { Icon } from '../../shared/ui/Icon/Icon';
 import { Modal } from '../../shared/ui/Modal/Modal';
 import { chatsApi } from '../../features/chats/api/chatsApi';
+import { clientsApi } from '../../features/clients/api/clientsApi';
 import { aiApi } from '../../features/ai/api/aiApi';
+import { ticketsApi } from '../../features/tickets/api/ticketsApi';
 import { Chat, ChatPriority, Message } from '../../features/chats/model/types';
+import { ClientComment } from '../../features/clients/model/types';
+import type { Ticket, TicketPriority, TicketStatus } from '../../features/tickets/model/types';
 import { NetworkError } from '../../shared/api/types';
 import { isFirefoxLikeBrowser } from '../../shared/utils/firefoxMode';
-import { useAuth } from '../../features/auth/model/authContext';
+import { toggleLayoutMenu } from '../../shared/utils/layoutMenu';
+import { useAuth } from '@/auth/useAuth';
 import { CallWidget, type CallWidgetStatus } from '../../features/webrtc/ui/CallWidget/CallWidget';
 import styles from './ChatsPage.module.css';
 
@@ -40,6 +46,17 @@ const formatTimeAgo = (iso: string) => {
   return new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit' });
 };
 
+const formatDateTime = (iso: string) => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const extractPhoneFromJid = (jid: string | null) => {
   if (!jid) return '';
   const beforeAt = jid.split('@')[0] ?? '';
@@ -54,9 +71,56 @@ const formatChannelLabel = (channel: Chat['channel']) => {
   return channel;
 };
 
+const toSlug = (value?: string | null) => (value || '').toLowerCase().replace(/\s+/g, '_');
+
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
+const TICKET_STATUS_OPTIONS: Array<TicketStatus | string> = [
+  'new',
+  'open',
+  'in_progress',
+  'pending',
+  'resolved',
+  'closed',
+];
+const TICKET_PRIORITY_OPTIONS: Array<TicketPriority | string> = ['low', 'normal', 'high', 'urgent'];
+
+const formatTicketDuration = (startedAt?: string | null) => {
+  if (!startedAt) return '';
+  const start = new Date(startedAt).getTime();
+  if (Number.isNaN(start)) return '';
+  const diffMs = Date.now() - start;
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+  if (days > 0) return `${days}д ${hours}ч`;
+  if (hours > 0) return `${hours}ч`;
+  const minutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+  return `${minutes} мин`;
+};
+
+const formatPhoneInput = (raw: string) => {
+  const digits = raw.replace(/\D+/g, '');
+  if (!digits) return '';
+  let result = digits.startsWith('7') || digits.startsWith('8') ? '+7 ' : '+';
+  const tail = digits.startsWith('7') ? digits.slice(1) : digits.startsWith('8') ? digits.slice(1) : digits;
+  const chunks = [tail.slice(0, 3), tail.slice(3, 6), tail.slice(6, 8), tail.slice(8, 10)].filter(Boolean);
+  result += chunks
+    .map((chunk, idx) => {
+      if (idx === 2) return `${chunk[0] ?? ''}${chunk[1] ?? ''}`.trim();
+      return chunk;
+    })
+    .join(' ');
+  return result.trim();
+};
+
+const renderIconLabel = (icon: string, label: string) => (
+  <span className={styles.iconLabel}>
+    <span aria-hidden="true">{icon}</span>
+    <span className={styles.iconLabelText}>{label}</span>
+  </span>
+);
 
 export function ChatsPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
@@ -85,14 +149,12 @@ export function ChatsPage() {
   const [previewCaption, setPreviewCaption] = useState('');
   const [viewerMessage, setViewerMessage] = useState<Message | null>(null);
   const [isAssigningChat, setIsAssigningChat] = useState(false);
-  const [isUpdatingPriority, setIsUpdatingPriority] = useState(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [sendError, setSendError] = useState('');
-  const [autoTranslateIncoming, setAutoTranslateIncoming] = useState(true);
   const [translationsByMessageId, setTranslationsByMessageId] = useState<Record<number, TranslationState>>({});
   const [pagination, setPagination] = useState({
     total: 0,
@@ -105,6 +167,43 @@ export function ChatsPage() {
   const [callWidgetStatus, setCallWidgetStatus] = useState<CallWidgetStatus | null>(null);
   const [callWidgetCallee, setCallWidgetCallee] = useState('');
   const [callWidgetCalleeVersion, setCallWidgetCalleeVersion] = useState(0);
+  const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
+  const [clientComments, setClientComments] = useState<ClientComment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
+  const [commentsError, setCommentsError] = useState('');
+  const [commentInput, setCommentInput] = useState('');
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [commentsPagination, setCommentsPagination] = useState({
+    limit: 50,
+    offset: 0,
+    total: 0,
+    hasMore: false,
+  });
+  const commentsPaginationRef = useRef({
+    limit: 50,
+    offset: 0,
+    total: 0,
+    hasMore: false,
+  });
+  const [isLoadingTicket, setIsLoadingTicket] = useState(false);
+  const [ticketError, setTicketError] = useState('');
+  const [isTicketActionLoading, setIsTicketActionLoading] = useState(false);
+  const [ticketActionError, setTicketActionError] = useState('');
+  const [ticketActionToast, setTicketActionToast] = useState('');
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
+  const [pinnedChatIds, setPinnedChatIds] = useState<number[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem('pinnedChats');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'number') : [];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  });
 
   const handleCallWidgetStatus = useCallback((s: CallWidgetStatus) => {
     setCallWidgetStatus(s);
@@ -125,6 +224,223 @@ export function ChatsPage() {
     setCallWidgetCallee(selectedChatPhone);
     setCallWidgetCalleeVersion((v) => v + 1);
   }, [selectedChatPhone]);
+
+  const statusChipClass = useCallback(
+    (status?: string | null) => {
+      if (!status) return '';
+      const slug = toSlug(status);
+      return [styles.statusChip, styles[`status-${slug}`]].filter(Boolean).join(' ');
+    },
+    []
+  );
+
+  const priorityChipClass = useCallback(
+    (priority?: string | null) => {
+      if (!priority) return '';
+      const slug = toSlug(priority);
+      return [styles.priorityChip, styles[`priority-${slug}`]].filter(Boolean).join(' ');
+    },
+    []
+  );
+
+  const currentTicketNumber = useMemo(() => {
+    if (!selectedChat?.ticketNumber) return '';
+    return String(selectedChat.ticketNumber);
+  }, [selectedChat?.ticketNumber]);
+
+  const handleOpenTicketPage = useCallback(() => {
+    if (!currentTicketNumber) return;
+    navigate(`/tickets?ticketNumber=${currentTicketNumber}`);
+  }, [currentTicketNumber, navigate]);
+
+  const togglePinChat = useCallback((chatId: number) => {
+    setPinnedChatIds((prev) => {
+      const exists = prev.includes(chatId);
+      const next = exists ? prev.filter((id) => id !== chatId) : [...prev, chatId];
+      return next;
+    });
+  }, []);
+
+  const updateChatInState = useCallback((chat: Chat) => {
+    setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, ...chat } : c)));
+  }, []);
+
+  const handleChatClick = useCallback(
+    (chatId: number) => {
+      setSelectedChatId(chatId);
+      setMessages([]);
+      setMessagesError('');
+      setSendError('');
+      setPendingAttachment(null);
+      setPreviewCaption('');
+      setMediaError('');
+      setIsSuggestionsOpen(false);
+      setSuggestions([]);
+      setSuggestionsError('');
+      setIsLoadingSuggestions(false);
+      setMessagesPagination((prev) => ({ ...prev, offset: 0, hasMore: false, total: 0 }));
+      messagesPaginationRef.current = { ...messagesPaginationRef.current, offset: 0, hasMore: false };
+    },
+    [setSelectedChatId]
+  );
+
+  const getFilteredChats = useCallback((): Chat[] => {
+    let result = chats;
+
+    if (activeFilter === 'my' && user) {
+      result = result.filter((c) => c.assignedUser?.id === user.id);
+    } else if (activeFilter === 'ignored') {
+      result = result.filter((c) => c.status === 'closed');
+    } else if (activeFilter === 'open') {
+      result = result.filter((c) => c.status === 'open');
+    } else if (activeFilter === 'unread') {
+      result = result.filter((c) => (c.unreadCount ?? 0) > 0);
+    }
+
+    if (priorityFilter) {
+      result = result.filter((c) => c.priority === priorityFilter);
+    }
+
+    if (channelFilter) {
+      result = result.filter((c) => c.channel === channelFilter);
+    }
+
+    return result;
+  }, [activeFilter, channelFilter, chats, priorityFilter, user]);
+
+  const loadCurrentTicket = useCallback(async () => {
+    if (!currentTicketNumber) {
+      setCurrentTicket(null);
+      setTicketError('');
+      return;
+    }
+
+    setIsLoadingTicket(true);
+    setTicketError('');
+    try {
+      const ticket = await ticketsApi.getTicket(currentTicketNumber);
+      setCurrentTicket(ticket);
+    } catch (err) {
+      setCurrentTicket(null);
+      if (err instanceof NetworkError) setTicketError(err.message);
+      else setTicketError('Не удалось загрузить тикет');
+    } finally {
+      setIsLoadingTicket(false);
+    }
+  }, [currentTicketNumber]);
+
+  const loadClientComments = useCallback(async (chatId: number | null, options?: { append?: boolean }) => {
+    if (!chatId) {
+      setClientComments([]);
+      setCommentsError('');
+      setCommentsPagination((prev) => ({ ...prev, offset: 0, total: 0, hasMore: false }));
+      commentsPaginationRef.current = { ...commentsPaginationRef.current, offset: 0, total: 0, hasMore: false };
+      return;
+    }
+
+    const append = options?.append ?? false;
+    if (append) setIsLoadingMoreComments(true);
+    else setIsLoadingComments(true);
+    setCommentsError('');
+
+    const { limit, offset: currentOffset } = commentsPaginationRef.current;
+    const offset = append ? currentOffset : 0;
+
+    try {
+      const response = await clientsApi.getComments(chatId, { limit, offset });
+      const comments = response.comments ?? [];
+      const pagination = response.pagination ?? {};
+
+      const totalFromApi = typeof pagination.total === 'number' ? pagination.total : undefined;
+      const nextOffset = offset + comments.length;
+      const total = totalFromApi ?? (append ? Math.max(currentOffset, nextOffset) : comments.length);
+      const hasMoreFromApi = typeof pagination.hasMore === 'boolean' ? pagination.hasMore : undefined;
+      const hasMore = hasMoreFromApi ?? (typeof total === 'number' ? nextOffset < total : comments.length === limit);
+
+      commentsPaginationRef.current = { limit, offset: nextOffset, total: total ?? nextOffset, hasMore };
+      setCommentsPagination(commentsPaginationRef.current);
+      setClientComments((prev) => (append ? [...prev, ...comments] : comments));
+    } catch (err) {
+      if (err instanceof NetworkError) setCommentsError(err.message);
+      else setCommentsError('Не удалось загрузить комментарии');
+    } finally {
+      if (append) setIsLoadingMoreComments(false);
+      else setIsLoadingComments(false);
+    }
+  }, []);
+
+  const handleAddComment = useCallback(async () => {
+    if (!selectedChatId) return;
+    const text = commentInput.trim();
+    if (!text) return;
+
+    setIsAddingComment(true);
+    setCommentsError('');
+    try {
+      const newComment = await clientsApi.addComment(selectedChatId, text);
+      setClientComments((prev) => [newComment, ...prev]);
+      setCommentsPagination((prev) => ({
+        ...prev,
+        total: (prev.total || prev.offset || 0) + 1,
+      }));
+      commentsPaginationRef.current = {
+        ...commentsPaginationRef.current,
+        total: (commentsPaginationRef.current.total || commentsPaginationRef.current.offset || 0) + 1,
+      };
+      setCommentInput('');
+    } catch (err) {
+      if (err instanceof NetworkError) setCommentsError(err.message);
+      else setCommentsError('Не удалось добавить комментарий');
+    } finally {
+      setIsAddingComment(false);
+    }
+  }, [commentInput, selectedChatId]);
+
+  const withTicketAction = useCallback(async (action: () => Promise<unknown>, fallbackError: string) => {
+    setIsTicketActionLoading(true);
+    setTicketActionError('');
+    try {
+      await action();
+      await loadCurrentTicket();
+    } catch (err) {
+      if (err instanceof NetworkError) setTicketActionError(err.message);
+      else setTicketActionError(fallbackError);
+    } finally {
+      setIsTicketActionLoading(false);
+    }
+  }, [loadCurrentTicket]);
+
+  const handleAssignTicketToMe = useCallback(async () => {
+    if (!currentTicketNumber || !user?.id) return;
+    await withTicketAction(
+      () => ticketsApi.assignTicket(currentTicketNumber, user.id),
+      'Не удалось назначить тикет на вас'
+    );
+  }, [currentTicketNumber, user?.id, withTicketAction]);
+
+  const handleSetTicketStatus = useCallback(async (status: string) => {
+    if (!currentTicketNumber) return;
+    await withTicketAction(
+      () => ticketsApi.setStatus(currentTicketNumber, status),
+      'Не удалось изменить статус тикета'
+    );
+  }, [currentTicketNumber, withTicketAction]);
+
+  const handleSetTicketPriority = useCallback(async (priority: string) => {
+    if (!currentTicketNumber) return;
+    await withTicketAction(
+      () => ticketsApi.setPriority(currentTicketNumber, priority),
+      'Не удалось изменить приоритет тикета'
+    );
+  }, [currentTicketNumber, withTicketAction]);
+
+  const handleCloseTicket = useCallback(async () => {
+    if (!currentTicketNumber) return;
+    await withTicketAction(
+      () => ticketsApi.closeTicket(currentTicketNumber),
+      'Не удалось закрыть тикет'
+    );
+  }, [currentTicketNumber, withTicketAction]);
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
@@ -149,6 +465,7 @@ export function ChatsPage() {
     offset: 0,
     hasMore: false,
   });
+  const [isFormatBarOpen, setIsFormatBarOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -209,8 +526,20 @@ export function ChatsPage() {
   }, [selectedChatId]);
 
   useEffect(() => {
+    setIsMoreActionsOpen(false);
+  }, [selectedChatId]);
+
+  useEffect(() => {
     translationsRef.current = translationsByMessageId;
   }, [translationsByMessageId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pinnedChats', JSON.stringify(pinnedChatIds));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [pinnedChatIds]);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -221,16 +550,33 @@ export function ChatsPage() {
   }, [selectedChatId]);
 
   useEffect(() => {
+    commentsPaginationRef.current = { limit: 50, offset: 0, total: 0, hasMore: false };
+    setCommentsPagination(commentsPaginationRef.current);
+    void loadClientComments(selectedChatId, { append: false });
+  }, [loadClientComments, selectedChatId]);
+
+  useEffect(() => {
+    void loadCurrentTicket();
+  }, [loadCurrentTicket]);
+
+  useEffect(() => {
+    if (!ticketActionError) return;
+    setTicketActionToast(ticketActionError);
+    const t = setTimeout(() => setTicketActionToast(''), 3500);
+    return () => clearTimeout(t);
+  }, [ticketActionError]);
+
+  useEffect(() => {
     setTranslationsByMessageId({});
   }, [selectedChatId]);
 
   useEffect(() => {
     if (!selectedChatId) return;
 
-    // Периодическое обновление сообщений активного чата
+    // Периодическое обновление сообщений активного чата (раз в 7 секунд)
     const interval = setInterval(() => {
       void loadMessages(selectedChatId, { silent: true });
-    }, 2000);
+    }, 7000);
 
     return () => clearInterval(interval);
   }, [selectedChatId]);
@@ -468,63 +814,55 @@ export function ChatsPage() {
         total: response.pagination.total,
         limit: response.pagination.limit,
         offset: response.pagination.offset,
-        hasMore: response.pagination.hasMore,
+        hasMore:
+          typeof response.pagination.hasMore === 'boolean'
+            ? response.pagination.hasMore
+            : response.pagination.offset + response.pagination.limit < response.pagination.total,
       });
     } catch (err) {
-      if (silent) return;
       if (err instanceof NetworkError) {
-        setMessagesError(err.message);
+        alert(`Ошибка: ${err.message}`);
       } else {
-        setMessagesError('Не удалось загрузить сообщения');
+        alert('Не удалось отметить чат прочитанным');
       }
     } finally {
       if (silent) {
         messagesRefreshInFlightRef.current = false;
-        return;
+      } else {
+        setIsLoadingMessages(false);
       }
-      setIsLoadingMessages(false);
     }
   };
 
   const loadMoreMessages = async (chatId: number) => {
     if (isLoadingMoreMessages) return;
-    if (!messagesPaginationRef.current.hasMore) return;
-
-    const el = messagesContainerRef.current;
-    if (el) {
-      pendingScrollAdjustRef.current = {
-        prevScrollHeight: el.scrollHeight,
-        prevScrollTop: el.scrollTop,
-      };
-    }
-
     setIsLoadingMoreMessages(true);
     setMessagesError('');
+
     try {
-      const nextOffset = messagesPaginationRef.current.offset + messagesPaginationRef.current.limit;
+      const { limit, offset } = messagesPaginationRef.current;
+      const nextOffset = offset + limit;
+
       const response = await chatsApi.getMessages(chatId, {
-        limit: messagesPaginationRef.current.limit,
+        limit,
         offset: nextOffset,
       });
 
-      const incoming = response.messages || [];
       setMessages((prev) => {
-        const map = new Map<number, Message>();
-        for (const m of prev) map.set(m.id, m);
-        for (const m of incoming) map.set(m.id, m);
-        return Array.from(map.values()).sort((a, b) => {
-          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-        });
+        const merged = [...prev, ...response.messages];
+        return merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
       });
 
       setMessagesPagination({
         total: response.pagination.total,
         limit: response.pagination.limit,
         offset: response.pagination.offset,
-        hasMore: response.pagination.hasMore,
+        hasMore:
+          typeof response.pagination.hasMore === 'boolean'
+            ? response.pagination.hasMore
+            : response.pagination.offset + response.pagination.limit < response.pagination.total,
       });
     } catch (err) {
-      pendingScrollAdjustRef.current = null;
       if (err instanceof NetworkError) {
         setMessagesError(err.message);
       } else {
@@ -532,46 +870,6 @@ export function ChatsPage() {
       }
     } finally {
       setIsLoadingMoreMessages(false);
-    }
-  };
-
-  const getFilteredChats = () => {
-    switch (activeFilter) {
-      case 'unread':
-        return chats.filter(chat => chat.unreadCount > 0);
-      case 'open':
-        return chats.filter(chat => chat.status !== 'closed');
-      case 'my':
-        return chats;
-      case 'ignored':
-        return chats.filter(chat => chat.status === 'closed');
-      default:
-        return chats;
-    }
-  };
-
-  const handleChatClick = (chatId: number) => {
-    setSelectedChatId(chatId);
-  };
-
-  const updateChatInState = (updated: Chat) => {
-    setChats((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-  };
-
-  const handleMarkChatRead = async () => {
-    if (!selectedChatId) return;
-
-    try {
-      await chatsApi.markChatRead(selectedChatId);
-      setChats((prev) =>
-        prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: 0 } : c))
-      );
-    } catch (err) {
-      if (err instanceof NetworkError) {
-        alert(`Ошибка: ${err.message}`);
-      } else {
-        alert('Не удалось отметить чат прочитанным');
-      }
     }
   };
 
@@ -594,24 +892,32 @@ export function ChatsPage() {
     }
   };
 
-  const handleSetChatPriority = async (priority: ChatPriority) => {
-    if (!selectedChatId || isUpdatingPriority) return;
-
-    setIsUpdatingPriority(true);
+  const handleMarkChatRead = useCallback(async () => {
+    if (!selectedChatId) return;
     try {
-      const resp = await chatsApi.setChatPriority({ chatId: selectedChatId, priority });
-      updateChatInState(resp.chat);
+      await chatsApi.markChatRead(selectedChatId);
+      setChats((prev) => prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: 0 } : c)));
     } catch (err) {
       if (err instanceof NetworkError) {
         alert(`Ошибка: ${err.message}`);
       } else {
-        alert('Не удалось изменить приоритет чата');
+        alert('Не удалось отметить чат прочитанным');
       }
-    } finally {
-      setIsUpdatingPriority(false);
     }
-  };
-  
+  }, [selectedChatId]);
+
+  const handleSearchInputChange = useCallback(
+    (value: string) => {
+      if (searchType === 'phone') {
+        const formatted = formatPhoneInput(value);
+        setSearchText(formatted);
+        return;
+      }
+      setSearchText(value);
+    },
+    [searchType]
+  );
+
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedChatId || isSendingMessage) return;
     const firefoxSendWarning = isFirefoxLikeBrowser();
@@ -624,7 +930,7 @@ export function ChatsPage() {
       if (firefoxSendWarning) {
         setSendError(FIREFOX_SEND_WARNING);
       }
-      void loadMessages(selectedChatId, { silent: true });
+      void loadMessages(selectedChatId);
     } catch (err) {
       if (err instanceof NetworkError) {
         setSendError(firefoxSendWarning ? `${err.message}. ${FIREFOX_SEND_WARNING}` : err.message);
@@ -697,30 +1003,6 @@ export function ChatsPage() {
       }));
     }
   }, []);
-
-  useEffect(() => {
-    if (!autoTranslateIncoming) return;
-
-    let cancelled = false;
-
-    const run = async () => {
-      for (const message of messages) {
-        if (cancelled) return;
-        if (message.fromMe) continue;
-        const sourceText = message.content?.trim() ?? '';
-        if (!sourceText) continue;
-        const current = translationsRef.current[message.id];
-        if (current?.status === 'loading' || current?.status === 'done') continue;
-        await translateIncomingMessage(message);
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [messages, autoTranslateIncoming, translateIncomingMessage]);
 
   const getMediaTypeFromFile = (file: File): 'image' | 'document' | 'video' | 'audio' => {
     const mime = file.type;
@@ -1022,12 +1304,22 @@ export function ChatsPage() {
         <div className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''}`}>
           <aside className={styles.sidebar}>
             <div className={styles.searchSection}>
-              <Input
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Поиск по чатам"
-                aria-label="Поиск по чатам"
-              />
+              <div className={styles.searchInputRow}>
+                <button
+                  type="button"
+                  className={styles.menuToggleButton}
+                  aria-label="Открыть меню"
+                  onClick={toggleLayoutMenu}
+                >
+                  ☰
+                </button>
+                <Input
+                  value={searchText}
+                  onChange={(e) => handleSearchInputChange(e.target.value)}
+                  placeholder="Поиск по чатам"
+                  aria-label="Поиск по чатам"
+                />
+              </div>
               <div className={styles.searchRow}>
                 <select
                   className={styles.searchSelect}
@@ -1120,10 +1412,30 @@ export function ChatsPage() {
                 </span>
               </button>
             </div>
+
+            <div className={styles.quickFiltersRow}>
+              <Button
+                size="small"
+                variant={priorityFilter === 'urgent' ? 'primary' : 'secondary'}
+                onClick={() => setPriorityFilter((prev) => (prev === 'urgent' ? '' : 'urgent'))}
+              >
+                🔥 Срочные
+              </Button>
+            </div>
             
             <div className={styles.chatList} ref={chatListRef}>
               {isLoading && chats.length === 0 ? (
-                <div className={styles.loading}>Загрузка...</div>
+                <div className={styles.skeletonList} aria-label="Загрузка чатов">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <div key={idx} className={styles.skeletonItem}>
+                      <div className={styles.skeletonAvatar} />
+                      <div className={styles.skeletonBody}>
+                        <div className={styles.skeletonLineShort} />
+                        <div className={styles.skeletonLine} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : error ? (
                 <div className={styles.error}>
                   <p className={styles.errorText}>{error}</p>
@@ -1151,6 +1463,7 @@ export function ChatsPage() {
                   return (
                     <div
                       key={chat.id}
+                      data-priority={chat.priority || undefined}
                       className={`${styles.chatItem} ${
                         selectedChatId === chat.id ? styles.active : ''
                       }`}
@@ -1169,30 +1482,60 @@ export function ChatsPage() {
                       <div className={styles.chatDetails}>
                         <div className={styles.chatHeader}>
                           <div className={styles.chatTitleBlock}>
-                            <span className={styles.chatName}>{displayName}</span>
-                            {chat.assignedUser && (
-                              <span className={styles.chatAssignedUser}>
-                                {chat.assignedUser.name || chat.assignedUser.email}
+                            <div className={styles.chatTitleRow}>
+                              <span
+                                className={`${styles.priorityDot} ${styles[`priorityDot-${chat.priority || 'low'}`]}`}
+                                aria-hidden="true"
+                              />
+                              <span
+                                className={`${styles.chatName} ${chat.unreadCount > 0 ? styles.chatNameUnread : ''}`}
+                              >
+                                {displayName}
                               </span>
-                            )}
-                            <span className={styles.chatSubtitle}>
-                              {formatChannelLabel(chat.channel)}
-                              {clientPhone ? ` • ${clientPhone}` : ''}
-                              {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
-                              {orgConnLabel ? ` (${orgConnLabel})` : ''}
-                            </span>
+                              {pinnedChatIds.includes(chat.id) && <span className={styles.pinBadge}>📌</span>}
+                              {chat.assignedUser && (
+                                <span className={styles.chatAssignedUser}>
+                                  {chat.assignedUser.name || chat.assignedUser.email}
+                                </span>
+                              )}
+                              {user && chat.assignedUser?.id === user.id ? (
+                                <span className={styles.myBadge}>Мой</span>
+                              ) : null}
+                            </div>
+                            <div className={styles.chatSubtitleRow}>
+                              <span className={styles.channelBadge}>{formatChannelLabel(chat.channel)}</span>
+                              {clientPhone ? <span className={styles.metaDot}>•</span> : null}
+                              {clientPhone ? <span className={styles.chatSubtitle}>{clientPhone}</span> : null}
+                              {orgPhoneLabel ? <span className={styles.chatSubtitle}>• {orgPhoneLabel}</span> : null}
+                              {orgConnLabel ? <span className={styles.chatSubtitle}> ({orgConnLabel})</span> : null}
+                            </div>
                           </div>
                           <div className={styles.chatMeta}>
                             <span className={styles.chatTime}>{timeAgo}</span>
                             {chat.priority === 'urgent' && (
                               <span className={styles.urgentBadge}>URGENT</span>
                             )}
+                            <button
+                              type="button"
+                              className={styles.pinButton}
+                              aria-label={pinnedChatIds.includes(chat.id) ? 'Открепить' : 'Закрепить'}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePinChat(chat.id);
+                              }}
+                            >
+                              📌
+                            </button>
                             {chat.unreadCount > 0 && (
                               <span className={styles.unreadBubble}>{chat.unreadCount}</span>
                             )}
                           </div>
                         </div>
-                        <p className={styles.chatLastMessage}>
+                        <p
+                          className={`${styles.chatLastMessage} ${
+                            chat.unreadCount > 0 ? styles.chatLastMessageUnread : ''
+                          }`}
+                        >
                           {chat.lastMessage?.content.substring(0, 60) || 'Нет сообщений'}
                         </p>
                       </div>
@@ -1208,66 +1551,179 @@ export function ChatsPage() {
           <main className={styles.content}>
             {selectedChatId ? (
               <div className={styles.chatWindow}>
-                <div className={styles.chatTopBar}>
-                  <button className={styles.chatTopIcon} type="button" aria-label="Назад">
-                    <Icon name="back" size={20} color="var(--primary)" />
-                  </button>
+                <div className={styles.chatHeaderPanel}>
+                  <div className={styles.chatTopBar}>
+                    <button className={styles.chatTopIcon} type="button" aria-label="Назад">
+                      <Icon name="back" size={20} color="var(--primary)" />
+                    </button>
 
-                  <div className={styles.chatTopCenter}>
-                    <div className={styles.chatTopAvatar}>
-                      {(chats.find((c) => c.id === selectedChatId)?.displayName || 'Ч').charAt(0).toUpperCase()}
-                    </div>
-                    <div className={styles.chatTopTitleBlock}>
-                      {(() => {
-                        const currentChat = chats.find((c) => c.id === selectedChatId) || null;
-                        const title = currentChat?.displayName || currentChat?.name || `Чат #${selectedChatId}`;
-                        const clientPhone = extractPhoneFromJid(currentChat?.remoteJid ?? null);
-                        const orgPhoneLabel = currentChat?.organizationPhone?.displayName || '';
-                        const orgConnLabel = currentChat?.organizationPhone?.connectionType || '';
+                    <div className={styles.chatTopCenter}>
+                      <div className={styles.chatTopAvatar}>
+                        {(chats.find((c) => c.id === selectedChatId)?.displayName || 'Ч').charAt(0).toUpperCase()}
+                      </div>
+                      <div className={styles.chatTopTitleBlock}>
+                        {(() => {
+                          const currentChat = chats.find((c) => c.id === selectedChatId) || null;
+                          const title = currentChat?.displayName || currentChat?.name || `Чат #${selectedChatId}`;
+                          const clientPhone = extractPhoneFromJid(currentChat?.remoteJid ?? null);
+                          const orgPhoneLabel = currentChat?.organizationPhone?.displayName || '';
+                          const orgConnLabel = currentChat?.organizationPhone?.connectionType || '';
 
-                        return (
-                          <>
-                            <div className={styles.chatTopTitle}>{title}</div>
-                            <div className={styles.chatTopSubtitle}>
-                              {currentChat ? formatChannelLabel(currentChat.channel) : ''}
-                              {clientPhone ? ` • ${clientPhone}` : ''}
-                              {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
-                              {orgConnLabel ? ` (${orgConnLabel})` : ''}
-                            </div>
-                          </>
-                        );
-                      })()}
+                          return (
+                            <>
+                              <div className={styles.chatTopTitle}>{title}</div>
+                              <div className={styles.chatTopSubtitle}>
+                                {currentChat ? formatChannelLabel(currentChat.channel) : ''}
+                                {clientPhone ? ` • ${clientPhone}` : ''}
+                                {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
+                                {orgConnLabel ? ` (${orgConnLabel})` : ''}
+                              </div>
+                              {currentChat?.unreadCount ? (
+                                <div className={styles.chatTopUnread}>Непрочитано: {currentChat.unreadCount}</div>
+                              ) : null}
+                              {currentTicketNumber && (
+                                <div className={styles.chatTopTicketMeta}>
+                                  Тикет #{currentTicketNumber}
+                                  {currentTicket?.status ? ` • ${currentTicket.status}` : ''}
+                                  {currentTicket?.priority ? ` • ${currentTicket.priority}` : ''}
+                                  {currentTicket?.createdAt ? ` • ${formatTicketDuration(currentTicket.createdAt)}` : ''}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
 
                   <div className={styles.chatTopRight}>
-                    <select
-                      className={styles.searchSelect}
-                      value={(chats.find((c) => c.id === selectedChatId)?.priority ?? 'medium') as ChatPriority}
-                      onChange={(e) => void handleSetChatPriority(e.target.value as ChatPriority)}
-                      aria-label="Приоритет чата"
-                      disabled={!selectedChatId || isUpdatingPriority}
-                    >
-                      <option value="low">low</option>
-                      <option value="medium">Нормально</option>
-                      <option value="high">high</option>
-                      <option value="urgent">Передать Администрации</option>
-                    </select>
-                    <button
-                      className={styles.chatTopAction}
-                      type="button"
-                      onClick={handleToggleAssignment}
-                      disabled={!user || isAssigningChat}
-                    >
-                      {(chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять')}
-                    </button>
-                    <button
-                      className={styles.chatTopAction}
-                      type="button"
-                      onClick={handleMarkChatRead}
-                    >
-                      Прочитать
-                    </button>
+                    {currentTicketNumber && (
+                      <div className={styles.ticketInlineGroup}>
+                        <button
+                          type="button"
+                          className={styles.chatTopTicketBadge}
+                          onClick={handleOpenTicketPage}
+                          title="Открыть тикет"
+                        >
+                          #{currentTicketNumber}
+                        </button>
+                        {currentTicket?.status ? (
+                          <span className={statusChipClass(currentTicket.status)} title={`Статус: ${currentTicket.status}`}>
+                            {currentTicket.status}
+                          </span>
+                        ) : null}
+                        {currentTicket?.priority ? (
+                          <span
+                            className={priorityChipClass(currentTicket.priority)}
+                            title={`Приоритет: ${currentTicket.priority}`}
+                          >
+                            {currentTicket.priority}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+
+                    {currentTicketNumber && (
+                      <>
+                        {isLoadingTicket ? (
+                          <span className={styles.chatTopTicketState}>
+                            <span className={styles.spinner} aria-label="Загрузка" />
+                          </span>
+                        ) : ticketError ? (
+                          <span className={styles.chatTopTicketError}>{ticketError}</span>
+                        ) : currentTicket ? (
+                          <>
+                            <select
+                              className={styles.ticketSelect}
+                              value={String(currentTicket.status || '')}
+                              onChange={(e) => void handleSetTicketStatus(e.target.value)}
+                              disabled={isTicketActionLoading}
+                              aria-label="Статус тикета"
+                            >
+                              {TICKET_STATUS_OPTIONS.map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </select>
+
+                            <select
+                              className={styles.ticketSelect}
+                              value={String(currentTicket.priority || '')}
+                              onChange={(e) => void handleSetTicketPriority(e.target.value)}
+                              disabled={isTicketActionLoading}
+                              aria-label="Приоритет тикета"
+                            >
+                              {TICKET_PRIORITY_OPTIONS.map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </select>
+
+                            <Button
+                              size="small"
+                              variant="secondary"
+                              onClick={() => void handleAssignTicketToMe()}
+                              disabled={!user || isTicketActionLoading}
+                            >
+                              {renderIconLabel('👤', 'Мне')}
+                            </Button>
+
+                            <Button
+                              size="small"
+                              variant="secondary"
+                              onClick={() => void handleCloseTicket()}
+                              disabled={isTicketActionLoading || currentTicket.status === 'closed'}
+                            >
+                              {renderIconLabel('✕', 'Закрыть')}
+                            </Button>
+
+                            <button
+                              type="button"
+                              className={styles.moreActionsButton}
+                              aria-label="Дополнительные действия"
+                              onClick={() => setIsMoreActionsOpen((prev) => !prev)}
+                            >
+                              ⋯
+                            </button>
+
+                            {isMoreActionsOpen ? (
+                              <div className={styles.moreActionsMenu}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void handleCloseTicket();
+                                    setIsMoreActionsOpen(false);
+                                  }}
+                                  disabled={isTicketActionLoading || currentTicket.status === 'closed'}
+                                >
+                                  Закрыть тикет
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void handleMarkChatRead();
+                                    setIsMoreActionsOpen(false);
+                                  }}
+                                >
+                                  Отметить прочитанным
+                                </button>
+                              </div>
+                            ) : null}
+
+                            {ticketActionError ? (
+                              <span className={styles.chatTopTicketError}>{ticketActionError}</span>
+                            ) : null}
+                            {ticketActionToast ? (
+                              <span className={styles.chatTopTicketToast} role="status">{ticketActionToast}</span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className={styles.chatTopTicketState}>Тикет не найден</span>
+                        )}
+                      </>
+                    )}
+
                     <button
                       className={styles.chatTopAction}
                       type="button"
@@ -1275,8 +1731,27 @@ export function ChatsPage() {
                       disabled={!selectedChatPhone}
                       title={selectedChatPhone ? `Позвонить: ${selectedChatPhone}` : 'Нет номера для звонка'}
                     >
-                      Позвонить
+                      {renderIconLabel('📞', 'Звонок')}
                     </button>
+                    <button
+                      className={`${styles.chatTopAction} ${styles.chatTopGhost}`}
+                      type="button"
+                      onClick={handleMarkChatRead}
+                      title="Отметить чат прочитанным"
+                    >
+                      {renderIconLabel('✓', 'Прочесть')}
+                    </button>
+
+                    <button
+                      className={styles.chatTopAction}
+                      type="button"
+                      onClick={handleToggleAssignment}
+                      disabled={!user || isAssigningChat}
+                      title={chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять'}
+                    >
+                      {renderIconLabel('👤', chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять')}
+                    </button>
+                  </div>
                   </div>
                 </div>
                 
@@ -1325,6 +1800,14 @@ export function ChatsPage() {
                           minute: '2-digit',
                         });
 
+                        const ticketNumber =
+                          message.ticketNumber ??
+                          message.ticket?.ticketNumber ??
+                          selectedChat?.ticketNumber ??
+                          null;
+                        const ticketStatus = message.ticketStatus ?? message.ticket?.status ?? null;
+                        const ticketPriority = message.ticketPriority ?? message.ticket?.priority ?? null;
+
                         const senderLabel = message.senderUser
                           ? (message.senderUser.name || message.senderUser.email).trim()
                           : '';
@@ -1340,8 +1823,23 @@ export function ChatsPage() {
                               {senderLabel && (
                                 <div className={styles.messageSender}>{senderLabel}</div>
                               )}
+                              {ticketNumber ? (
+                                <div className={styles.messageTicket}>
+                                  <span className={styles.messageTicketBadge}>Тикет #{ticketNumber}</span>
+                                  {(ticketStatus || ticketPriority) && (
+                                    <span className={styles.messageTicketMeta}>
+                                      {[ticketStatus, ticketPriority].filter(Boolean).join(' · ')}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : null}
                               {renderMessageBody(message)}
                               {renderTranslation(message)}
+                              {message.responsibleUser ? (
+                                <div className={styles.messageResponsible}>
+                                  Ответственный: {message.responsibleUser.name || message.responsibleUser.email}
+                                </div>
+                              ) : null}
                               <span className={styles.messageTime}>{time}</span>
                             </div>
                           </div>
@@ -1409,7 +1907,18 @@ export function ChatsPage() {
                     {isSendingMedia ? '…' : '+'}
                   </button>
 
-                  <div className={styles.formatBar}>
+                  <button
+                    type="button"
+                    className={`${styles.formatToggle} ${isFormatBarOpen ? styles.formatToggleActive : ''}`}
+                    onClick={() => setIsFormatBarOpen((v) => !v)}
+                    aria-label={isFormatBarOpen ? 'Скрыть форматирование' : 'Показать форматирование'}
+                    aria-pressed={isFormatBarOpen}
+                    title={isFormatBarOpen ? 'Скрыть форматирование' : 'Показать форматирование'}
+                  >
+                    Aa
+                  </button>
+
+                  <div className={`${styles.formatBar} ${!isFormatBarOpen ? styles.formatBarClosed : ''}`}>
                     <button
                       type="button"
                       className={styles.formatButton}
@@ -1477,16 +1986,6 @@ export function ChatsPage() {
                     title="Подсказки"
                   >
                     AI
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.suggestionsButton}
-                    onClick={() => setAutoTranslateIncoming((v) => !v)}
-                    disabled={!selectedChatId}
-                    aria-label="Автоперевод входящих сообщений"
-                    title="Автоперевод входящих сообщений"
-                  >
-                    {autoTranslateIncoming ? 'Перевод ON' : 'Перевод OFF'}
                   </button>
                   <button
                     type="button"
@@ -1632,6 +2131,63 @@ export function ChatsPage() {
                 defaultCalleeVersion={callWidgetCalleeVersion}
                 onStatusChange={handleCallWidgetStatus}
               />
+
+              <div className={styles.commentsSection} aria-label="Комментарии клиента">
+                <div className={styles.commentsHeader}>
+                  <div className={styles.commentsTitle}>Комментарии</div>
+                  {isLoadingComments ? <span className={styles.commentStatus}>Загрузка…</span> : null}
+                  {commentsError ? <span className={styles.commentError}>{commentsError}</span> : null}
+                </div>
+
+                <div className={styles.commentsList}>
+                  {!isLoadingComments && !commentsError && clientComments.length === 0 ? (
+                    <div className={styles.commentEmpty}>Нет комментариев</div>
+                  ) : null}
+
+                  {clientComments.map((comment) => (
+                    <div key={comment.id} className={styles.commentItem}>
+                        <div className={styles.commentMeta}>
+                        <div className={styles.commentAuthor}>{comment.user?.name || 'Без имени'}</div>
+                        {comment.user?.email ? (
+                          <div className={styles.commentEmail}>{comment.user.email}</div>
+                        ) : null}
+                        <div className={styles.commentTime}>{formatDateTime(comment.createdAt)}</div>
+                      </div>
+                      <div className={styles.commentText}>{comment.content}</div>
+                    </div>
+                  ))}
+
+                  {commentsPagination.hasMore ? (
+                    <button
+                      type="button"
+                      className={styles.commentsLoadMore}
+                      onClick={() => void loadClientComments(selectedChatId, { append: true })}
+                      disabled={isLoadingMoreComments}
+                    >
+                      {isLoadingMoreComments ? 'Загрузка…' : 'Показать ещё'}
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className={styles.commentForm}>
+                  <textarea
+                    className={styles.commentTextarea}
+                    placeholder="Новый комментарий"
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    rows={2}
+                    disabled={isAddingComment}
+                  />
+                  <Button
+                    size="small"
+                    variant="primary"
+                    onClick={() => void handleAddComment()}
+                    disabled={!commentInput.trim() || isAddingComment || !selectedChatId}
+                  >
+                    {isAddingComment ? 'Сохранение…' : 'Добавить'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </aside>
         </div>

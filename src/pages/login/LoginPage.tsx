@@ -1,18 +1,18 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/features/auth/model/authContext';
+import { useAuth } from '@/auth/useAuth';
 import { LoginForm } from '@/features/auth/ui/LoginForm';
 import styles from './LoginPage.module.css';
 
 export function LoginPage() {
-  const { user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated) {
       navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className={styles.page}>

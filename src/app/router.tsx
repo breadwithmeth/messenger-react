@@ -1,19 +1,22 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '@/shared/ui/ProtectedRoute/ProtectedRoute';
+import { ProtectedRoute } from '@/auth/ProtectedRoute';
 import { LoginPage } from '@/pages/login/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ChatsPage } from '@/pages/chats/ChatsPage';
+import { TicketsPage } from '@/pages/tickets/TicketsPage';
+import { EmployeesPage } from '@/pages/employees/EmployeesPage';
+import { SettingsPage } from '@/pages/settings/SettingsPage';
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
-import { useAuth } from '@/features/auth/model/authContext';
+import { useAuth } from '@/auth/useAuth';
 
 function RootRedirect() {
-  const { user, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
   if (isLoading) {
     return <div>Загрузка...</div>;
   }
   
-  return user ? <Navigate to="/chats" replace /> : <Navigate to="/login" replace />;
+  return isAuthenticated ? <Navigate to="/chats" replace /> : <Navigate to="/login" replace />;
 }
 
 export function AppRouter() {
@@ -38,6 +41,33 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <ChatsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute>
+              <TicketsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute requiredRoles={['admin', 'supervisor']}>
+              <EmployeesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
             </ProtectedRoute>
           }
         />

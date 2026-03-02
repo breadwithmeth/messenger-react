@@ -89,6 +89,15 @@ export interface Message {
   isReadByOperator: boolean;
   quotedMessageId: string | null;
   senderUser: SenderUser | null;
+  ticketNumber?: number;
+  ticketStatus?: string;
+  ticketPriority?: string;
+  ticket?: {
+    ticketNumber?: number;
+    status?: string;
+    priority?: string;
+  } | null;
+  responsibleUser?: SenderUser | null;
 }
 
 export interface MessagesResponse {
