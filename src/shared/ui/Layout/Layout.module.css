@@ -40,55 +40,212 @@
   box-shadow: var(--shadow-sm);
 }
 
-.topNav {
-  display: inline-flex;
-  align-items: center;
+.floatingControls {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  display: flex;
   gap: 8px;
-  overflow-x: auto;
-  padding: 0 4px;
-  margin-left: 8px;
+  z-index: 70;
 }
 
-.topNav::-webkit-scrollbar {
-  height: 6px;
-}
-
-.topNav::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 8px;
-}
-
-.topNavItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: var(--surface-2);
+.floatingBurger,
+.presenceToggle {
+  border: 1px solid var(--border);
+  background: var(--surface);
   color: var(--text);
-  font-size: 13px;
-  line-height: 1.2;
-  white-space: nowrap;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.topNavItem:hover {
-  background: var(--surface);
-  border-color: var(--border);
-  box-shadow: var(--shadow-sm);
+.floatingBurger {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.presenceToggle {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.floatingBurger:hover,
+.presenceToggle:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
-.topNavItemActive {
-  background: rgba(31, 111, 235, 0.12);
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 8px 20px rgba(31, 111, 235, 0.18);
+.presencePopover {
+  position: fixed;
+  top: 66px;
+  right: 14px;
+  width: 260px;
+  max-width: calc(100vw - 28px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 10px 12px;
+  z-index: 70;
 }
 
-.topNavLabel {
+.presencePopoverHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.presenceClose {
+  border: none;
+  background: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.presenceClose:hover {
+  color: var(--text);
+}
+
+
+.presenceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(120deg, rgba(31, 111, 235, 0.08), rgba(31, 111, 235, 0.02));
+  box-shadow: var(--shadow-sm);
+  min-width: 220px;
+}
+
+.presenceHeader {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+.presenceSkeleton {
+  width: 100%;
+  height: 60px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.presenceChartWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.presenceChart {
+  width: 100%;
+  height: 70px;
+}
+
+.presenceAxisLabel {
+  font-size: 10px;
+  fill: var(--text-subtle);
+}
+
+.statusBarBg {
+  fill: var(--surface-2);
+}
+
+.dotInbound {
+  fill: var(--success, #16a34a);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+
+.dotOutbound {
+  fill: var(--warning, #f59e0b);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+
+.presenceLegend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--text-subtle);
+}
+
+.legendDotInbound,
+.legendDotOutbound {
+  display: inline-flex;
+  align-items: center;
+}
+
+.legendSwatchOnline,
+.legendSwatchOffline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 5px;
+  border-radius: 10px;
   font-weight: 600;
+}
+
+.legendSwatchOnline {
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--success, #16a34a);
+}
+
+.legendSwatchOffline {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger, #ef4444);
+}
+
+.legendDotInbound::before,
+.legendDotOutbound::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  border: 1px solid var(--surface);
+}
+
+.legendDotInbound::before {
+  background: var(--success, #16a34a);
+}
+
+.legendDotOutbound::before {
+  background: var(--warning, #f59e0b);
+}
+
+.presenceEmpty {
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .backdrop {

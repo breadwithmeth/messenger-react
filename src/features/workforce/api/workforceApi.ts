@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/client';
-import type { EmployeeDto } from '../model/types';
+import type { EmployeeDto, WorkforceActivityDto } from '../model/types';
 
 export const workforceApi = {
   getEmployees: async (): Promise<EmployeeDto[]> => {
@@ -8,5 +8,9 @@ export const workforceApi = {
 
   sendHeartbeat: async (): Promise<void> => {
     await apiClient.post('/workforce/presence/heartbeat');
+  },
+
+  getActivity: async (): Promise<WorkforceActivityDto> => {
+    return apiClient.get<WorkforceActivityDto>('/workforce/me/activity');
   },
 };

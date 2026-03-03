@@ -5,6 +5,7 @@ import { Button } from '../../shared/ui/Button/Button';
 import { Input } from '../../shared/ui/Input/Input';
 import { Icon } from '../../shared/ui/Icon/Icon';
 import { Modal } from '../../shared/ui/Modal/Modal';
+import PresenceTimeline, { type PresenceResponse, type PresenceStatus } from '../../shared/ui/PresenceTimeline/PresenceTimeline';
 import { chatsApi } from '../../features/chats/api/chatsApi';
 import { clientsApi } from '../../features/clients/api/clientsApi';
 import { aiApi } from '../../features/ai/api/aiApi';
@@ -18,6 +19,8 @@ import { toggleLayoutMenu } from '../../shared/utils/layoutMenu';
 import { emitToast } from '../../shared/utils/toast';
 import { useAuth } from '@/auth/useAuth';
 import { CallWidget, type CallWidgetStatus } from '../../features/webrtc/ui/CallWidget/CallWidget';
+import { workforceApi } from '@/features/workforce/api/workforceApi';
+import type { WorkforceActivityDto } from '@/features/workforce/model/types';
 import styles from './ChatsPage.module.css';
 
 type ChatFilter = 'all' | 'my' | 'ignored' | 'open' | 'unread';
@@ -243,6 +246,11 @@ export function ChatsPage() {
     []
   );
 
+  const [isActivityVisible, setIsActivityVisible] = useState(false);
+  const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
+  const [isActivityLoading, setIsActivityLoading] = useState(false);
+  const [isActivityFullscreen, setIsActivityFullscreen] = useState(false);
+
   const currentTicketNumber = useMemo(() => {
     if (!selectedChat?.ticketNumber) return '';
     return String(selectedChat.ticketNumber);
@@ -260,6 +268,245 @@ export function ChatsPage() {
       return next;
     });
   }, []);
+
+  const loadActivity = useCallback(async () => {
+    setIsActivityLoading(true);
+    try {
+      const data = await workforceApi.getActivity();
+      setActivity(data);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('activity load failed', error);
+      }
+    } finally {
+      setIsActivityLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isActivityVisible || activity || isActivityLoading) return;
+    void loadActivity();
+  }, [activity, isActivityLoading, isActivityVisible, loadActivity]);
+
+  const formatDurationShort = (ms: number) => {
+    const totalMinutes = Math.max(0, Math.round(ms / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) return `${hours}ч ${minutes.toString().padStart(2, '0')}м`;
+    return `${Math.max(1, minutes)} мин`;
+  };
+
+  const normalizePresenceStatus = (status?: WorkforceActivityDto['presenceHistory'][number]['status']): PresenceStatus => {
+    switch (status) {
+      case 'ONLINE':
+        return 'ONLINE';
+      case 'BUSY':
+        return 'BUSY';
+      case 'AWAY':
+        return 'AWAY';
+      case 'IDLE':
+        return 'IDLE';
+      case 'OFFLINE':
+      default:
+        return 'OFFLINE';
+    }
+  };
+
+  const parseTimestamp = (value?: string) => {
+    const ts = value ? new Date(value).getTime() : NaN;
+    return Number.isFinite(ts) ? ts : undefined;
+  };
+
+  const activityTimelineData = useMemo<PresenceResponse | null>(() => {
+    if (!activity) return null;
+
+    const now = Date.now();
+    const lastHistoryItem = activity.presenceHistory?.[activity.presenceHistory.length - 1];
+    const rangeFromTs =
+      parseTimestamp(activity.range?.from) ?? parseTimestamp(activity.presenceHistory?.[0]?.changedAt) ?? now - 60 * 60 * 1000;
+    const rangeToTs = Math.max(
+      rangeFromTs + 60 * 1000,
+      parseTimestamp(activity.range?.to) ?? parseTimestamp(lastHistoryItem?.changedAt) ?? now,
+    );
+
+    const range: PresenceResponse['range'] = {
+      from: new Date(rangeFromTs).toISOString(),
+      to: new Date(rangeToTs).toISOString(),
+    };
+
+    const presenceHistory: PresenceResponse['presenceHistory'] = (activity.presenceHistory ?? []).map((item, idx) => {
+      const ts = parseTimestamp(item.changedAt) ?? rangeFromTs + idx * 60_000;
+      return {
+        status: normalizePresenceStatus(item.status),
+        changedAt: new Date(ts).toISOString(),
+        messages: (item.messages ?? []).map((m) => ({
+          timestamp: m.timestamp,
+          type: m.direction === 'outbound' ? ('outbound' as const) : ('inbound' as const),
+        })),
+      };
+    });
+
+    const recentMessages = (activity.messages?.recent ?? []).map((m) => ({
+      timestamp: m.timestamp,
+      type: m.direction === 'outbound' ? ('outbound' as const) : ('inbound' as const),
+    }));
+
+    return {
+      range,
+      presenceHistory,
+      messages: recentMessages,
+    };
+  }, [activity]);
+
+  const activityStats = useMemo(() => {
+    if (!activity) return null;
+
+    const now = Date.now();
+    const lastHistoryItem = activity.presenceHistory?.[activity.presenceHistory.length - 1];
+    const rangeFromTs =
+      parseTimestamp(activity.range?.from) ?? parseTimestamp(activity.presenceHistory?.[0]?.changedAt) ?? now - 60 * 60 * 1000;
+    const rangeToTs = Math.max(
+      rangeFromTs + 60 * 1000,
+      parseTimestamp(activity.range?.to) ?? parseTimestamp(lastHistoryItem?.changedAt) ?? now,
+    );
+
+    const durations: Record<PresenceStatus, number> = {
+      ONLINE: 0,
+      BUSY: 0,
+      AWAY: 0,
+      IDLE: 0,
+      OFFLINE: 0,
+    };
+
+    const history = (activity.presenceHistory ?? [])
+      .map((item, idx) => ({
+        status: normalizePresenceStatus(item.status),
+        ts: parseTimestamp(item.changedAt) ?? rangeFromTs + idx * 60_000,
+      }))
+      .sort((a, b) => a.ts - b.ts);
+
+    let prevStatus = history[0]?.status ?? 'OFFLINE';
+    let prevTs = rangeFromTs;
+
+    for (const item of history) {
+      const start = Math.max(prevTs, rangeFromTs);
+      const end = Math.min(item.ts, rangeToTs);
+      if (end > start) durations[prevStatus] += end - start;
+      prevStatus = item.status;
+      prevTs = item.ts;
+    }
+
+    if (rangeToTs > prevTs) {
+      durations[prevStatus] += rangeToTs - Math.max(prevTs, rangeFromTs);
+    }
+
+    const recent = activity.messages?.recent ?? [];
+    const inboundCount =
+      typeof activity.messages?.inbound === 'number'
+        ? activity.messages.inbound
+        : recent.filter((m) => m.direction === 'inbound').length;
+    const outboundCount =
+      typeof activity.messages?.outbound === 'number'
+        ? activity.messages.outbound
+        : recent.filter((m) => m.direction === 'outbound').length;
+
+    return {
+      durations,
+      inbound: inboundCount,
+      outbound: outboundCount,
+      totalMessages: inboundCount + outboundCount,
+    };
+  }, [activity]);
+
+  const ActivityTimeline = ({ isLoading }: { isLoading: boolean }) => {
+    if (isLoading) {
+      return <div className={styles.activitySkeleton} aria-label="Загрузка активности" />;
+    }
+
+    if (!activityTimelineData) {
+      return <div className={styles.activityEmpty}>Нет данных активности</div>;
+    }
+
+    return <PresenceTimeline data={activityTimelineData} />;
+  };
+
+  const ActivityLegend = () => (
+    <div className={styles.activityLegend}>
+      <span className={`${styles.activityLegendPill} ${styles.activityLegendOnline}`}>Online</span>
+      <span className={`${styles.activityLegendPill} ${styles.activityLegendBusy}`}>Busy</span>
+      <span className={`${styles.activityLegendPill} ${styles.activityLegendAway}`}>Away</span>
+      <span className={`${styles.activityLegendPill} ${styles.activityLegendIdle}`}>Idle</span>
+      <span className={`${styles.activityLegendPill} ${styles.activityLegendOffline}`}>Offline</span>
+      <span className={styles.activityLegendDotInbound}>Входящие</span>
+      <span className={styles.activityLegendDotOutbound}>Исходящие</span>
+    </div>
+  );
+
+  const ActivityMeta = () => {
+    if (!activityStats) return null;
+
+    const statusOrder: PresenceStatus[] = ['ONLINE', 'BUSY', 'AWAY', 'IDLE', 'OFFLINE'];
+    const labels: Record<PresenceStatus, string> = {
+      ONLINE: 'Онлайн',
+      BUSY: 'Занят',
+      AWAY: 'Отошел',
+      IDLE: 'Бездействует',
+      OFFLINE: 'Оффлайн',
+    };
+
+    return (
+      <div className={styles.activityMeta}>
+        {statusOrder
+          .filter((status) => activityStats.durations[status] > 0)
+          .map((status) => (
+            <div key={status} className={styles.activityStat}>
+              <span>{labels[status]}</span>
+              <strong>{formatDurationShort(activityStats.durations[status])}</strong>
+            </div>
+          ))}
+        <div className={styles.activityStat}>
+          <span>Входящие</span>
+          <strong>{activityStats.inbound}</strong>
+        </div>
+        <div className={styles.activityStat}>
+          <span>Исходящие</span>
+          <strong>{activityStats.outbound}</strong>
+        </div>
+        <div className={styles.activityStatTotal}>
+          <span>Всего сообщений</span>
+          <strong>{activityStats.totalMessages}</strong>
+        </div>
+      </div>
+    );
+  };
+
+  const ActivityFullscreen = () => (
+    <div className={styles.activityFullscreen} role="dialog" aria-label="Детальная активность">
+      <div className={styles.activityFullscreenContent}>
+        <div className={styles.activityFullscreenHeader}>
+          <div>
+            <div className={styles.activityFullscreenTitle}>Детальная активность</div>
+            <div className={styles.activityFullscreenSubtitle}>Статусы оператора и сообщения за выбранный диапазон</div>
+          </div>
+          <button
+            type="button"
+            className={styles.activityFullscreenClose}
+            aria-label="Закрыть"
+            onClick={() => setIsActivityFullscreen(false)}
+          >
+            ×
+          </button>
+        </div>
+        <div className={styles.activityFullscreenBody}>
+          <div className={styles.activityChartWide}>
+            <ActivityTimeline isLoading={isActivityLoading} />
+          </div>
+        </div>
+        <ActivityLegend />
+        <ActivityMeta />
+      </div>
+    </div>
+  );
 
   const updateChatInState = useCallback((chat: Chat) => {
     setChats((prev) => prev.map((c) => (c.id === chat.id ? { ...c, ...chat } : c)));
@@ -1328,6 +1575,15 @@ export function ChatsPage() {
                   placeholder="Поиск по чатам"
                   aria-label="Поиск по чатам"
                 />
+                <button
+                  type="button"
+                  className={styles.activityToggle}
+                  onClick={() => {
+                    setIsActivityVisible((v) => !v);
+                  }}
+                >
+                  {isActivityVisible ? 'Скрыть активность' : 'Активность'}
+                </button>
               </div>
               <div className={styles.searchRow}>
                 <select
@@ -1389,6 +1645,24 @@ export function ChatsPage() {
                   <option value="urgent">Передать Администрации</option>
                 </select>
               </div>
+
+              {isActivityVisible && (
+                <div className={styles.activityCard}>
+                  <div className={styles.activityCardHeader}>
+                    <span className={styles.activityCardTitle}>Активность</span>
+                    <button
+                      type="button"
+                      className={styles.activityExpand}
+                      onClick={() => setIsActivityFullscreen(true)}
+                    >
+                      Развернуть
+                    </button>
+                  </div>
+                  <ActivityTimeline isLoading={isActivityLoading} />
+                  <ActivityLegend />
+                  <ActivityMeta />
+                </div>
+              )}
             </div>
             
             <div className={styles.sidebarHeader}>
@@ -2194,6 +2468,7 @@ export function ChatsPage() {
           </aside>
         </div>
       </div>
+      {isActivityFullscreen && <ActivityFullscreen />}
     </Layout>
   );
 }

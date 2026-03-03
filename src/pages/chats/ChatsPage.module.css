@@ -480,9 +480,27 @@
 
 .searchInputRow {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 6px;
   align-items: center;
+}
+
+.activityToggle {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.activityToggle:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .menuToggleButton {
@@ -509,6 +527,244 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
+}
+
+.activityCard {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: linear-gradient(120deg, rgba(31, 111, 235, 0.08), rgba(31, 111, 235, 0.02));
+  box-shadow: var(--shadow-sm);
+}
+
+.activityCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.activityCardTitle {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.activityExpand {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.activityExpand:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.activitySkeleton {
+  width: 100%;
+  height: 160px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.activityEmpty {
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.activityChart {
+  width: 100%;
+  height: 90px;
+}
+
+.activityBarBg {
+  fill: var(--surface-2);
+}
+
+.activityAxisLabel {
+  font-size: 10px;
+  fill: var(--text-subtle);
+}
+
+.activityDotInbound {
+  fill: #2563eb;
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+
+.activityDotOutbound {
+  fill: #f97316;
+  stroke: var(--surface);
+  stroke-width: 1.5;
+}
+
+.activityLegend {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: var(--text-subtle);
+}
+
+.activityLegendPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 5px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.activityLegendOnline { background: rgba(34, 197, 94, 0.14); color: #15803d; }
+.activityLegendBusy { background: rgba(239, 68, 68, 0.14); color: #b91c1c; }
+.activityLegendAway { background: rgba(251, 191, 36, 0.18); color: #b45309; }
+.activityLegendIdle { background: rgba(139, 92, 246, 0.16); color: #6d28d9; }
+.activityLegendOffline { background: rgba(148, 163, 184, 0.18); color: #475569; }
+
+.activityLegendDotInbound::before,
+.activityLegendDotOutbound::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  border: 1px solid var(--surface);
+}
+
+.activityLegendDotInbound,
+.activityLegendDotOutbound {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.activityLegendDotInbound::before {
+  background: #2563eb;
+}
+
+.activityLegendDotOutbound::before {
+  background: #f97316;
+}
+
+.activityMeta {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.activityStat,
+.activityStatTotal {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.activityStatTotal {
+  background: linear-gradient(135deg, rgba(31, 111, 235, 0.12), rgba(31, 111, 235, 0.04));
+  font-weight: 700;
+}
+
+.activityStat strong,
+.activityStatTotal strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.activityChartWide {
+  width: 100%;
+}
+
+.activityFullscreen {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.activityFullscreenContent {
+  width: min(1180px, 100%);
+  max-height: min(90vh, 820px);
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 18px;
+}
+
+.activityFullscreenHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.activityFullscreenTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.activityFullscreenSubtitle {
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.activityFullscreenClose {
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.activityFullscreenClose:hover {
+  color: var(--primary);
+}
+
+.activityFullscreenBody {
+  width: 100%;
+  flex: 1;
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .searchSelect {
@@ -1316,6 +1572,15 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 
