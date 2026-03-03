@@ -272,7 +272,7 @@ export function Layout({ children }: LayoutProps) {
         <main className={isChatsPage ? styles.mainFluid : styles.main}>{children}</main>
       </div>
 
-      {user && (
+      {/* {user && (
         <div className={styles.floatingControls}>
           <button
             type="button"
@@ -288,10 +288,10 @@ export function Layout({ children }: LayoutProps) {
             aria-label={isPresenceOpen ? 'Скрыть активность' : 'Показать активность'}
             onClick={() => setIsPresenceOpen((v) => !v)}
           >
-            Активность
+            Активность1
           </button>
         </div>
-      )}
+      )} */}
 
       {user && isPresenceOpen && (
         <div className={styles.presencePopover} role="dialog" aria-label="Онлайн-активность">

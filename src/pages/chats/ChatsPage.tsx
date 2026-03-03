@@ -194,19 +194,7 @@ export function ChatsPage() {
   const [isTicketActionLoading, setIsTicketActionLoading] = useState(false);
   const [ticketActionError, setTicketActionError] = useState('');
   const [ticketActionToast, setTicketActionToast] = useState('');
-  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
-  const [pinnedChatIds, setPinnedChatIds] = useState<number[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const raw = localStorage.getItem('pinnedChats');
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'number') : [];
-    } catch (e) {
-      console.error(e);
-      return [];
-    }
-  });
+  // pinning disabled
 
   const handleCallWidgetStatus = useCallback((s: CallWidgetStatus) => {
     setCallWidgetStatus(s);
@@ -246,7 +234,6 @@ export function ChatsPage() {
     []
   );
 
-  const [isActivityVisible, setIsActivityVisible] = useState(false);
   const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [isActivityFullscreen, setIsActivityFullscreen] = useState(false);
@@ -261,13 +248,7 @@ export function ChatsPage() {
     navigate(`/tickets?ticketNumber=${currentTicketNumber}`);
   }, [currentTicketNumber, navigate]);
 
-  const togglePinChat = useCallback((chatId: number) => {
-    setPinnedChatIds((prev) => {
-      const exists = prev.includes(chatId);
-      const next = exists ? prev.filter((id) => id !== chatId) : [...prev, chatId];
-      return next;
-    });
-  }, []);
+  // const togglePinChat = useCallback(() => undefined, []);
 
   const loadActivity = useCallback(async () => {
     setIsActivityLoading(true);
@@ -284,9 +265,9 @@ export function ChatsPage() {
   }, []);
 
   useEffect(() => {
-    if (!isActivityVisible || activity || isActivityLoading) return;
+    if (activity || isActivityLoading) return;
     void loadActivity();
-  }, [activity, isActivityLoading, isActivityVisible, loadActivity]);
+  }, [activity, isActivityLoading, loadActivity]);
 
   const formatDurationShort = (ms: number) => {
     const totalMinutes = Math.max(0, Math.round(ms / 60000));
@@ -401,14 +382,18 @@ export function ChatsPage() {
     }
 
     const recent = activity.messages?.recent ?? [];
+    const historyMessages = (activity.presenceHistory ?? []).flatMap((item) => item.messages ?? []);
+    const combinedMessages = [...historyMessages, ...recent];
+
     const inboundCount =
       typeof activity.messages?.inbound === 'number'
         ? activity.messages.inbound
-        : recent.filter((m) => m.direction === 'inbound').length;
+        : combinedMessages.filter((m) => m.direction === 'inbound').length;
+
     const outboundCount =
       typeof activity.messages?.outbound === 'number'
         ? activity.messages.outbound
-        : recent.filter((m) => m.direction === 'outbound').length;
+        : combinedMessages.filter((m) => m.direction === 'outbound').length;
 
     return {
       durations,
@@ -774,20 +759,10 @@ export function ChatsPage() {
   }, [selectedChatId]);
 
   useEffect(() => {
-    setIsMoreActionsOpen(false);
-  }, [selectedChatId]);
-
-  useEffect(() => {
     translationsRef.current = translationsByMessageId;
   }, [translationsByMessageId]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('pinnedChats', JSON.stringify(pinnedChatIds));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [pinnedChatIds]);
+  useEffect(() => {}, []);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -1578,11 +1553,10 @@ export function ChatsPage() {
                 <button
                   type="button"
                   className={styles.activityToggle}
-                  onClick={() => {
-                    setIsActivityVisible((v) => !v);
-                  }}
+                  onClick={() => setIsActivityFullscreen(true)}
+                  aria-label="Открыть активность"
                 >
-                  {isActivityVisible ? 'Скрыть активность' : 'Активность'}
+                  Активность
                 </button>
               </div>
               <div className={styles.searchRow}>
@@ -1646,23 +1620,21 @@ export function ChatsPage() {
                 </select>
               </div>
 
-              {isActivityVisible && (
-                <div className={styles.activityCard}>
-                  <div className={styles.activityCardHeader}>
-                    <span className={styles.activityCardTitle}>Активность</span>
-                    <button
-                      type="button"
-                      className={styles.activityExpand}
-                      onClick={() => setIsActivityFullscreen(true)}
-                    >
-                      Развернуть
-                    </button>
-                  </div>
-                  <ActivityTimeline isLoading={isActivityLoading} />
-                  <ActivityLegend />
-                  <ActivityMeta />
+              <div className={styles.activityCard}>
+                <div className={styles.activityCardHeader}>
+                  <span className={styles.activityCardTitle}>Активность</span>
+                  <button
+                    type="button"
+                    className={styles.activityExpand}
+                    onClick={() => setIsActivityFullscreen(true)}
+                  >
+                    Развернуть
+                  </button>
                 </div>
-              )}
+                <ActivityTimeline isLoading={isActivityLoading} />
+                <ActivityLegend />
+                <ActivityMeta />
+              </div>
             </div>
             
             <div className={styles.sidebarHeader}>
@@ -1768,7 +1740,7 @@ export function ChatsPage() {
                               >
                                 {displayName}
                               </span>
-                              {pinnedChatIds.includes(chat.id) && <span className={styles.pinBadge}>📌</span>}
+                              {/* pin badge removed */}
                               {chat.assignedUser && (
                                 <span className={styles.chatAssignedUser}>
                                   {chat.assignedUser.name || chat.assignedUser.email}
@@ -1791,17 +1763,7 @@ export function ChatsPage() {
                             {chat.priority === 'urgent' && (
                               <span className={styles.urgentBadge}>URGENT</span>
                             )}
-                            <button
-                              type="button"
-                              className={styles.pinButton}
-                              aria-label={pinnedChatIds.includes(chat.id) ? 'Открепить' : 'Закрепить'}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePinChat(chat.id);
-                              }}
-                            >
-                              📌
-                            </button>
+                            {/* pin button removed */}
                             {chat.unreadCount > 0 && (
                               <span className={styles.unreadBubble}>{chat.unreadCount}</span>
                             )}
@@ -1953,39 +1915,6 @@ export function ChatsPage() {
                             >
                               {renderIconLabel('✕', 'Закрыть')}
                             </Button>
-
-                            <button
-                              type="button"
-                              className={styles.moreActionsButton}
-                              aria-label="Дополнительные действия"
-                              onClick={() => setIsMoreActionsOpen((prev) => !prev)}
-                            >
-                              ⋯
-                            </button>
-
-                            {isMoreActionsOpen ? (
-                              <div className={styles.moreActionsMenu}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    void handleCloseTicket();
-                                    setIsMoreActionsOpen(false);
-                                  }}
-                                  disabled={isTicketActionLoading || currentTicket.status === 'closed'}
-                                >
-                                  Закрыть тикет
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    void handleMarkChatRead();
-                                    setIsMoreActionsOpen(false);
-                                  }}
-                                >
-                                  Отметить прочитанным
-                                </button>
-                              </div>
-                            ) : null}
 
                             {ticketActionError ? (
                               <span className={styles.chatTopTicketError}>{ticketActionError}</span>
