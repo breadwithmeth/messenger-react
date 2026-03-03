@@ -195,6 +195,7 @@ export function ChatsPage() {
   const [ticketActionError, setTicketActionError] = useState('');
   const [ticketActionToast, setTicketActionToast] = useState('');
   // pinning disabled
+  const [isActivityVisible, setIsActivityVisible] = useState(true);
 
   const handleCallWidgetStatus = useCallback((s: CallWidgetStatus) => {
     setCallWidgetStatus(s);
@@ -265,9 +266,10 @@ export function ChatsPage() {
   }, []);
 
   useEffect(() => {
+    if (!isActivityVisible) return;
     if (activity || isActivityLoading) return;
     void loadActivity();
-  }, [activity, isActivityLoading, loadActivity]);
+  }, [activity, isActivityLoading, isActivityVisible, loadActivity]);
 
   const formatDurationShort = (ms: number) => {
     const totalMinutes = Math.max(0, Math.round(ms / 60000));
@@ -1553,10 +1555,10 @@ export function ChatsPage() {
                 <button
                   type="button"
                   className={styles.activityToggle}
-                  onClick={() => setIsActivityFullscreen(true)}
-                  aria-label="Открыть активность"
+                  onClick={() => setIsActivityVisible((v) => !v)}
+                  aria-label={isActivityVisible ? 'Скрыть активность' : 'Показать активность'}
                 >
-                  Активность
+                  {isActivityVisible ? '🙈' : '📊'}
                 </button>
               </div>
               <div className={styles.searchRow}>
@@ -1620,21 +1622,23 @@ export function ChatsPage() {
                 </select>
               </div>
 
-              <div className={styles.activityCard}>
-                <div className={styles.activityCardHeader}>
-                  <span className={styles.activityCardTitle}>Активность</span>
-                  <button
-                    type="button"
-                    className={styles.activityExpand}
-                    onClick={() => setIsActivityFullscreen(true)}
-                  >
-                    Развернуть
-                  </button>
+              {isActivityVisible && (
+                <div className={styles.activityCard}>
+                  <div className={styles.activityCardHeader}>
+                    <span className={styles.activityCardTitle}>Активность</span>
+                    <button
+                      type="button"
+                      className={styles.activityExpand}
+                      onClick={() => setIsActivityFullscreen(true)}
+                    >
+                      Развернуть
+                    </button>
+                  </div>
+                  <ActivityTimeline isLoading={isActivityLoading} />
+                  <ActivityLegend />
+                  <ActivityMeta />
                 </div>
-                <ActivityTimeline isLoading={isActivityLoading} />
-                <ActivityLegend />
-                <ActivityMeta />
-              </div>
+              )}
             </div>
             
             <div className={styles.sidebarHeader}>
