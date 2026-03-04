@@ -414,7 +414,15 @@ export function ChatsPage() {
       return <div className={styles.activityEmpty}>Нет данных активности</div>;
     }
 
-    return <PresenceTimeline data={activityTimelineData} />;
+    return (
+      <button
+        type="button"
+        className={styles.activityOpenButton}
+        onClick={() => setIsActivityFullscreen(true)}
+      >
+        Показать график активности
+      </button>
+    );
   };
 
   const ActivityLegend = () => (
@@ -1622,7 +1630,7 @@ export function ChatsPage() {
                 </select>
               </div>
 
-              {isActivityVisible && (
+              {/* {isActivityVisible && (
                 <div className={styles.activityCard}>
                   <div className={styles.activityCardHeader}>
                     <span className={styles.activityCardTitle}>Активность</span>
@@ -1638,7 +1646,7 @@ export function ChatsPage() {
                   <ActivityLegend />
                   <ActivityMeta />
                 </div>
-              )}
+              )} */}
             </div>
             
             <div className={styles.sidebarHeader}>

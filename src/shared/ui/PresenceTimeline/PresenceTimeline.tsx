@@ -155,8 +155,10 @@ const buildMessagePoints = (data: PresenceResponse): MessagePoint[] => {
   return points;
 };
 
-const MessageMarker: React.FC<Record<string, unknown>> = (rawProps) => {
-  const { cx, cy, payload } = rawProps as { cx?: number; cy?: number; payload?: MessagePoint };
+type MessageMarkerProps = { cx?: number; cy?: number; payload?: MessagePoint };
+
+const MessageMarker = (rawProps: MessageMarkerProps) => {
+  const { cx, cy, payload } = rawProps;
   if (typeof cx !== 'number' || typeof cy !== 'number' || !payload) return null;
   const color = payload.type === 'inbound' ? INBOUND_COLOR : OUTBOUND_COLOR;
   return (
@@ -167,9 +169,9 @@ const MessageMarker: React.FC<Record<string, unknown>> = (rawProps) => {
   );
 };
 
-const InvisibleShape: React.FC<Record<string, unknown>> = () => <></>;
+const InvisibleShape = () => <></>;
 
-const TooltipContent: React.FC<{ active?: boolean; payload?: any[] }> = ({ active, payload }) => {
+const TooltipContent = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
   if (!active || !payload || !payload.length) return null;
   const p = payload[0]?.payload as IntervalPoint | MessagePoint | undefined;
   if (!p) return null;
@@ -236,13 +238,13 @@ export default function PresenceTimeline({ data }: PresenceTimelineProps) {
           <XAxis
             type="number"
             dataKey="x"
-            domain={[domainFrom, domainTo]}
-            tickFormatter={(v) => formatTime(Number(v))}
+            domain={[domainFrom, domainTo] as [number, number]}
+            tickFormatter={(v: number) => formatTime(Number(v))}
             tick={{ fontSize: 11, fill: '#475569' }}
             axisLine={{ stroke: '#cbd5e1' }}
             tickLine={{ stroke: '#cbd5e1' }}
           />
-          <YAxis type="number" dataKey="y" domain={[0, 10]} hide />
+          <YAxis type="number" dataKey="y" domain={[0, 10] as [number, number]} hide />
           {intervals.map((interval) => (
             <ReferenceArea
               key={`${interval.start}-${interval.end}-${interval.status}`}

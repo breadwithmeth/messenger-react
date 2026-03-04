@@ -1,4 +1,15 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Area,
+  Brush,
+  CartesianGrid,
+  ComposedChart,
+  ResponsiveContainer,
+  Scatter,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { apiClient } from '../../../shared/api/client';
@@ -258,6 +269,15 @@ export function Layout({ children }: LayoutProps) {
                 Симулировать ошибку
               </button>
               <button
+                type="button"
+                className={styles.themeToggle}
+                onClick={() => setIsPresenceOpen((v) => !v)}
+                aria-expanded={isPresenceOpen}
+                aria-controls="presence-popover"
+              >
+                Онлайн-активность
+              </button>
+              <button
                 className={styles.userButton}
                 onClick={handleLogout}
               >
@@ -294,7 +314,12 @@ export function Layout({ children }: LayoutProps) {
       )} */}
 
       {user && isPresenceOpen && (
-        <div className={styles.presencePopover} role="dialog" aria-label="Онлайн-активность">
+        <div
+          className={styles.presencePopover}
+          role="dialog"
+          aria-label="Онлайн-активность"
+          id="presence-popover"
+        >
           <div className={styles.presencePopoverHeader}>
             <span>Онлайн-активность</span>
             <button
@@ -331,20 +356,18 @@ type PresenceMiniChartProps = {
 function PresenceMiniChart({ activity, isLoading }: PresenceMiniChartProps) {
   const visualization = useMemo(() => {
     if (!activity) return null;
-    const width = 240;
-    const height = 64;
-    const paddingX = 10;
-    const paddingY = 8;
+    const presenceHistory = Array.isArray(activity.presenceHistory) ? activity.presenceHistory : [];
+    const recentMessages = Array.isArray(activity.messages?.recent) ? activity.messages?.recent ?? [] : [];
 
     const aggregatedMessages: WorkforceMessageDto[] = [
-      ...activity.presenceHistory.flatMap((h) => h.messages),
-      ...activity.messages.recent,
+      ...presenceHistory.flatMap((h) => h.messages ?? []),
+      ...recentMessages,
     ];
 
     const rangeFrom = activity.range?.from ? new Date(activity.range.from).getTime() : undefined;
     const rangeTo = activity.range?.to ? new Date(activity.range.to).getTime() : undefined;
 
-    const historyWithTs = activity.presenceHistory.map((h, idx) => ({
+    const historyWithTs = presenceHistory.map((h, idx) => ({
       ...h,
       ts: h.changedAt ? new Date(h.changedAt).getTime() : undefined,
       idx,
@@ -378,87 +401,122 @@ function PresenceMiniChart({ activity, isLoading }: PresenceMiniChartProps) {
       }))
       .sort((a, b) => a.ts - b.ts);
 
-    const getX = (ts: number) => paddingX + ((ts - minTime) / range) * (width - paddingX * 2);
+    if (history.length === 0) return null;
 
-    const segments = history.map((item, idx) => {
-      const startX = getX(item.ts);
-      const endX = idx < history.length - 1 ? getX(history[idx + 1].ts) : getX(maxTime);
-      const color = item.status === 'ONLINE' ? 'var(--success, #16a34a)' : 'var(--danger, #ef4444)';
-      return { startX, endX, color, status: item.status };
+    const statusValue = (status: string) => (status === 'ONLINE' ? 1 : 0);
+
+    const chartData: { ts: number; status: number; statusLabel: string }[] = [];
+    const firstStatus = history[0]?.status ?? 'OFFLINE';
+    chartData.push({ ts: minTime, status: statusValue(firstStatus), statusLabel: firstStatus });
+
+    history.forEach((item) => {
+      chartData.push({ ts: item.ts, status: statusValue(item.status), statusLabel: item.status });
     });
 
-    const barY = paddingY + 14;
+    const lastStatus = history[history.length - 1]?.status ?? firstStatus;
+    chartData.push({ ts: maxTime, status: statusValue(lastStatus), statusLabel: lastStatus });
 
-    const messagePoints = aggregatedMessages.map((msg) => {
+    const messagesData = aggregatedMessages.map((msg) => {
       const ts = new Date(msg.timestamp).getTime();
       const clampedTs = Math.min(Math.max(ts, minTime), maxTime);
-      const x = getX(clampedTs);
-      const y = barY;
-      return { x, y, direction: msg.direction };
+      return { ts: clampedTs, y: 1.12, direction: msg.direction };
     });
 
-    const minLabel = new Date(minTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const maxLabel = new Date(maxTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    return { segments, messagePoints, width, height, paddingX, paddingY, barY, minLabel, maxLabel };
+    return {
+      chartData,
+      messagesData,
+      minTime,
+      maxTime,
+    };
   }, [activity]);
+
+  const renderTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const point = payload[0];
+    const ts: number | undefined = point?.payload?.ts;
+    if (!ts) return null;
+    const statusPayload = payload.find((p: any) => p.dataKey === 'status');
+    const statusLabel = statusPayload?.payload?.statusLabel;
+    const directions = payload
+      .filter((p: any) => p.name === 'messages' || p.dataKey === 'y')
+      .map((p: any) => p.payload?.direction)
+      .filter(Boolean);
+
+    return (
+      <div className={styles.tooltipBox}>
+        <div className={styles.tooltipLine}>{new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+        {statusLabel ? <div className={styles.tooltipLine}>Статус: {statusLabel}</div> : null}
+        {directions.length ? <div className={styles.tooltipLine}>Сообщения: {directions.join(', ')}</div> : null}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.presenceCard}>
-      <div className={styles.presenceHeader}>Онлайн-активность</div>
+      <div className={styles.presenceHeaderRow}>
+        <div className={styles.presenceHeader}>Онлайн-активность</div>
+      </div>
       {isLoading ? (
         <div className={styles.presenceSkeleton} aria-label="Загрузка активности" />
       ) : visualization ? (
         <div className={styles.presenceChartWrapper}>
-          <svg
-            viewBox={`0 0 ${visualization.width} ${visualization.height}`}
-            role="img"
-            aria-label="График смены статусов и сообщений"
-            className={styles.presenceChart}
-          >
-            <rect
-              x={visualization.paddingX}
-              y={visualization.barY - 8}
-              width={visualization.width - visualization.paddingX * 2}
-              height={16}
-              rx={8}
-              ry={8}
-              className={styles.statusBarBg}
-            />
-            {visualization.segments.map((seg, idx) => (
-              <rect
-                key={`${seg.startX}-${seg.endX}-${idx}`}
-                x={seg.startX}
-                y={visualization.barY - 7}
-                width={Math.max(2, seg.endX - seg.startX)}
-                height={14}
-                rx={6}
-                ry={6}
-                fill={seg.color}
-                opacity={0.9}
-              />
-            ))}
-            {visualization.messagePoints.map((p, idx) => (
-              <circle
-                key={`${p.x}-${p.y}-${idx}`}
-                cx={p.x}
-                cy={p.y}
-                r={4}
-                className={p.direction === 'inbound' ? styles.dotInbound : styles.dotOutbound}
-              />
-            ))}
-            <text x={visualization.paddingX} y={visualization.height - 6} className={styles.presenceAxisLabel}>
-              {visualization.minLabel}
-            </text>
-            <text
-              x={visualization.width - visualization.paddingX}
-              y={visualization.height - 6}
-              className={styles.presenceAxisLabel}
-              textAnchor="end"
-            >
-              {visualization.maxLabel}
-            </text>
-          </svg>
+          <div className={styles.presenceChart}>
+            <ResponsiveContainer width="100%" height={90}>
+              <ComposedChart data={visualization.chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border, #dbeafe)" />
+                <XAxis
+                  dataKey="ts"
+                  type="number"
+                  domain={[visualization.minTime, visualization.maxTime]}
+                  tickFormatter={(ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  tick={{ fontSize: 10, fill: 'var(--text-subtle)' }}
+                  axisLine={false}
+                  tickLine={false}
+                  stroke="var(--text-subtle)"
+                />
+                <YAxis hide domain={[-0.2, 1.4]} />
+                <Tooltip content={renderTooltip} wrapperStyle={{ outline: 'none' }} />
+                <Area
+                  dataKey="status"
+                  type="stepAfter"
+                  stroke="var(--primary, #2f63e4)"
+                  fill="var(--primary, #2f63e4)"
+                  fillOpacity={0.18}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+                <Scatter
+                  data={visualization.messagesData}
+                  name="messages"
+                  dataKey="y"
+                  yAxisId={0}
+                  shape={(props: { cx?: number; cy?: number; payload?: { direction?: string } }) => {
+                    const direction = props.payload?.direction;
+                    const color = direction === 'inbound' ? 'var(--success, #16a34a)' : 'var(--warning, #f59e0b)';
+                    return (
+                      <circle
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={4}
+                        fill={color}
+                        stroke="var(--surface, #fff)"
+                        strokeWidth={1.5}
+                      />
+                    );
+                  }}
+                  line={false}
+                  isAnimationActive={false}
+                />
+                <Brush
+                  dataKey="ts"
+                  height={14}
+                  stroke="var(--primary, #2f63e4)"
+                  travellerWidth={8}
+                  tickFormatter={(ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
           <div className={styles.presenceLegend}>
             <span className={styles.legendSwatchOnline}>Online</span>
             <span className={styles.legendSwatchOffline}>Offline</span>

@@ -630,6 +630,26 @@
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
+
+.activityOpenButton {
+  width: 100%;
+  min-height: 140px;
+  border-radius: 14px;
+  border: 1px dashed var(--primary);
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.activityOpenButton:hover {
+  background: var(--surface-2);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
 .activityLegendOnline { background: rgba(34, 197, 94, 0.14); color: #15803d; }
 .activityLegendBusy { background: rgba(239, 68, 68, 0.14); color: #b91c1c; }
 .activityLegendAway { background: rgba(251, 191, 36, 0.18); color: #b45309; }
