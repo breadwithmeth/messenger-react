@@ -68,26 +68,26 @@
 }
 
 :root[data-firefox-mode='on'] {
-  --bg: #ff1f1f;
-  --surface: #ff3838;
-  --surface-2: #ff5454;
-  --text: #fff5f5;
-  --text-muted: #ffd4d4;
-  --text-subtle: #ffb0b0;
-  --border: #ff8f8f;
+  --bg: #ffff00;
+  --surface: #fff200;
+  --surface-2: #ffe500;
+  --text: #fff;
+  --text-muted: #0000ff;
+  --text-subtle: #0000ff;
+  --border: #0000ff;
 
-  --primary: #8c0000;
-  --primary-hover: #760000;
-  --on-primary: #fff5f5;
+  --primary: #123999;
+  --primary-hover: #fff;
+  --on-primary: #ffff00;
 
-  --danger: #7a0000;
-  --danger-hover: #640000;
-  --on-danger: #fff5f5;
+  --danger: #0000e6;
+  --danger-hover: #0000cc;
+  --on-danger: #ffff00;
 
-  --focus: rgba(255, 255, 255, 0.45);
+  --focus: rgba(0, 0, 255, 0.4);
 
-  --shadow-sm: 0 1px 0 rgba(122, 0, 0, 0.35), 0 8px 24px rgba(122, 0, 0, 0.25);
-  --shadow-md: 0 1px 0 rgba(122, 0, 0, 0.45), 0 16px 48px rgba(122, 0, 0, 0.35);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 255, 0.35), 0 8px 24px rgba(0, 0, 255, 0.2);
+  --shadow-md: 0 1px 0 rgba(0, 0, 255, 0.45), 0 16px 48px rgba(0, 0, 255, 0.25);
 }
 
 body {
