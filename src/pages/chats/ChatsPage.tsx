@@ -5,7 +5,7 @@ import { Button } from '../../shared/ui/Button/Button';
 import { Input } from '../../shared/ui/Input/Input';
 import { Icon } from '../../shared/ui/Icon/Icon';
 import { Modal } from '../../shared/ui/Modal/Modal';
-import PresenceTimeline, { type PresenceResponse, type PresenceStatus } from '../../shared/ui/PresenceTimeline/PresenceTimeline';
+import type { PresenceResponse, PresenceStatus } from '../../shared/ui/PresenceTimeline/PresenceTimeline';
 import { chatsApi } from '../../features/chats/api/chatsApi';
 import { clientsApi } from '../../features/clients/api/clientsApi';
 import { aiApi } from '../../features/ai/api/aiApi';
