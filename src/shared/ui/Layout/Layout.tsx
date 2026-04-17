@@ -27,6 +27,7 @@ interface LayoutProps {
 }
 
 type ThemeName = 'light' | 'dark' | 'retro8';
+type CrtLevel = 'soft' | 'arcade' | 'crt' | 'vhs';
 
 type ToastItem = {
   id: number;
@@ -51,6 +52,11 @@ export function Layout({ children }: LayoutProps) {
     return localStorage.getItem('retro-sfx') !== 'off';
   });
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [crtLevel, setCrtLevel] = useState<CrtLevel>(() => {
+    if (typeof window === 'undefined') return 'crt';
+    const saved = localStorage.getItem('crt-level');
+    return saved === 'soft' || saved === 'arcade' || saved === 'crt' || saved === 'vhs' ? saved : 'crt';
+  });
   const toastTimeoutsRef = useRef<number[]>([]);
   const trackingLossTimeoutRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -67,6 +73,11 @@ export function Layout({ children }: LayoutProps) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-crt-level', crtLevel);
+    localStorage.setItem('crt-level', crtLevel);
+  }, [crtLevel]);
 
   useEffect(() => {
     localStorage.setItem('retro-sfx', isRetroSfxEnabled ? 'on' : 'off');
@@ -380,6 +391,21 @@ export function Layout({ children }: LayoutProps) {
               >
                 SFX: {isRetroSfxEnabled ? 'ON' : 'OFF'}
               </button>
+              <label className={styles.crtLabel}>
+                Scanline Intensity
+                <select
+                  className={styles.crtSelect}
+                  value={crtLevel}
+                  onChange={(event) => setCrtLevel(event.target.value as CrtLevel)}
+                  disabled={theme !== 'retro8'}
+                  aria-label="CRT intensity"
+                >
+                  <option value="soft">Soft</option>
+                  <option value="arcade">Arcade</option>
+                  <option value="crt">CRT</option>
+                  <option value="vhs">VHS Broken</option>
+                </select>
+              </label>
               <button
                 type="button"
                 className={styles.themeToggle}

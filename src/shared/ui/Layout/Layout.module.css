@@ -496,6 +496,29 @@
   border-color: var(--primary);
 }
 
+.crtLabel {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.crtSelect {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.crtSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .starRating {
   display: flex;
   align-items: center;

@@ -39,6 +39,44 @@ type TranslationState = {
   error?: string;
 };
 
+type MessageContextMenuState = {
+  x: number;
+  y: number;
+  message: Message;
+};
+
+type DamagePopup = {
+  id: number;
+  text: string;
+  kind: 'alert' | 'critical';
+};
+
+type PixelBurst = {
+  id: number;
+  x: number;
+  y: number;
+  tone: 'danger' | 'success' | 'neutral';
+  size: number;
+};
+
+type AchievementToast = {
+  id: number;
+  title: string;
+  tier: 'COMMON' | 'ELITE' | 'BOSS';
+};
+
+type AchievementId =
+  | 'firstReply'
+  | 'messages100'
+  | 'noUnreadChats'
+  | 'bossTicketClosed'
+  | 'voiceRunner'
+  | 'mediaCrafter'
+  | 'translator'
+  | 'questCommander'
+  | 'nightShift'
+  | 'urgentHunter';
+
 const formatTimeAgo = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
@@ -82,6 +120,13 @@ const getQuestStatus = (chat: Chat) => {
   return 'COMPLETED';
 };
 
+const getNpcRarity = (chat: Chat | null): 'COMMON' | 'ELITE' | 'BOSS' => {
+  if (!chat) return 'COMMON';
+  if (chat.priority === 'urgent') return 'BOSS';
+  if (chat.priority === 'high') return 'ELITE';
+  return 'COMMON';
+};
+
 const toSlug = (value?: string | null) => (value || '').toLowerCase().replace(/\s+/g, '_');
 
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
@@ -123,9 +168,57 @@ const formatPhoneInput = (raw: string) => {
   return result.trim();
 };
 
-const renderIconLabel = (icon: string, label: string) => (
+type PixelIconName = 'user' | 'close' | 'call' | 'check' | 'take' | 'release';
+
+const PIXEL_ICON_SHAPES: Record<PixelIconName, Array<[number, number, number, number]>> = {
+  user: [
+    [6, 4, 4, 4],
+    [4, 9, 8, 2],
+    [3, 11, 10, 2],
+  ],
+  close: [
+    [4, 4, 2, 2],
+    [10, 4, 2, 2],
+    [6, 6, 4, 4],
+    [4, 10, 2, 2],
+    [10, 10, 2, 2],
+  ],
+  call: [
+    [3, 4, 3, 2],
+    [6, 6, 2, 2],
+    [8, 8, 2, 2],
+    [10, 10, 3, 2],
+    [4, 12, 4, 2],
+  ],
+  check: [
+    [3, 9, 3, 2],
+    [6, 11, 2, 2],
+    [8, 9, 2, 2],
+    [10, 7, 2, 2],
+  ],
+  take: [
+    [3, 8, 10, 2],
+    [9, 4, 4, 2],
+    [9, 12, 4, 2],
+  ],
+  release: [
+    [3, 8, 10, 2],
+    [3, 4, 4, 2],
+    [3, 12, 4, 2],
+  ],
+};
+
+const renderPixelIcon = (name: PixelIconName) => (
+  <svg className={styles.pixelIcon} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    {PIXEL_ICON_SHAPES[name].map(([x, y, width, height], idx) => (
+      <rect key={`${name}-${idx}`} x={x} y={y} width={width} height={height} />
+    ))}
+  </svg>
+);
+
+const renderIconLabel = (icon: PixelIconName, label: string) => (
   <span className={styles.iconLabel}>
-    <span aria-hidden="true">{icon}</span>
+    <span className={styles.iconGlyph}>{renderPixelIcon(icon)}</span>
     <span className={styles.iconLabelText}>{label}</span>
   </span>
 );
@@ -166,6 +259,29 @@ export function ChatsPage() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [sendError, setSendError] = useState('');
+  const [activeVoiceMessageId, setActiveVoiceMessageId] = useState<number | null>(null);
+  const [playedVoiceCount, setPlayedVoiceCount] = useState(0);
+  const [messageContextMenu, setMessageContextMenu] = useState<MessageContextMenuState | null>(null);
+  const [isPauseMenuOpen, setIsPauseMenuOpen] = useState(false);
+  const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
+  const [urgentIncomingMessageId, setUrgentIncomingMessageId] = useState<number | null>(null);
+  const [isRetroMiniMode, setIsRetroMiniMode] = useState(false);
+  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
+  const [pixelBursts, setPixelBursts] = useState<PixelBurst[]>([]);
+  const [achievementToast, setAchievementToast] = useState<AchievementToast | null>(null);
+  const [bootStepIndex, setBootStepIndex] = useState(0);
+  const [achievements, setAchievements] = useState<Record<AchievementId, boolean>>({
+    firstReply: false,
+    messages100: false,
+    noUnreadChats: false,
+    bossTicketClosed: false,
+    voiceRunner: false,
+    mediaCrafter: false,
+    translator: false,
+    questCommander: false,
+    nightShift: false,
+    urgentHunter: false,
+  });
   const [translationsByMessageId, setTranslationsByMessageId] = useState<Record<number, TranslationState>>({});
   const [pagination, setPagination] = useState({
     total: 0,
@@ -248,6 +364,11 @@ export function ChatsPage() {
   const isRetroTheme =
     typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'retro8';
 
+  const bootSequenceSteps = useMemo(
+    () => ['INIT MEMORY', 'LOAD NPC DIALOGUE', 'SYNC QUEST FLAGS', 'READY'],
+    []
+  );
+
   const currentTicketNumber = useMemo(() => {
     if (!selectedChat?.ticketNumber) return '';
     return String(selectedChat.ticketNumber);
@@ -260,10 +381,430 @@ export function ChatsPage() {
 
   const retroQueueCount = useMemo(() => chats.filter((c) => c.unreadCount > 0).length, [chats]);
   const retroUrgentCount = useMemo(() => chats.filter((c) => c.priority === 'urgent').length, [chats]);
+  const retroUnreadTotal = useMemo(() => chats.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0), [chats]);
+  const retroTranslatedCount = useMemo(
+    () => Object.values(translationsByMessageId).filter((state) => state.status === 'done').length,
+    [translationsByMessageId]
+  );
+  const retroVoiceActiveCount = useMemo(
+    () => messages.filter((msg) => msg.type === 'audio' && Boolean(msg.mediaUrl)).length,
+    [messages]
+  );
   const retroSelectedQuest = useMemo(() => {
     if (!selectedChat) return 'NO TARGET';
     return getQuestStatus(selectedChat);
   }, [selectedChat]);
+
+  const combatBars = useMemo(() => {
+    const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+    const relationBase = selectedChat ? 48 + (selectedChat.assignedUser ? 16 : 0) + Math.min(26, messages.filter((m) => m.fromMe).length / 2) : 0;
+    const relation = clamp(relationBase);
+
+    const riskBase = selectedChat
+      ? (selectedChat.priority === 'urgent'
+          ? 88
+          : selectedChat.priority === 'high'
+            ? 70
+            : selectedChat.priority === 'medium'
+              ? 48
+              : 30) + Math.min(16, (selectedChat.unreadCount ?? 0) * 2)
+      : 0;
+    const risk = clamp(riskBase);
+
+    const slaBase = currentTicket
+      ? currentTicket.status === 'closed'
+        ? 100
+        : currentTicket.status === 'resolved'
+          ? 84
+          : currentTicket.status === 'in_progress'
+            ? 70
+            : 58
+      : selectedChat
+        ? 62
+        : 0;
+    const sla = clamp(slaBase - Math.min(18, retroUnreadTotal));
+
+    return [
+      { label: 'RELATION', value: relation, tone: 'good' as const },
+      { label: 'RISK', value: risk, tone: 'danger' as const },
+      { label: 'SLA', value: sla, tone: 'neutral' as const },
+    ];
+  }, [currentTicket, messages, retroUnreadTotal, selectedChat]);
+
+  const retroRadarEvents = useMemo(
+    () => [
+      {
+        id: 'urgent',
+        label: 'URGENT',
+        value: retroUrgentCount,
+        active: retroUrgentCount > 0,
+        tone: 'danger' as const,
+      },
+      {
+        id: 'unread',
+        label: 'UNREAD',
+        value: retroUnreadTotal,
+        active: retroUnreadTotal > 0,
+        tone: 'warn' as const,
+      },
+      {
+        id: 'translated',
+        label: 'TRANSLATED',
+        value: retroTranslatedCount,
+        active: retroTranslatedCount > 0,
+        tone: 'good' as const,
+      },
+      {
+        id: 'voice',
+        label: 'VOICE',
+        value: retroVoiceActiveCount,
+        active: retroVoiceActiveCount > 0,
+        tone: 'neutral' as const,
+      },
+    ],
+    [retroTranslatedCount, retroUnreadTotal, retroUrgentCount, retroVoiceActiveCount]
+  );
+
+  const retroQuestProgress = useMemo(() => {
+    if (!selectedChat) return 0;
+    const status = getQuestStatus(selectedChat);
+    if (status === 'COMPLETED') return 100;
+    if (status === 'IN PROGRESS') return 65;
+    if (status === 'BOSS FIGHT') return 85;
+    return 30;
+  }, [selectedChat]);
+
+  const retroQuestHistory = useMemo(() => {
+    const latest = messages.slice(-4).map((m) => {
+      const stamp = formatDateTime(m.timestamp) || '--:--';
+      const source = m.fromMe ? 'PLAYER' : 'NPC';
+      return `${stamp} ${source} EVENT`;
+    });
+    if (latest.length > 0) return latest.reverse();
+    return ['NO RECENT EVENTS'];
+  }, [messages]);
+
+  const retroAchievementList = useMemo(
+    () => [
+      {
+        id: 'firstReply' as const,
+        label: 'First Response',
+        description: 'Send your first reply',
+        tier: 'COMMON' as const,
+      },
+      {
+        id: 'messages100' as const,
+        label: 'Comms Veteran',
+        description: 'Send 100 replies',
+        tier: 'ELITE' as const,
+      },
+      {
+        id: 'noUnreadChats' as const,
+        label: 'Inbox Zero',
+        description: 'Clear all unread chats',
+        tier: 'ELITE' as const,
+      },
+      {
+        id: 'bossTicketClosed' as const,
+        label: 'Boss Defeated',
+        description: 'Close urgent ticket',
+        tier: 'BOSS' as const,
+      },
+      {
+        id: 'voiceRunner' as const,
+        label: 'Voice Runner',
+        description: 'Play 5 voice logs',
+        tier: 'COMMON' as const,
+      },
+      {
+        id: 'mediaCrafter' as const,
+        label: 'Media Crafter',
+        description: 'Use 3 media types',
+        tier: 'ELITE' as const,
+      },
+      {
+        id: 'translator' as const,
+        label: 'Lore Translator',
+        description: 'Complete 3 translations',
+        tier: 'COMMON' as const,
+      },
+      {
+        id: 'questCommander' as const,
+        label: 'Quest Commander',
+        description: 'Handle 3 assigned chats',
+        tier: 'ELITE' as const,
+      },
+      {
+        id: 'nightShift' as const,
+        label: 'Night Shift',
+        description: 'Send message after 22:00',
+        tier: 'COMMON' as const,
+      },
+      {
+        id: 'urgentHunter' as const,
+        label: 'Urgent Hunter',
+        description: 'Read all urgent chats',
+        tier: 'BOSS' as const,
+      },
+    ],
+    []
+  );
+
+  const achievementMetaById = useMemo(
+    () =>
+      Object.fromEntries(
+        retroAchievementList.map((achievement) => [achievement.id, { label: achievement.label, tier: achievement.tier }])
+      ) as Record<AchievementId, { label: string; tier: 'COMMON' | 'ELITE' | 'BOSS' }>,
+    [retroAchievementList]
+  );
+
+  const playedVoiceMessageIdsRef = useRef<Set<number>>(new Set());
+
+  const spawnPixelBurst = useCallback((tone: PixelBurst['tone']) => {
+    const center = tone === 'danger' ? { x: 76, y: 18 } : tone === 'success' ? { x: 72, y: 24 } : { x: 68, y: 20 };
+    const particles: PixelBurst[] = Array.from({ length: 14 }).map((_, idx) => ({
+      id: Date.now() + idx,
+      x: center.x + (Math.random() * 12 - 6),
+      y: center.y + (Math.random() * 10 - 5),
+      tone,
+      size: 4 + Math.floor(Math.random() * 4),
+    }));
+    setPixelBursts((prev) => [...prev, ...particles].slice(-48));
+    window.setTimeout(() => {
+      setPixelBursts((prev) => prev.filter((particle) => !particles.some((item) => item.id === particle.id)));
+    }, 720);
+  }, []);
+
+  useEffect(() => {
+    // Stop visualizer when switching chat to avoid stale active state.
+    setActiveVoiceMessageId(null);
+  }, [selectedChatId]);
+
+  const lastIncomingUrgentMessageIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isRetroTheme || selectedChat?.priority !== 'urgent') {
+      setUrgentIncomingMessageId(null);
+      lastIncomingUrgentMessageIdRef.current = null;
+      return;
+    }
+
+    const latestIncoming = [...messages].reverse().find((message) => !message.fromMe);
+    if (!latestIncoming) return;
+
+    const previousId = lastIncomingUrgentMessageIdRef.current;
+    lastIncomingUrgentMessageIdRef.current = latestIncoming.id;
+    if (previousId === null || previousId === latestIncoming.id) return;
+
+    setUrgentIncomingMessageId(latestIncoming.id);
+    spawnPixelBurst('danger');
+    const timeout = window.setTimeout(() => {
+      setUrgentIncomingMessageId((current) => (current === latestIncoming.id ? null : current));
+    }, 1400);
+    return () => window.clearTimeout(timeout);
+  }, [isRetroTheme, messages, selectedChat?.priority, spawnPixelBurst]);
+
+  useEffect(() => {
+    if (!isLoading || chats.length > 0) return;
+    setBootStepIndex(0);
+    const interval = window.setInterval(() => {
+      setBootStepIndex((prev) => (prev + 1) % bootSequenceSteps.length);
+    }, 420);
+    return () => window.clearInterval(interval);
+  }, [bootSequenceSteps.length, chats.length, isLoading]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('retro-achievements');
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved) as Partial<Record<AchievementId, boolean>>;
+      setAchievements((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      // ignore invalid local storage values
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('retro-achievements', JSON.stringify(achievements));
+  }, [achievements]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('retro-mini-mode');
+    if (!saved) return;
+    setIsRetroMiniMode(saved === '1');
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('retro-mini-mode', isRetroMiniMode ? '1' : '0');
+  }, [isRetroMiniMode]);
+
+  useEffect(() => {
+    setAchievements((prev) => {
+      const next = { ...prev };
+      const sentByMe = messages.filter((m) => m.fromMe).length;
+      const sentByMeHours = messages
+        .filter((m) => m.fromMe)
+        .map((m) => new Date(m.timestamp).getHours())
+        .filter((h) => !Number.isNaN(h));
+      const translatedCount = Object.values(translationsByMessageId).filter((state) => state.status === 'done').length;
+      const assignedCount = chats.filter((c) => c.assignedUser).length;
+      const hasUrgentUnread = chats.some((c) => c.priority === 'urgent' && (c.unreadCount ?? 0) > 0);
+      const mediaTypesUsed = new Set(
+        messages
+          .filter((m) => m.fromMe && (m.type === 'image' || m.type === 'video' || m.type === 'audio' || m.type === 'document'))
+          .map((m) => m.type)
+      );
+
+      if (sentByMe >= 1) next.firstReply = true;
+      if (sentByMe >= 100) next.messages100 = true;
+      if (chats.length > 0 && chats.every((c) => (c.unreadCount ?? 0) === 0)) next.noUnreadChats = true;
+      if (currentTicket?.status === 'closed' && currentTicket?.priority === 'urgent') next.bossTicketClosed = true;
+      if (playedVoiceCount >= 5) next.voiceRunner = true;
+      if (mediaTypesUsed.size >= 3) next.mediaCrafter = true;
+      if (translatedCount >= 3) next.translator = true;
+      if (assignedCount >= 3) next.questCommander = true;
+      if (sentByMeHours.some((h) => h >= 22 || h < 6)) next.nightShift = true;
+      if (!hasUrgentUnread && chats.some((c) => c.priority === 'urgent')) next.urgentHunter = true;
+      return next;
+    });
+  }, [messages, chats, currentTicket?.priority, currentTicket?.status, translationsByMessageId, playedVoiceCount]);
+
+  const achievementSnapshotRef = useRef<Record<AchievementId, boolean>>(achievements);
+  useEffect(() => {
+    const previous = achievementSnapshotRef.current;
+    const unlocked = (Object.keys(achievements) as AchievementId[]).find((id) => achievements[id] && !previous[id]);
+    achievementSnapshotRef.current = achievements;
+    if (!unlocked) return;
+
+    const meta = achievementMetaById[unlocked];
+    setAchievementToast({ id: Date.now(), title: meta.label, tier: meta.tier });
+    spawnPixelBurst('success');
+    const timeout = window.setTimeout(() => setAchievementToast(null), 2200);
+    return () => window.clearTimeout(timeout);
+  }, [achievementMetaById, achievements, spawnPixelBurst]);
+
+  useEffect(() => {
+    if (!isRetroTheme) {
+      setIsPauseMenuOpen(false);
+      return;
+    }
+
+    const handleEscPause = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      const target = event.target as HTMLElement | null;
+      const isInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT';
+      if (isInput && !isPauseMenuOpen) return;
+      event.preventDefault();
+      setIsPauseMenuOpen((prev) => !prev);
+    };
+
+    window.addEventListener('keydown', handleEscPause);
+    return () => window.removeEventListener('keydown', handleEscPause);
+  }, [isPauseMenuOpen, isRetroTheme]);
+
+  const lastRetroCountersRef = useRef({ unread: 0, urgent: 0 });
+  useEffect(() => {
+    const unread = chats.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
+    const urgent = chats.filter((c) => c.priority === 'urgent' && (c.unreadCount ?? 0) > 0).length;
+    const previous = lastRetroCountersRef.current;
+    const popups: DamagePopup[] = [];
+
+    if (unread > previous.unread) {
+      popups.push({ id: Date.now(), text: `+${unread - previous.unread} ALERT`, kind: 'alert' });
+    }
+    if (urgent > previous.urgent) {
+      popups.push({ id: Date.now() + 1, text: 'CRITICAL', kind: 'critical' });
+    }
+
+    if (popups.length > 0) {
+      setDamagePopups((prev) => [...prev, ...popups].slice(-4));
+      popups.forEach((popup) => {
+        window.setTimeout(() => {
+          setDamagePopups((prev) => prev.filter((item) => item.id !== popup.id));
+        }, 1400);
+      });
+    }
+
+    lastRetroCountersRef.current = { unread, urgent };
+  }, [chats]);
+
+  useEffect(() => {
+    const handleClose = () => setMessageContextMenu(null);
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMessageContextMenu(null);
+    };
+
+    window.addEventListener('click', handleClose);
+    window.addEventListener('resize', handleClose);
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('click', handleClose);
+      window.removeEventListener('resize', handleClose);
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, []);
+
+  const openMessageContextMenu = useCallback((event: React.MouseEvent, message: Message) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const menuWidth = 240;
+    const menuHeight = 170;
+    const x = Math.min(event.clientX, window.innerWidth - menuWidth - 12);
+    const y = Math.min(event.clientY, window.innerHeight - menuHeight - 12);
+    setMessageContextMenu({ x: Math.max(8, x), y: Math.max(8, y), message });
+  }, []);
+
+  const resolveVoiceThemeClass = useCallback(
+    (message: Message) => {
+      if (message.fromMe) return styles.voiceThemePlayer;
+      if (getNpcRarity(selectedChat) === 'BOSS') return styles.voiceThemeBoss;
+      return styles.voiceThemeNpc;
+    },
+    [selectedChat]
+  );
+
+  const resolveMessageRarityClass = useCallback(
+    (message: Message) => {
+      if (message.fromMe) return '';
+      const rarity = getNpcRarity(selectedChat);
+      if (rarity === 'BOSS') return styles.npcRarityBoss;
+      if (rarity === 'ELITE') return styles.npcRarityElite;
+      return styles.npcRarityCommon;
+    },
+    [selectedChat]
+  );
+
+  const renderRetroTimeRadar = useCallback((timestamp: string) => {
+    const date = new Date(timestamp);
+    const minutes = Number.isNaN(date.getTime()) ? 0 : date.getMinutes();
+    const activeIndex = Math.floor((minutes / 60) * 8);
+    return (
+      <span className={styles.retroTimeRadar} aria-label={formatDateTime(timestamp)}>
+        {Array.from({ length: 8 }).map((_, idx) => (
+          <span key={`rt-${timestamp}-${idx}`} className={`${styles.retroTimeDot} ${idx === activeIndex ? styles.retroTimeDotActive : ''}`} />
+        ))}
+      </span>
+    );
+  }, []);
+
+  const handleCopyMessageText = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    try {
+      await navigator.clipboard.writeText(trimmed);
+      emitToast('Текст сообщения скопирован');
+    } catch {
+      emitToast('Не удалось скопировать');
+    } finally {
+      setMessageContextMenu(null);
+    }
+  }, []);
+
+  const handleOpenMessageMedia = useCallback((message: Message) => {
+    if (!message.mediaUrl) return;
+    window.open(message.mediaUrl, '_blank', 'noopener,noreferrer');
+    setMessageContextMenu(null);
+  }, []);
 
   // const togglePinChat = useCallback(() => undefined, []);
 
@@ -525,6 +1066,10 @@ export function ChatsPage() {
 
   const handleChatClick = useCallback(
     (chatId: number) => {
+      if (isRetroTheme) {
+        setIsSceneTransitioning(true);
+        window.setTimeout(() => setIsSceneTransitioning(false), 280);
+      }
       setSelectedChatId(chatId);
       setMessages([]);
       setMessagesError('');
@@ -539,7 +1084,7 @@ export function ChatsPage() {
       setMessagesPagination((prev) => ({ ...prev, offset: 0, hasMore: false, total: 0 }));
       messagesPaginationRef.current = { ...messagesPaginationRef.current, offset: 0, hasMore: false };
     },
-    [setSelectedChatId]
+    [isRetroTheme, setSelectedChatId]
   );
 
   const getFilteredChats = useCallback((): Chat[] => {
@@ -661,9 +1206,11 @@ export function ChatsPage() {
     try {
       await action();
       await loadCurrentTicket();
+      return true;
     } catch (err) {
       if (err instanceof NetworkError) setTicketActionError(err.message);
       else setTicketActionError(fallbackError);
+      return false;
     } finally {
       setIsTicketActionLoading(false);
     }
@@ -695,11 +1242,15 @@ export function ChatsPage() {
 
   const handleCloseTicket = useCallback(async () => {
     if (!currentTicketNumber) return;
-    await withTicketAction(
+    const success = await withTicketAction(
       () => ticketsApi.closeTicket(currentTicketNumber),
       'Не удалось закрыть тикет'
     );
-  }, [currentTicketNumber, withTicketAction]);
+    if (!success) return;
+    setTicketActionToast('Boss objective closed');
+    spawnPixelBurst('success');
+    window.setTimeout(() => setTicketActionToast(''), 2200);
+  }, [currentTicketNumber, spawnPixelBurst, withTicketAction]);
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
@@ -1474,14 +2025,41 @@ export function ChatsPage() {
     }
 
     if (message.type === 'audio' && message.mediaUrl) {
+      const isVoiceActive = activeVoiceMessageId === message.id;
       return (
         <>
-          <audio
-            className={styles.messageMediaAudio}
-            controls
-            preload="metadata"
-            src={message.mediaUrl}
-          />
+          <div
+            className={`${styles.messageMediaAudioWrap} ${resolveVoiceThemeClass(message)} ${
+              isVoiceActive ? styles.messageMediaAudioWrapActive : ''
+            }`}
+            onContextMenu={(event) => openMessageContextMenu(event, message)}
+          >
+            <audio
+              className={styles.messageMediaAudio}
+              controls
+              preload="metadata"
+              src={message.mediaUrl}
+              onContextMenu={(event) => openMessageContextMenu(event, message)}
+              onPlay={() => {
+                if (!playedVoiceMessageIdsRef.current.has(message.id)) {
+                  playedVoiceMessageIdsRef.current.add(message.id);
+                  setPlayedVoiceCount(playedVoiceMessageIdsRef.current.size);
+                }
+                setActiveVoiceMessageId(message.id);
+              }}
+              onPause={() => setActiveVoiceMessageId((current) => (current === message.id ? null : current))}
+              onEnded={() => setActiveVoiceMessageId((current) => (current === message.id ? null : current))}
+            />
+            <div className={styles.voiceVisualizer} aria-hidden="true">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <span
+                  key={`bar-${message.id}-${idx}`}
+                  className={`${styles.voiceVisualizerBar} ${isVoiceActive ? styles.voiceVisualizerBarActive : ''}`}
+                  style={{ animationDelay: `${idx * 0.08}s` }}
+                />
+              ))}
+            </div>
+          </div>
           {hasText && <p className={styles.messageText}>{renderWhatsAppText(message.content)}</p>}
         </>
       );
@@ -1561,6 +2139,10 @@ export function ChatsPage() {
         <div
           className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''} ${
             isRetroTheme && selectedChat?.priority === 'urgent' ? styles.retroGlitchEvent : ''
+          } ${isSceneTransitioning ? styles.sceneTransitioning : ''} ${
+            isRetroTheme && isRetroMiniMode ? styles.retroMiniMode : ''
+          } ${
+            isRetroTheme && selectedChat?.priority === 'urgent' && urgentIncomingMessageId ? styles.panicFlash : ''
           }`}
         >
           <aside className={styles.sidebar}>
@@ -1705,32 +2287,77 @@ export function ChatsPage() {
 
             {isRetroTheme && (
               <div className={styles.retroRadarCard} aria-label="Retro radar">
-                <div className={styles.retroRadarHeader}>RADAR / QUEUE</div>
+                <div className={styles.retroRadarHeader}>
+                  <span>RADAR / QUEUE</span>
+                  <button
+                    type="button"
+                    className={styles.retroMiniToggle}
+                    onClick={() => setIsRetroMiniMode((prev) => !prev)}
+                    aria-label={isRetroMiniMode ? 'Обычный размер HUD' : 'Мини размер HUD'}
+                    title={isRetroMiniMode ? 'HUD: Normal' : 'HUD: Mini'}
+                  >
+                    {isRetroMiniMode ? 'NORMAL' : 'MINI'}
+                  </button>
+                </div>
                 <div className={styles.retroRadarGrid}>
-                  {Array.from({ length: Math.max(6, Math.min(18, retroQueueCount + 6)) }).map((_, idx) => (
+                  {Array.from({ length: Math.max(6, Math.min(10, retroQueueCount + 4)) }).map((_, idx) => (
                     <span
                       key={`radar-${idx}`}
                       className={`${styles.retroRadarDot} ${idx < retroQueueCount ? styles.retroRadarDotActive : ''}`}
                     />
                   ))}
                 </div>
-                <div className={styles.retroRadarMeta}>ALERTS: {retroUrgentCount}</div>
+                <div className={styles.retroRadarFooter}>
+                  <div className={styles.retroRadarMeta}>ALERTS: {retroUrgentCount}</div>
+                  <div className={styles.retroRadarEvents}>
+                    {retroRadarEvents.slice(0, 2).map((event) => (
+                    <span
+                      key={event.id}
+                      className={`${styles.retroRadarEvent} ${
+                        event.active ? styles.retroRadarEventActive : ''
+                      } ${
+                        event.tone === 'danger'
+                          ? styles.retroRadarEventDanger
+                          : event.tone === 'warn'
+                            ? styles.retroRadarEventWarn
+                            : event.tone === 'good'
+                              ? styles.retroRadarEventGood
+                              : styles.retroRadarEventNeutral
+                      }`}
+                    >
+                      {event.label}:{' '}
+                      <strong>{event.value}</strong>
+                    </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             
             <div className={styles.chatList} ref={chatListRef}>
               {isLoading && chats.length === 0 ? (
-                <div className={styles.skeletonList} aria-label="Загрузка чатов">
-                  {Array.from({ length: 5 }).map((_, idx) => (
-                    <div key={idx} className={styles.skeletonItem}>
-                      <div className={styles.skeletonAvatar} />
-                      <div className={styles.skeletonBody}>
-                        <div className={styles.skeletonLineShort} />
-                        <div className={styles.skeletonLine} />
+                isRetroTheme ? (
+                  <div className={styles.bootSequence} aria-label="Boot sequence">
+                    <div className={styles.bootTitle}>CARTRIDGE BOOT</div>
+                    {bootSequenceSteps.map((step, idx) => (
+                      <div key={step} className={`${styles.bootLine} ${idx <= bootStepIndex ? styles.bootLineActive : ''}`}>
+                        {idx <= bootStepIndex ? '>' : ' '} {step}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.skeletonList} aria-label="Загрузка чатов">
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <div key={idx} className={styles.skeletonItem}>
+                        <div className={styles.skeletonAvatar} />
+                        <div className={styles.skeletonBody}>
+                          <div className={styles.skeletonLineShort} />
+                          <div className={styles.skeletonLine} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : error ? (
                 <div className={styles.error}>
                   <p className={styles.errorText}>{error}</p>
@@ -1797,6 +2424,15 @@ export function ChatsPage() {
                                 <span className={styles.myBadge}>Мой</span>
                               ) : null}
                               {isRetroTheme ? <span className={styles.questBadge}>{getQuestStatus(chat)}</span> : null}
+                              {isRetroTheme ? (
+                                <span className={styles.statusEffects}>
+                                  {chat.status === 'closed' ? <span className={styles.statusEffectChip}>SILENCED</span> : null}
+                                  {(chat.priority === 'high' || chat.priority === 'urgent') ? (
+                                    <span className={styles.statusEffectChip}>PRIORITY</span>
+                                  ) : null}
+                                  {chat.assignedUser ? <span className={styles.statusEffectChip}>ASSIGNED</span> : null}
+                                </span>
+                              ) : null}
                             </div>
                             <div className={styles.chatSubtitleRow}>
                               <span className={styles.channelBadge}>{formatChannelLabel(chat.channel)}</span>
@@ -1836,7 +2472,7 @@ export function ChatsPage() {
 
           <main className={styles.content}>
             {selectedChatId ? (
-              <div className={styles.chatWindow}>
+              <div className={`${styles.chatWindow} ${isSceneTransitioning ? styles.chatWindowSceneTransition : ''}`}>
                 <div className={styles.chatHeaderPanel}>
                   <div className={styles.chatTopBar}>
                     <button className={styles.chatTopIcon} type="button" aria-label="Назад">
@@ -1866,6 +2502,28 @@ export function ChatsPage() {
                               </div>
                               {currentChat?.unreadCount ? (
                                 <div className={styles.chatTopUnread}>Непрочитано: {currentChat.unreadCount}</div>
+                              ) : null}
+                              {isRetroTheme ? (
+                                <div className={styles.combatBars}>
+                                  {combatBars.map((bar) => (
+                                    <div key={bar.label} className={styles.combatBarRow}>
+                                      <span className={styles.combatBarLabel}>{bar.label}</span>
+                                      <div className={styles.combatBarTrack}>
+                                        <div
+                                          className={`${styles.combatBarFill} ${
+                                            bar.tone === 'danger'
+                                              ? styles.combatBarFillDanger
+                                              : bar.tone === 'good'
+                                                ? styles.combatBarFillGood
+                                                : styles.combatBarFillNeutral
+                                          }`}
+                                          style={{ width: `${bar.value}%` }}
+                                        />
+                                      </div>
+                                      <span className={styles.combatBarValue}>{bar.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
                               ) : null}
                               {currentTicketNumber && (
                                 <div className={styles.chatTopTicketMeta}>
@@ -1911,9 +2569,16 @@ export function ChatsPage() {
                     {currentTicketNumber && (
                       <>
                         {isLoadingTicket ? (
-                          <span className={styles.chatTopTicketState}>
-                            <span className={styles.spinner} aria-label="Загрузка" />
-                          </span>
+                          isRetroTheme ? (
+                            <span className={styles.chatTopTicketSkeleton} aria-label="Loading ticket data">
+                              <span className={styles.chatTopTicketSkeletonLine} />
+                              <span className={styles.chatTopTicketSkeletonLineShort} />
+                            </span>
+                          ) : (
+                            <span className={styles.chatTopTicketState}>
+                              <span className={styles.spinner} aria-label="Загрузка" />
+                            </span>
+                          )
                         ) : ticketError ? (
                           <span className={styles.chatTopTicketError}>{ticketError}</span>
                         ) : currentTicket ? (
@@ -1952,7 +2617,7 @@ export function ChatsPage() {
                               onClick={() => void handleAssignTicketToMe()}
                               disabled={!user || isTicketActionLoading}
                             >
-                              {renderIconLabel('👤', 'Мне')}
+                              {renderIconLabel('user', 'Мне')}
                             </Button>
 
                             <Button
@@ -1961,7 +2626,7 @@ export function ChatsPage() {
                               onClick={() => void handleCloseTicket()}
                               disabled={isTicketActionLoading || currentTicket.status === 'closed'}
                             >
-                              {renderIconLabel('✕', 'Закрыть')}
+                              {renderIconLabel('close', 'Закрыть')}
                             </Button>
 
                             {ticketActionError ? (
@@ -1984,7 +2649,7 @@ export function ChatsPage() {
                       disabled={!selectedChatPhone}
                       title={selectedChatPhone ? `Позвонить: ${selectedChatPhone}` : 'Нет номера для звонка'}
                     >
-                      {renderIconLabel('📞', 'Звонок')}
+                      {renderIconLabel('call', 'Звонок')}
                     </button>
                     <button
                       className={`${styles.chatTopAction} ${styles.chatTopGhost}`}
@@ -1992,7 +2657,7 @@ export function ChatsPage() {
                       onClick={handleMarkChatRead}
                       title="Отметить чат прочитанным"
                     >
-                      {renderIconLabel('✓', 'Прочесть')}
+                      {renderIconLabel('check', 'Прочесть')}
                     </button>
 
                     <button
@@ -2002,7 +2667,10 @@ export function ChatsPage() {
                       disabled={!user || isAssigningChat}
                       title={chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять'}
                     >
-                      {renderIconLabel('👤', chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять')}
+                      {renderIconLabel(
+                        chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'release' : 'take',
+                        chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять'
+                      )}
                     </button>
                   </div>
                   </div>
@@ -2029,9 +2697,23 @@ export function ChatsPage() {
                     </button>
                   )}
                   {isLoadingMessages ? (
-                    <div className={styles.empty}>
-                      <div className={styles.loading}>Загрузка сообщений...</div>
-                    </div>
+                    isRetroTheme ? (
+                      <div className={styles.retroMessageSkeletonList} aria-label="Loading messages">
+                        {Array.from({ length: 6 }).map((_, idx) => (
+                          <div
+                            key={`rmsg-sk-${idx}`}
+                            className={`${styles.retroMessageSkeleton} ${idx % 2 === 0 ? styles.retroMessageSkeletonOwn : ''}`}
+                          >
+                            <span className={styles.retroMessageSkeletonLine} />
+                            <span className={styles.retroMessageSkeletonLineShort} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.empty}>
+                        <div className={styles.loading}>Загрузка сообщений...</div>
+                      </div>
+                    )
                   ) : messagesError ? (
                     <div className={styles.empty}>
                       <div className={styles.error}>
@@ -2053,7 +2735,7 @@ export function ChatsPage() {
                       {isLoadingMoreMessages && (
                         <div className={styles.moreLoading}>Загрузка...</div>
                       )}
-                      {messages.map((message) => {
+                      {messages.map((message, idx) => {
                         const time = new Date(message.timestamp).toLocaleString('ru-RU', {
                           day: '2-digit',
                           month: '2-digit',
@@ -2078,7 +2760,11 @@ export function ChatsPage() {
                             key={message.id}
                             className={`${styles.message} ${
                               message.fromMe ? styles.messageOwn : styles.messageOther
+                            } ${resolveMessageRarityClass(message)} ${isRetroTheme ? styles.messageAppear : ''} ${
+                              urgentIncomingMessageId === message.id ? styles.messageUrgentPulse : ''
                             }`}
+                            style={isRetroTheme ? { animationDelay: `${Math.min(idx, 12) * 18}ms` } : undefined}
+                            onContextMenu={(event) => openMessageContextMenu(event, message)}
                           >
                             <div className={styles.messageContent}>
                               {isRetroTheme && !message.fromMe ? (
@@ -2106,7 +2792,9 @@ export function ChatsPage() {
                                   Ответственный: {message.responsibleUser.name || message.responsibleUser.email}
                                 </div>
                               ) : null}
-                              <span className={styles.messageTime}>{time}</span>
+                              <span className={styles.messageTime}>
+                                {isRetroTheme ? renderRetroTimeRadar(message.timestamp) : time}
+                              </span>
                             </div>
                           </div>
                         );
@@ -2278,6 +2966,47 @@ export function ChatsPage() {
                   </button>
                 </div>
 
+                {messageContextMenu && (
+                  <div
+                    className={styles.messageContextMenu}
+                    style={{ left: messageContextMenu.x, top: messageContextMenu.y }}
+                    role="menu"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className={styles.messageContextMenuItem}
+                      onClick={() => void handleCopyMessageText(messageContextMenu.message.content || '')}
+                      disabled={!messageContextMenu.message.content?.trim()}
+                    >
+                      Copy text
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.messageContextMenuItem}
+                      onClick={() => void translateIncomingMessage(messageContextMenu.message)}
+                      disabled={messageContextMenu.message.fromMe || !messageContextMenu.message.content?.trim()}
+                    >
+                      Translate
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.messageContextMenuItem}
+                      onClick={() => handleOpenMessageMedia(messageContextMenu.message)}
+                      disabled={!messageContextMenu.message.mediaUrl}
+                    >
+                      Open media
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.messageContextMenuItem}
+                      onClick={() => setMessageContextMenu(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                )}
+
                 {mediaError && <div className={styles.mediaError}>{mediaError}</div>}
 
                 <Modal
@@ -2349,6 +3078,37 @@ export function ChatsPage() {
               </div>
             )}
           </main>
+
+          {isRetroTheme && selectedChatId && (
+            <aside className={styles.retroQuestSidebar} aria-label="Quest log">
+              <div className={styles.retroQuestTitle}>QUEST LOG</div>
+              <div className={styles.retroQuestActive}>ACTIVE: {retroSelectedQuest}</div>
+              <div className={styles.retroQuestProgressTrack}>
+                <div className={styles.retroQuestProgressFill} style={{ width: `${retroQuestProgress}%` }} />
+              </div>
+              <div className={styles.retroQuestProgressLabel}>{retroQuestProgress}%</div>
+              <div className={styles.retroQuestHistory}>
+                {retroQuestHistory.map((entry, idx) => (
+                  <div key={`qh-${idx}-${entry}`} className={styles.retroQuestHistoryLine}>
+                    {entry}
+                  </div>
+                ))}
+              </div>
+              <div className={styles.retroAchievements}>
+                <div className={styles.retroAchievementsTitle}>ACHIEVEMENTS</div>
+                {retroAchievementList.map((achievement) => (
+                  <div
+                    key={achievement.id}
+                    className={`${styles.retroAchievementItem} ${achievements[achievement.id] ? styles.retroAchievementUnlocked : ''}`}
+                  >
+                    <span>{achievements[achievement.id] ? '★' : '☆'} {achievement.label}</span>
+                    <span className={styles.retroAchievementMeta}>{achievement.description}</span>
+                    <span className={styles.retroAchievementTier}>{achievement.tier}</span>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          )}
 
           <aside
             className={`${styles.callPanel} ${isCallPanelCollapsed ? styles.callPanelCollapsed : ''}`}
@@ -2461,6 +3221,76 @@ export function ChatsPage() {
               </div>
             </div>
           </aside>
+
+          {isRetroTheme && damagePopups.length > 0 && (
+            <div className={styles.damagePopupLayer} aria-hidden="true">
+              {damagePopups.map((popup) => (
+                <div
+                  key={popup.id}
+                  className={`${styles.damagePopup} ${popup.kind === 'critical' ? styles.damagePopupCritical : styles.damagePopupAlert}`}
+                >
+                  {popup.text}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isRetroTheme && pixelBursts.length > 0 && (
+            <div className={styles.pixelBurstLayer} aria-hidden="true">
+              {pixelBursts.map((particle) => (
+                <span
+                  key={particle.id}
+                  className={`${styles.pixelBurst} ${
+                    particle.tone === 'danger'
+                      ? styles.pixelBurstDanger
+                      : particle.tone === 'success'
+                        ? styles.pixelBurstSuccess
+                        : styles.pixelBurstNeutral
+                  }`}
+                  style={{ left: `${particle.x}%`, top: `${particle.y}%`, width: particle.size, height: particle.size }}
+                />
+              ))}
+            </div>
+          )}
+
+          {isRetroTheme && achievementToast && (
+            <div className={styles.achievementToast} role="status" aria-live="polite">
+              <div className={styles.achievementToastTitle}>ACHIEVEMENT UNLOCKED</div>
+              <div className={styles.achievementToastName}>{achievementToast.title}</div>
+              <div className={styles.achievementToastTier}>{achievementToast.tier}</div>
+            </div>
+          )}
+
+          {isRetroTheme && isPauseMenuOpen && (
+            <div className={styles.pauseMenuOverlay} role="dialog" aria-label="Pause menu">
+              <div className={styles.pauseMenuCard}>
+                <div className={styles.pauseMenuTitle}>PAUSE MENU</div>
+                <button type="button" className={styles.pauseMenuButton} onClick={() => setIsPauseMenuOpen(false)}>
+                  RESUME
+                </button>
+                <button
+                  type="button"
+                  className={styles.pauseMenuButton}
+                  onClick={() => {
+                    setIsPauseMenuOpen(false);
+                    navigate('/settings');
+                  }}
+                >
+                  SETTINGS
+                </button>
+                <button
+                  type="button"
+                  className={styles.pauseMenuButton}
+                  onClick={() => {
+                    setIsPauseMenuOpen(false);
+                    setSelectedChatId(null);
+                  }}
+                >
+                  EXIT CHAT
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {isActivityFullscreen && <ActivityFullscreen />}
