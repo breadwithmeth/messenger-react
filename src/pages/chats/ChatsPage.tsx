@@ -75,6 +75,13 @@ const formatChannelLabel = (channel: Chat['channel']) => {
   return channel;
 };
 
+const getQuestStatus = (chat: Chat) => {
+  if (chat.priority === 'urgent') return 'BOSS FIGHT';
+  if ((chat.unreadCount ?? 0) > 0) return 'NEW QUEST';
+  if (chat.assignedUser) return 'IN PROGRESS';
+  return 'COMPLETED';
+};
+
 const toSlug = (value?: string | null) => (value || '').toLowerCase().replace(/\s+/g, '_');
 
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
@@ -166,7 +173,7 @@ export function ChatsPage() {
     offset: 0,
     hasMore: false,
   });
-  const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(false);
+  const [isCallPanelCollapsed, setIsCallPanelCollapsed] = useState(true);
   const [callWidgetStatus, setCallWidgetStatus] = useState<CallWidgetStatus | null>(null);
   const [callWidgetCallee, setCallWidgetCallee] = useState('');
   const [callWidgetCalleeVersion, setCallWidgetCalleeVersion] = useState(0);
@@ -238,6 +245,8 @@ export function ChatsPage() {
   const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [isActivityFullscreen, setIsActivityFullscreen] = useState(false);
+  const isRetroTheme =
+    typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'retro8';
 
   const currentTicketNumber = useMemo(() => {
     if (!selectedChat?.ticketNumber) return '';
@@ -248,6 +257,13 @@ export function ChatsPage() {
     if (!currentTicketNumber) return;
     navigate(`/tickets?ticketNumber=${currentTicketNumber}`);
   }, [currentTicketNumber, navigate]);
+
+  const retroQueueCount = useMemo(() => chats.filter((c) => c.unreadCount > 0).length, [chats]);
+  const retroUrgentCount = useMemo(() => chats.filter((c) => c.priority === 'urgent').length, [chats]);
+  const retroSelectedQuest = useMemo(() => {
+    if (!selectedChat) return 'NO TARGET';
+    return getQuestStatus(selectedChat);
+  }, [selectedChat]);
 
   // const togglePinChat = useCallback(() => undefined, []);
 
@@ -1542,7 +1558,11 @@ export function ChatsPage() {
   return (
     <Layout>
       <div className={styles.page}>
-        <div className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''}`}>
+        <div
+          className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''} ${
+            isRetroTheme && selectedChat?.priority === 'urgent' ? styles.retroGlitchEvent : ''
+          }`}
+        >
           <aside className={styles.sidebar}>
             <div className={styles.searchSection}>
               <div className={styles.searchInputRow}>
@@ -1682,6 +1702,21 @@ export function ChatsPage() {
                 🔥 Срочные
               </Button>
             </div>
+
+            {isRetroTheme && (
+              <div className={styles.retroRadarCard} aria-label="Retro radar">
+                <div className={styles.retroRadarHeader}>RADAR / QUEUE</div>
+                <div className={styles.retroRadarGrid}>
+                  {Array.from({ length: Math.max(6, Math.min(18, retroQueueCount + 6)) }).map((_, idx) => (
+                    <span
+                      key={`radar-${idx}`}
+                      className={`${styles.retroRadarDot} ${idx < retroQueueCount ? styles.retroRadarDotActive : ''}`}
+                    />
+                  ))}
+                </div>
+                <div className={styles.retroRadarMeta}>ALERTS: {retroUrgentCount}</div>
+              </div>
+            )}
             
             <div className={styles.chatList} ref={chatListRef}>
               {isLoading && chats.length === 0 ? (
@@ -1761,6 +1796,7 @@ export function ChatsPage() {
                               {user && chat.assignedUser?.id === user.id ? (
                                 <span className={styles.myBadge}>Мой</span>
                               ) : null}
+                              {isRetroTheme ? <span className={styles.questBadge}>{getQuestStatus(chat)}</span> : null}
                             </div>
                             <div className={styles.chatSubtitleRow}>
                               <span className={styles.channelBadge}>{formatChannelLabel(chat.channel)}</span>
@@ -1970,6 +2006,14 @@ export function ChatsPage() {
                     </button>
                   </div>
                   </div>
+
+                  {isRetroTheme && (
+                    <div className={styles.retroHudBar}>
+                      <span>FOCUS: {selectedChat ? 100 - Math.min(95, selectedChat.unreadCount * 8) : 0}%</span>
+                      <span>QUEUE: {retroQueueCount}</span>
+                      <span>MODE: {retroSelectedQuest}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className={styles.messagesContainer} ref={messagesContainerRef}>
@@ -2037,6 +2081,11 @@ export function ChatsPage() {
                             }`}
                           >
                             <div className={styles.messageContent}>
+                              {isRetroTheme && !message.fromMe ? (
+                                <div className={styles.messageNpcNameplate}>
+                                  {senderLabel || selectedChat?.displayName || 'NPC UNIT'}
+                                </div>
+                              ) : null}
                               {senderLabel && (
                                 <div className={styles.messageSender}>{senderLabel}</div>
                               )}
@@ -2106,6 +2155,11 @@ export function ChatsPage() {
                 )}
                 
                 <div className={styles.messageInputContainer}>
+                  {isRetroTheme && (
+                    <div className={styles.retroSpeakerBox}>
+                      PLAYER &gt; {(user?.displayName || user?.username || 'OPERATOR').toUpperCase()}
+                    </div>
+                  )}
                   <input
                     ref={fileInputRef}
                     type="file"

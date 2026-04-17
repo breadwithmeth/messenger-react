@@ -26,6 +26,8 @@ interface LayoutProps {
   children: ReactNode;
 }
 
+type ThemeName = 'light' | 'dark' | 'retro8';
+
 type ToastItem = {
   id: number;
   message: string;
@@ -43,15 +45,22 @@ export function Layout({ children }: LayoutProps) {
   const isChatsPage = location.pathname.startsWith('/chats');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPresenceOpen, setIsPresenceOpen] = useState(false);
+  const [isTrackingLossActive, setIsTrackingLossActive] = useState(false);
+  const [isRetroSfxEnabled, setIsRetroSfxEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('retro-sfx') !== 'off';
+  });
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastTimeoutsRef = useRef<number[]>([]);
+  const trackingLossTimeoutRef = useRef<number | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [isFirefoxModeEnabled, setIsFirefoxModeEnabledState] = useState<boolean>(() => getFirefoxModeEnabled());
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+  const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem('theme');
-    return saved === 'dark' ? 'dark' : 'light';
+    return saved === 'dark' || saved === 'retro8' ? saved : 'light';
   });
 
   useEffect(() => {
@@ -60,25 +69,79 @@ export function Layout({ children }: LayoutProps) {
   }, [theme]);
 
   useEffect(() => {
+    localStorage.setItem('retro-sfx', isRetroSfxEnabled ? 'on' : 'off');
+  }, [isRetroSfxEnabled]);
+
+  const playRetroTone = (frequency: number, duration = 0.05, type: OscillatorType = 'square', gain = 0.025) => {
+    if (typeof window === 'undefined') return;
+    if (theme !== 'retro8' || !isRetroSfxEnabled) return;
+    const Ctx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new Ctx();
+    }
+
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+    gainNode.gain.setValueAtTime(gain, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + duration);
+  };
+
+  useEffect(() => {
     const toggleFromOutside = () => {
       setIsMenuOpen((prev) => !prev);
     };
 
     window.addEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
+    const handleGlobalClick = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const interactive = target.closest('button, a, [role="button"], input, select, textarea');
+      if (!interactive) return;
+      playRetroTone(660, 0.045, 'square', 0.02);
+    };
     const handleToast = (event: Event) => {
       const custom = event as CustomEvent<{ message?: string }>;
       const message = custom.detail?.message;
       if (message) showToast(message);
+      playRetroTone(420, 0.09, 'triangle', 0.03);
     };
+    document.addEventListener('click', handleGlobalClick, true);
     window.addEventListener(toastEvents.name, handleToast);
 
     return () => {
       window.removeEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
+      document.removeEventListener('click', handleGlobalClick, true);
       window.removeEventListener(toastEvents.name, handleToast);
       toastTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       toastTimeoutsRef.current = [];
+      if (trackingLossTimeoutRef.current) {
+        window.clearTimeout(trackingLossTimeoutRef.current);
+        trackingLossTimeoutRef.current = null;
+      }
+      document.documentElement.removeAttribute('data-tracking-loss');
     };
-  }, []);
+  }, [theme, isRetroSfxEnabled]);
+
+  useEffect(() => {
+    if (theme === 'retro8') return;
+    setIsTrackingLossActive(false);
+    if (trackingLossTimeoutRef.current) {
+      window.clearTimeout(trackingLossTimeoutRef.current);
+      trackingLossTimeoutRef.current = null;
+    }
+    document.documentElement.removeAttribute('data-tracking-loss');
+  }, [theme]);
 
   useEffect(() => {
     if (!user) return;
@@ -122,7 +185,16 @@ export function Layout({ children }: LayoutProps) {
     void load();
   }, [user]);
 
-  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
+  const toggleTheme = () => {
+    setTheme((current) => {
+      if (current === 'light') return 'dark';
+      if (current === 'dark') return 'retro8';
+      return 'light';
+    });
+  };
+
+  const nextThemeLabel =
+    theme === 'light' ? '🌙 Тёмная' : theme === 'dark' ? '🕹 8-bit' : '☀️ Светлая';
 
   const toggleFirefoxMode = () => {
     setIsFirefoxModeEnabledState((prev) => {
@@ -131,6 +203,26 @@ export function Layout({ children }: LayoutProps) {
       showToast(next ? 'Режим фаерфокса включен' : 'Режим фаерфокса выключен');
       return next;
     });
+  };
+
+  const triggerTrackingLoss = () => {
+    if (theme !== 'retro8') {
+      showToast('Tracking Loss доступен только в теме 8-bit');
+      return;
+    }
+
+    setIsTrackingLossActive(true);
+    document.documentElement.setAttribute('data-tracking-loss', 'on');
+
+    if (trackingLossTimeoutRef.current) {
+      window.clearTimeout(trackingLossTimeoutRef.current);
+    }
+
+    trackingLossTimeoutRef.current = window.setTimeout(() => {
+      document.documentElement.removeAttribute('data-tracking-loss');
+      setIsTrackingLossActive(false);
+      trackingLossTimeoutRef.current = null;
+    }, 1800);
   };
 
   const showToast = (message: string) => {
@@ -249,7 +341,7 @@ export function Layout({ children }: LayoutProps) {
                 onClick={toggleTheme}
                 aria-label="Сменить тему"
               >
-                {theme === 'light' ? '🌙 Тёмная' : '☀️ Светлая'}
+                {nextThemeLabel}
               </button>
               <button
                 type="button"
@@ -267,6 +359,26 @@ export function Layout({ children }: LayoutProps) {
                 }}
               >
                 Симулировать ошибку
+              </button>
+              <button
+                type="button"
+                className={`${styles.trackingLossButton} ${isTrackingLossActive ? styles.trackingLossButtonActive : ''}`}
+                onClick={triggerTrackingLoss}
+                disabled={theme !== 'retro8'}
+                aria-label="Включить VHS tracking loss"
+                title={theme === 'retro8' ? 'Срыв синхронизации VHS' : 'Доступно только в теме 8-bit'}
+              >
+                VHS: Tracking Loss
+              </button>
+              <button
+                type="button"
+                className={`${styles.trackingLossButton} ${isRetroSfxEnabled ? styles.trackingLossButtonActive : ''}`}
+                onClick={() => setIsRetroSfxEnabled((prev) => !prev)}
+                disabled={theme !== 'retro8'}
+                aria-label="Переключить ретро звук"
+                title={theme === 'retro8' ? 'Ретро звуки UI' : 'Доступно только в теме 8-bit'}
+              >
+                SFX: {isRetroSfxEnabled ? 'ON' : 'OFF'}
               </button>
               <button
                 type="button"

@@ -468,6 +468,34 @@
   border-color: var(--danger-hover);
 }
 
+.trackingLossButton {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary);
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.trackingLossButton:hover:enabled {
+  background: var(--surface);
+  border-color: var(--primary-hover);
+}
+
+.trackingLossButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trackingLossButtonActive {
+  background: color-mix(in srgb, var(--primary) 22%, var(--surface) 78%);
+  color: var(--text);
+  border-color: var(--primary);
+}
+
 .starRating {
   display: flex;
   align-items: center;
