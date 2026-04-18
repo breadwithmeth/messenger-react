@@ -26,8 +26,39 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-type ThemeName = 'light' | 'dark' | 'retro8';
+type ThemeName = 'light' | 'dark' | 'retro8' | 'barbie-diary';
 type CrtLevel = 'soft' | 'arcade' | 'crt' | 'vhs';
+type SecretThemeKey = 'retro8' | 'barbie-diary';
+
+type SecretThemesState = {
+  retro8: boolean;
+  'barbie-diary': boolean;
+};
+
+const SECRET_THEMES_STORAGE_KEY = 'secret-themes-unlocked';
+const RETRO_UNLOCK_SEQUENCE = ['r', 'e', 't', 'r', 'o'] as const;
+const BARBIE_UNLOCK_SEQUENCE = ['b', 'a', 'r', 'b', 'i', 'e'] as const;
+
+const readSecretThemesState = (): SecretThemesState => {
+  if (typeof window === 'undefined') {
+    return { retro8: false, 'barbie-diary': false };
+  }
+
+  const raw = localStorage.getItem(SECRET_THEMES_STORAGE_KEY);
+  if (!raw) {
+    return { retro8: false, 'barbie-diary': false };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<SecretThemesState>;
+    return {
+      retro8: parsed.retro8 === true,
+      'barbie-diary': parsed['barbie-diary'] === true,
+    };
+  } catch {
+    return { retro8: false, 'barbie-diary': false };
+  }
+};
 
 type ToastItem = {
   id: number;
@@ -63,16 +94,34 @@ export function Layout({ children }: LayoutProps) {
   const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [isFirefoxModeEnabled, setIsFirefoxModeEnabledState] = useState<boolean>(() => getFirefoxModeEnabled());
+  const [secretThemes, setSecretThemes] = useState<SecretThemesState>(() => readSecretThemesState());
   const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === 'undefined') return 'light';
+    const unlocked = readSecretThemesState();
     const saved = localStorage.getItem('theme');
-    return saved === 'dark' || saved === 'retro8' ? saved : 'light';
+    if (saved === 'dark' || saved === 'light') return saved;
+    if (saved === 'retro8' && unlocked.retro8) return saved;
+    if (saved === 'barbie-diary' && unlocked['barbie-diary']) return saved;
+    return 'light';
   });
+  const comboBufferRef = useRef<string[]>([]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(SECRET_THEMES_STORAGE_KEY, JSON.stringify(secretThemes));
+  }, [secretThemes]);
+
+  useEffect(() => {
+    const isRetroLocked = theme === 'retro8' && !secretThemes.retro8;
+    const isBarbieLocked = theme === 'barbie-diary' && !secretThemes['barbie-diary'];
+    if (isRetroLocked || isBarbieLocked) {
+      setTheme('light');
+    }
+  }, [secretThemes, theme]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-crt-level', crtLevel);
@@ -196,16 +245,88 @@ export function Layout({ children }: LayoutProps) {
     void load();
   }, [user]);
 
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      if (!el) return false;
+      if (el.isContentEditable) return true;
+      return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
+    };
+
+    const unlockTheme = (themeKey: SecretThemeKey, message: string) => {
+      setSecretThemes((prev) => {
+        if (prev[themeKey]) return prev;
+        showToast(message);
+        return { ...prev, [themeKey]: true };
+      });
+    };
+
+    const endsWithSequence = (buffer: string[], sequence: readonly string[]) => {
+      if (buffer.length < sequence.length) return false;
+      const start = buffer.length - sequence.length;
+      for (let i = 0; i < sequence.length; i += 1) {
+        if (buffer[start + i] !== sequence[i]) return false;
+      }
+      return true;
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isEditableTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+      if (!key) return;
+
+      comboBufferRef.current.push(key);
+      if (comboBufferRef.current.length > 20) {
+        comboBufferRef.current = comboBufferRef.current.slice(-20);
+      }
+
+      if (endsWithSequence(comboBufferRef.current, RETRO_UNLOCK_SEQUENCE)) {
+        unlockTheme('retro8', 'Секретная тема 8-bit разблокирована');
+        return;
+      }
+
+      if (endsWithSequence(comboBufferRef.current, BARBIE_UNLOCK_SEQUENCE)) {
+        unlockTheme('barbie-diary', 'Секретная тема Barbie Diary разблокирована');
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+
+  const availableThemes = useMemo<ThemeName[]>(() => {
+    const themes: ThemeName[] = ['light', 'dark'];
+    if (secretThemes.retro8) themes.push('retro8');
+    if (secretThemes['barbie-diary']) themes.push('barbie-diary');
+    return themes;
+  }, [secretThemes]);
+
   const toggleTheme = () => {
     setTheme((current) => {
-      if (current === 'light') return 'dark';
-      if (current === 'dark') return 'retro8';
-      return 'light';
+      const index = availableThemes.indexOf(current);
+      const nextIndex = index === -1 ? 0 : (index + 1) % availableThemes.length;
+      return availableThemes[nextIndex];
     });
   };
 
+  const nextTheme = useMemo<ThemeName>(() => {
+    const index = availableThemes.indexOf(theme);
+    const nextIndex = index === -1 ? 0 : (index + 1) % availableThemes.length;
+    return availableThemes[nextIndex];
+  }, [availableThemes, theme]);
+
   const nextThemeLabel =
-    theme === 'light' ? '🌙 Тёмная' : theme === 'dark' ? '🕹 8-bit' : '☀️ Светлая';
+    nextTheme === 'light'
+      ? '☀️ Светлая'
+      : nextTheme === 'dark'
+        ? '🌙 Тёмная'
+        : nextTheme === 'retro8'
+          ? '🕹 8-bit'
+          : '💖 Barbie Diary';
 
   const toggleFirefoxMode = () => {
     setIsFirefoxModeEnabledState((prev) => {
@@ -296,6 +417,10 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className={styles.layout}>
+      <a href="#main-content" className={styles.skipLink}>
+        Перейти к основному содержимому
+      </a>
+
       {user && (
         <>
           {isMenuOpen && (
@@ -427,7 +552,9 @@ export function Layout({ children }: LayoutProps) {
       )}
       
       <div className={styles.mainWrapper}>
-        <main className={isChatsPage ? styles.mainFluid : styles.main}>{children}</main>
+        <main id="main-content" tabIndex={-1} className={isChatsPage ? styles.mainFluid : styles.main}>
+          {children}
+        </main>
       </div>
 
       {/* {user && (

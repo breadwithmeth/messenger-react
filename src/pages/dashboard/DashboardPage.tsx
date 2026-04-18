@@ -9,6 +9,7 @@ export function DashboardPage() {
     <Layout>
       <div className={styles.page}>
         <header className={styles.header}>
+          <p className={styles.kicker}>workspace overview</p>
           <h1 className={styles.title}>Главная панель</h1>
           <p className={styles.subtitle}>
             Добро пожаловать в омниканальную платформу чатов
@@ -51,9 +52,16 @@ export function DashboardPage() {
 
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Быстрые действия</h2>
-            <p className={styles.note}>
-              Функционал находится в разработке. Скоро здесь появятся инструменты для управления чатами.
-            </p>
+            <div className={styles.emptyStateCard}>
+              <p className={styles.note}>
+                Функционал находится в разработке. Скоро здесь появятся инструменты для управления чатами.
+              </p>
+              <div className={styles.quickActionsSkeleton} aria-hidden="true">
+                <span className={styles.quickActionsLine} />
+                <span className={`${styles.quickActionsLine} ${styles.quickActionsLineShort}`} />
+                <span className={`${styles.quickActionsLine} ${styles.quickActionsLineTiny}`} />
+              </div>
+            </div>
           </section>
         </div>
       </div>

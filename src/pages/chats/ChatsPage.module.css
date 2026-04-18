@@ -10,6 +10,10 @@
   --state-warning: #f3b35d;
   --state-danger: #ff5f5f;
   --state-muted: #94a3b8;
+  --motion-fast: 130ms;
+  --motion-base: 190ms;
+  --motion-enter: 250ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   padding: 0;
   height: calc(100vh - var(--topbar-height));
   min-height: calc(100vh - var(--topbar-height));
@@ -223,7 +227,7 @@
 
 .container {
   display: grid;
-  grid-template-columns: 320px 1fr 320px;
+  grid-template-columns: 292px 1fr 320px;
   gap: 10px;
   height: 100%;
   min-height: 0;
@@ -235,10 +239,12 @@
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
   box-shadow: var(--shadow-md);
+  animation: page-enter var(--motion-enter) var(--motion-ease) both;
+  will-change: transform, opacity;
 }
 
 .containerCollapsed {
-  grid-template-columns: 300px 1fr 52px;
+  grid-template-columns: 272px 1fr 52px;
 }
 
 .callPanel {
@@ -321,6 +327,104 @@
 
 .callPanelCollapsed .callPanelContent {
   display: none;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.activityTimelineSection {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 8px;
+}
+
+.activityTimelineHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.activityTimelineTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.activityTimelineMeta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.activityTimelineList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.activityTimelineItem {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  gap: 8px;
+}
+
+.activityTimelineDot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.activityTimelineDotSuccess {
+  background: var(--state-success);
+}
+
+.activityTimelineDotDanger {
+  background: var(--state-danger);
+}
+
+.activityTimelineDotNeutral {
+  background: var(--state-info);
+}
+
+.activityTimelineContent {
+  display: grid;
+  gap: 2px;
+}
+
+.activityTimelineText {
+  font-size: 11px;
+  color: var(--text);
+}
+
+.activityTimelineTime,
+.activityTimelineMetaLine,
+.activityTimelineState,
+.activityTimelineEmpty {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.activityTimelineError {
+  font-size: 10px;
+  color: var(--danger);
 }
 
 .commentsSection {
@@ -469,49 +573,61 @@
 }
 
 .sidebar {
-  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  --surface: var(--surface-solid);
+  --surface-2: var(--surface-2-solid);
+  background: var(--surface-solid);
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .sidebarHeader {
-  padding: 12px 12px;
+  padding: 5px 8px;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .searchSection {
-  padding: 10px;
+  padding: 5px 6px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  gap: 4px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .searchInputRow {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
 }
 
+.searchInputRow :global(input) {
+  min-height: 28px;
+  height: 28px;
+  font-size: 11px;
+  padding: 0 8px;
+}
+
 .activityToggle {
-  padding: 8px 10px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
@@ -524,13 +640,13 @@
 }
 
 .menuToggleButton {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 20px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
@@ -545,8 +661,8 @@
 
 .searchRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .activityCard {
@@ -809,13 +925,13 @@
 
 .searchSelect {
   width: 100%;
-  height: 34px;
-  padding: 0 8px;
-  border-radius: 8px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 7px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .searchSelect:focus {
@@ -832,11 +948,11 @@
 .sidebarTitleRow {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .sidebarTitle {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text);
   margin: 0;
@@ -845,44 +961,116 @@
 .newBadge {
   background: var(--danger);
   color: var(--on-danger);
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 16px;
-  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  min-width: 16px;
   text-align: center;
 }
 
 .filterTabs {
-  padding: 10px;
+  padding: 4px 6px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 96%, var(--bg) 4%);
+  background: var(--surface);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .quickFiltersRow {
-  padding: 4px 8px 2px;
+  padding: 3px 6px;
+  background: var(--surface);
   display: flex;
-  gap: 4px;
+  gap: 3px;
   border-bottom: 1px solid var(--border);
+}
+
+.quickFiltersRow :global(button) {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 10px;
+  border-radius: 7px;
+}
+
+.densitySelect {
+  min-height: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 10px;
+  padding: 0 6px;
+  min-width: 88px;
+}
+
+.hotkeysHintButton {
+  min-height: 24px;
+  min-width: 24px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 7px;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+}
+
+.hotkeysHintButton:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.bulkActionsRow {
+  padding: 3px 6px;
+  display: flex;
+  gap: 3px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  animation: page-enter var(--motion-enter) var(--motion-ease) both;
+}
+
+.bulkActionButton {
+  min-height: 23px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 0 6px;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+}
+
+.bulkActionButton:hover:enabled {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 62%, var(--border));
+  transform: translateY(-1px);
+}
+
+.bulkActionButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .filterTab {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  padding: 10px 12px;
+  padding: 5px 6px;
   text-align: center;
-  font-size: 13px;
+  font-size: 10px;
   color: var(--text);
   cursor: pointer;
-  border-radius: 10px;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  border-radius: 7px;
+  transition: background var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   font-weight: 600;
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
@@ -916,11 +1104,15 @@
 .chatList {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 8px 10px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 97%, transparent) 0%, var(--surface) 100%);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  padding: 4px 5px 6px;
+  background: var(--surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.chatListVirtualSpacer {
+  width: 100%;
+  pointer-events: none;
 }
 
 .skeletonList {
@@ -981,20 +1173,64 @@
 }
 
 .chatItem {
-  padding: 8px 10px;
+  padding: 4px 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition: background-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 9px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-start;
   background: var(--surface);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
+  will-change: transform, box-shadow, opacity;
+  transform: translateZ(0);
+  animation: chat-item-enter var(--motion-enter) var(--motion-ease) both;
+  animation-delay: calc(var(--item-index, 0) * 14ms);
+}
+
+.chatItemUnread {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent 42%),
+    var(--surface);
+}
+
+.active {
+  outline: none;
+}
+
+.chatSelectButton {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+}
+
+.chatSelectButton:hover {
+  border-color: color-mix(in srgb, var(--primary) 58%, var(--border));
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.chatSelectButtonActive {
+  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 78%, var(--border));
+  color: var(--primary);
 }
 
 .chatItem::before {
@@ -1013,6 +1249,10 @@
   background-color: var(--surface-2);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
+}
+
+.chatItem:active {
+  transform: translateY(0) scale(0.995);
 }
 
 .chatItem:hover::before {
@@ -1069,22 +1309,22 @@
 }
 
 .avatarImage {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .avatarPlaceholder {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text);
-  font-size: 16.5px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -1111,20 +1351,20 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .chatHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
+  gap: 6px;
 }
 
 .chatTitleBlock {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   flex: 1;
   min-width: 0;
 }
@@ -1132,14 +1372,16 @@
 .chatTitleRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   min-width: 0;
 }
 
 .chatName {
   font-weight: 600;
   color: var(--text);
-  font-size: var(--text-md);
+  font-size: 11px;
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1150,9 +1392,24 @@
   font-weight: 700;
 }
 
+.chatClientHandle {
+  font-size: 8px;
+  color: var(--text-subtle);
+  opacity: 0.9;
+  max-width: 72px;
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 999px;
+  padding: 0 4px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
 .priorityDot {
-  width: 9px;
-  height: 9px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
   background: var(--border);
@@ -1166,20 +1423,25 @@
 .priorityDot-urgent { background: var(--state-danger); }
 
 .chatSubtitleRow {
-  display: flex;
+  display: none;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  gap: 3px;
   min-width: 0;
   overflow: hidden;
 }
 
+.chatItem.active .chatSubtitleRow,
+.chatItem:hover .chatSubtitleRow {
+  display: flex;
+}
+
 .channelBadge {
-  padding: 2px 7px;
+  padding: 0 5px;
   border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-size: var(--text-2xs);
+  font-size: 8px;
   line-height: 1.2;
   letter-spacing: 0.02em;
   color: var(--text-muted);
@@ -1192,8 +1454,40 @@
 .chatMeta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   flex-shrink: 0;
+}
+
+.slaBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+}
+
+.slaBadgeOk {
+  border-color: color-mix(in srgb, var(--state-success) 68%, var(--border));
+  color: color-mix(in srgb, var(--state-success) 84%, var(--text));
+}
+
+.slaBadgeWarning {
+  border-color: color-mix(in srgb, var(--state-warning) 72%, var(--border));
+  color: color-mix(in srgb, var(--state-warning) 84%, var(--text));
+}
+
+.slaBadgeCritical {
+  border-color: color-mix(in srgb, var(--state-danger) 82%, var(--border));
+  color: color-mix(in srgb, var(--state-danger) 88%, var(--text));
+  background: color-mix(in srgb, var(--state-danger) 16%, var(--surface));
+  animation: hud-chip-shift 1.35s var(--motion-ease) infinite;
 }
 
 .pinButton {
@@ -1221,9 +1515,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 7px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
   border-radius: 999px;
   background: var(--danger);
   color: var(--on-danger);
@@ -1235,8 +1529,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 21px;
-  padding: 0 7px;
+  height: 16px;
+  padding: 0 5px;
   border-radius: 999px;
   background: var(--danger);
   color: var(--on-danger);
@@ -1246,7 +1540,7 @@
 }
 
 .chatSubtitle {
-  font-size: 10px;
+  font-size: 8px;
   color: var(--text-muted);
   font-weight: 500;
   opacity: 0.86;
@@ -1261,8 +1555,8 @@
   font-size: var(--text-2xs);
   color: color-mix(in srgb, var(--primary) 86%, var(--text) 14%);
   font-weight: 600;
-  max-width: 120px;
-  padding: 2px 7px;
+  max-width: 74px;
+  padding: 0 5px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border) 60%);
@@ -1271,14 +1565,33 @@
   text-overflow: ellipsis;
 }
 
+/* Keep the row readable in compact mode: show only primary identifiers by default. */
+.chatAssignedUser,
+.myBadge,
+.questBadge,
+.statusEffects {
+  display: none;
+}
+
+.chatItem.active .chatAssignedUser,
+.chatItem.active .myBadge,
+.chatItem.active .questBadge,
+.chatItem.active .statusEffects,
+.chatItem:hover .chatAssignedUser,
+.chatItem:hover .myBadge,
+.chatItem:hover .questBadge,
+.chatItem:hover .statusEffects {
+  display: inline-flex;
+}
+
 .chatTime {
-  font-size: 9px;
+  font-size: 7px;
   color: var(--text-muted);
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-left: 6px;
-  padding: 0 6px;
+  margin-left: 3px;
+  padding: 0 4px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface-2) 75%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
@@ -1286,17 +1599,22 @@
   -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
+.chatItemUnread .chatTime {
+  color: color-mix(in srgb, var(--primary) 72%, var(--text));
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border));
+}
+
 .chatLastMessage {
-  font-size: var(--text-sm);
+  font-size: 10px;
   color: var(--text-muted);
   white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
-  line-height: 1.32;
+  line-height: 1.15;
   display: -webkit-box;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
+  line-clamp: 1;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 
@@ -1307,7 +1625,7 @@
 
 .myBadge {
   font-size: var(--text-2xs);
-  padding: 2px 6px;
+  padding: 0 4px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   border: 1px solid var(--primary);
@@ -1317,14 +1635,21 @@
 }
 
 .questBadge {
-  font-size: 9px;
-  padding: 2px 6px;
+  font-size: 7.5px;
+  padding: 0 4px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--primary) 60%, var(--border) 40%);
   color: var(--primary);
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.questBadgeNeutral {
+  font-size: 8px;
+  padding: 0 4px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 46%, var(--border));
 }
 
 .content {
@@ -1399,25 +1724,25 @@
 }
 
 .chatTopBar {
-  min-height: 58px;
+  min-height: 50px;
   padding: 2px 4px;
   background: transparent;
   border-bottom: none;
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: 48px 1fr auto;
   align-items: center;
 }
 
 .chatTopIcon {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   border: none;
   background: transparent;
   color: var(--primary);
   cursor: pointer;
   font-size: 18px;
-  margin-left: 12px;
+  margin-left: 8px;
 }
 
 .chatTopIcon:hover {
@@ -1439,14 +1764,14 @@
 }
 
 .chatTopAction {
-  height: 30px;
-  padding: 0 10px;
+  height: 27px;
+  padding: 0 8px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 600;
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
@@ -1497,9 +1822,21 @@
   background: color-mix(in srgb, var(--surface-2) 84%, transparent);
 }
 
+.overviewHudBar {
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.overviewHudBar span {
+  padding: 2px 9px;
+  color: var(--text-subtle);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
 .chatTopAvatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--surface-2);
   border: 2px solid var(--surface);
@@ -1509,7 +1846,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .chatTopTitleBlock {
@@ -1520,18 +1857,18 @@
 }
 
 .chatTopTitle {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   font-weight: 600;
   line-height: 1.2;
 }
 
 .chatTopSubtitle {
-  font-size: 10.5px;
+  font-size: 9.5px;
   color: var(--text-muted);
   font-weight: 400;
   max-width: 100%;
-  padding: 0 12px;
+  padding: 0 8px;
   line-height: 1.2;
   text-align: center;
   overflow: hidden;
@@ -1927,13 +2264,63 @@
 
 .messagesList {
   flex: 1;
-  padding: 14px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
+}
+
+.messagesDayDivider,
+.messagesUnreadDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.messagesDayDivider::before,
+.messagesDayDivider::after,
+.messagesUnreadDivider::before,
+.messagesUnreadDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.messagesDayDivider::before,
+.messagesDayDivider::after {
+  background: color-mix(in srgb, var(--border) 74%, transparent);
+}
+
+.messagesUnreadDivider::before,
+.messagesUnreadDivider::after {
+  background: color-mix(in srgb, var(--primary) 44%, var(--border));
+}
+
+.messagesDayDivider span,
+.messagesUnreadDivider span {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.messagesDayDivider span {
+  color: var(--text-subtle);
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+.messagesUnreadDivider span {
+  color: color-mix(in srgb, var(--primary) 78%, var(--text));
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 48%, var(--border));
 }
 
 .retroMessageSkeletonList {
@@ -1990,11 +2377,18 @@
 .message {
   display: flex;
   max-width: 72%;
+  will-change: transform, opacity;
 }
 
 .messageAppear {
   opacity: 0;
   animation: message-pop-in 0.34s steps(6, end) forwards;
+}
+
+.messageAppearSmooth {
+  opacity: 0;
+  animation: message-smooth-in 220ms var(--motion-ease) forwards;
+  animation-delay: calc(var(--message-index, 0) * 8ms);
 }
 
 .messageUrgentPulse .messageContent {
@@ -2013,12 +2407,18 @@
   background: linear-gradient(145deg,
       color-mix(in srgb, var(--surface-2) 92%, transparent) 0%,
       color-mix(in srgb, var(--surface-2) 82%, transparent) 100%);
-  padding: 11px 13px;
-  border-radius: 15px;
+  padding: 8px 10px;
+  border-radius: 12px;
   position: relative;
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
+  transition: transform var(--motion-fast) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), background var(--motion-base) var(--motion-ease);
+}
+
+.messageContent:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .messageOwn .messageContent {
@@ -2030,28 +2430,28 @@
 }
 
 .messageSender {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   opacity: 0.85;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .messageTicket {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 4px;
   flex-wrap: wrap;
 }
 
 .messageTicketBadge {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   border: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   color: var(--text);
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 1px 6px;
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
 }
@@ -2063,7 +2463,7 @@
 }
 
 .messageTicketMeta {
-  font-size: 10px;
+  font-size: 9px;
   opacity: 0.8;
 }
 
@@ -2071,12 +2471,12 @@
   margin: 0 0 3px 0;
   word-wrap: break-word;
   white-space: pre-wrap;
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 .messageResponsible {
-  font-size: 9.5px;
+  font-size: 9px;
   line-height: 1.2;
   color: var(--text-muted);
   opacity: 0.75;
@@ -2091,18 +2491,18 @@
 .messageCode {
   display: block;
   margin: 0 0 3px 0;
-  padding: 6px 8px;
+  padding: 4px 6px;
   border-radius: 9px;
   border: 1px solid var(--border);
   background: var(--surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
+  font-size: 11px;
   white-space: pre-wrap;
 }
 
 .messageMediaImage {
   display: block;
-  max-width: 220px;
+  max-width: 190px;
   width: 100%;
   height: auto;
   border-radius: 9px;
@@ -2124,14 +2524,14 @@
 
 .messageMediaVideo {
   display: block;
-  max-width: 260px;
+  max-width: 220px;
   width: 100%;
   border-radius: 9px;
   margin-bottom: 4px;
 }
 
 .messageMediaAudio {
-  width: 220px;
+  width: 190px;
   max-width: 100%;
   margin-bottom: 4px;
 }
@@ -2245,10 +2645,10 @@
 }
 
 .messageInputContainer {
-  padding: 12px 16px;
+  padding: 8px 10px;
   border-top: 1px solid var(--border);
   display: flex;
-  gap: 10px;
+  gap: 7px;
   align-items: flex-end;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   backdrop-filter: blur(var(--frost-blur));
@@ -2282,13 +2682,47 @@
   z-index: 5;
 }
 
+
 .retroRadarCard {
-  margin: 2px 6px 4px;
-  padding: 4px;
+  margin: 2px 4px 3px;
+  padding: 3px;
   border: 2px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  border-radius: 8px;
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
+}
+
+.overviewCard {
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+}
+
+.overviewCard .retroRadarHeader {
+  font-size: 9px;
+  margin-bottom: 3px;
+}
+
+.overviewCard .retroRadarGrid {
+  gap: 2px;
+}
+
+.overviewCard .retroRadarDot {
+  width: 9px;
+  height: 6px;
+}
+
+.overviewCard .retroRadarFooter {
+  margin-top: 3px;
+}
+
+.overviewCard .retroRadarMeta {
+  font-size: 8px;
+}
+
+.overviewCard .retroRadarEvent {
+  font-size: 7px;
+  padding: 0 3px;
 }
 
 .retroRadarHeader {
@@ -2296,11 +2730,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: 0.04em;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .retroMiniToggle {
@@ -2322,14 +2756,14 @@
 .retroRadarGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 1px;
   position: relative;
   overflow: hidden;
 }
 
 .retroRadarDot {
-  width: 12px;
-  height: 9px;
+  width: 8px;
+  height: 6px;
   border-radius: 2px;
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   background: color-mix(in srgb, var(--surface) 84%, transparent);
@@ -2351,30 +2785,30 @@
 
 .retroRadarMeta {
   margin-top: 0;
-  font-size: 9px;
+  font-size: 7px;
   color: var(--text-muted);
 }
 
 .retroRadarFooter {
-  margin-top: 4px;
+  margin-top: 2px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
+  gap: 2px;
 }
 
 .retroRadarEvents {
   margin-top: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 1px;
   justify-content: flex-end;
 }
 
 .retroRadarEvent {
-  font-size: 7px;
+  font-size: 6px;
   border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  padding: 0 2px;
+  padding: 0 1px;
   color: var(--text-muted);
   background: color-mix(in srgb, var(--surface) 84%, transparent);
   letter-spacing: 0.05em;
@@ -2734,9 +3168,9 @@
 }
 
 .formatToggle {
-  height: 32px;
-  min-width: 32px;
-  padding: 0 8px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 7px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2768,9 +3202,9 @@
 }
 
 .formatButton {
-  height: 36px;
-  min-width: 36px;
-  padding: 0 10px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2784,9 +3218,9 @@
 }
 
 .suggestionsButton {
-  height: 36px;
-  min-width: 44px;
-  padding: 0 10px;
+  height: 32px;
+  min-width: 40px;
+  padding: 0 8px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2805,7 +3239,7 @@
 }
 
 .suggestionsPanel {
-  margin: 10px 12px 0;
+  margin: 6px 10px 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -2816,21 +3250,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-2);
 }
 
 .suggestionsTitle {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text);
 }
 
 .suggestionsClose {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -2844,33 +3278,88 @@
 }
 
 .suggestionsState {
-  padding: 12px;
-  font-size: 12px;
+  padding: 8px 10px;
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .suggestionsList {
   display: flex;
   flex-direction: column;
-  padding: 6px;
-  gap: 6px;
+  padding: 5px;
+  gap: 4px;
 }
 
 .suggestionItem {
   text-align: left;
-  padding: 10px 10px;
+  padding: 7px 8px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
   cursor: pointer;
   color: var(--text);
-  font-size: 13px;
-  line-height: 1.25;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .suggestionItem:hover {
   background: var(--surface-2);
   border-color: var(--border);
+}
+
+:global(:root[data-theme='barbie-diary']) .chatItem {
+  border-radius: 14px;
+  border-color: color-mix(in srgb, var(--primary) 26%, var(--border));
+  background:
+    linear-gradient(115deg, color-mix(in srgb, #ffffff 80%, transparent) 0%, color-mix(in srgb, var(--surface) 80%, transparent) 46%, color-mix(in srgb, #ffd2ec 42%, var(--surface)) 100%);
+  box-shadow: 0 8px 18px rgba(208, 82, 163, 0.14);
+}
+
+:global(:root[data-theme='barbie-diary']) .chatItem::before {
+  width: 4px;
+  opacity: 0.3;
+  background: linear-gradient(180deg, #ff88cc 0%, #ef4aa8 100%);
+}
+
+:global(:root[data-theme='barbie-diary']) .chatItem:hover {
+  background:
+    linear-gradient(115deg, color-mix(in srgb, #ffffff 88%, transparent) 0%, color-mix(in srgb, var(--surface) 78%, transparent) 44%, color-mix(in srgb, #ffc1e8 50%, var(--surface)) 100%);
+  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
+  box-shadow: 0 14px 30px rgba(208, 82, 163, 0.24);
+}
+
+:global(:root[data-theme='barbie-diary']) .chatItem:nth-child(odd):hover {
+  transform: translateY(-2px) rotate(-0.45deg);
+}
+
+:global(:root[data-theme='barbie-diary']) .chatItem:nth-child(even):hover {
+  transform: translateY(-2px) rotate(0.45deg);
+}
+
+:global(:root[data-theme='barbie-diary']) .chatItem.active {
+  background:
+    linear-gradient(120deg, color-mix(in srgb, #ffffff 72%, transparent) 0%, color-mix(in srgb, #ffc5ea 62%, var(--surface)) 100%);
+  border-color: color-mix(in srgb, var(--primary) 72%, var(--border));
+  box-shadow: 0 16px 32px rgba(208, 82, 163, 0.28);
+}
+
+:global(:root[data-theme='barbie-diary']) .suggestionsPanel {
+  border-radius: 16px;
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+  background:
+    linear-gradient(170deg, color-mix(in srgb, #ffffff 86%, transparent), color-mix(in srgb, #ffd8ef 44%, var(--surface)));
+  box-shadow: 0 16px 36px rgba(208, 82, 163, 0.2);
+}
+
+:global(:root[data-theme='barbie-diary']) .suggestionItem {
+  border-radius: 12px;
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
+}
+
+:global(:root[data-theme='barbie-diary']) .suggestionItem:hover {
+  border-color: color-mix(in srgb, var(--primary) 62%, var(--border));
+  box-shadow: 0 10px 22px rgba(208, 82, 163, 0.16);
+  transform: translateY(-1px);
 }
 
 :global(:root[data-theme='retro8']) .chatWindow {
@@ -3067,19 +3556,19 @@
 
 .messageInput {
   flex: 1;
-  padding: 12px 16px;
+  padding: 9px 12px;
   border: 1px solid var(--border);
-  border-radius: 20px;
-  font-size: 14px;
+  border-radius: 14px;
+  font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
   background: var(--surface);
   color: var(--text);
 
   resize: none;
-  min-height: 40px;
-  max-height: 120px;
-  line-height: 1.4;
+  min-height: 34px;
+  max-height: 96px;
+  line-height: 1.3;
   overflow-y: auto;
 }
 
@@ -3093,13 +3582,13 @@
 }
 
 .voiceButton {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--surface-2);
   border: none;
   color: var(--text-muted);
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3837,6 +4326,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .container,
+  .chatItem,
+  .messageAppearSmooth,
+  .messageContent {
+    animation: none !important;
+    transition: none !important;
+  }
+
   .retroRadarDotActive,
   :global(:root[data-theme='retro8']) .retroRadarGrid::after,
   :global(:root[data-theme='retro8']) .retroQuestSidebar,
@@ -3885,6 +4382,39 @@
   }
 }
 
+@keyframes page-enter {
+  from {
+    opacity: 0.85;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chat-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes message-smooth-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .bootSequence {
   border: 2px solid var(--border);
   background: color-mix(in srgb, var(--surface-2) 82%, transparent);
@@ -3913,19 +4443,32 @@
 .statusEffects {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-left: 4px;
+  gap: 2px;
+  margin-left: 2px;
+  max-width: 84px;
+  overflow: hidden;
+}
+
+.statusEffectsNeutral {
+  gap: 6px;
 }
 
 .statusEffectChip {
-  font-size: 8.5px;
-  padding: 1px 5px;
+  font-size: 7px;
+  padding: 0 3px;
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: 999px;
   color: var(--text-muted);
   background: color-mix(in srgb, var(--surface-2) 80%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.statusEffectChipNeutral {
+  font-size: 7px;
+  padding: 0 4px;
+  color: var(--text-subtle);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 .sceneTransitioning {
@@ -4089,6 +4632,57 @@
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   padding: 5px;
   background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.overviewQuestCard {
+  margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 12px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 7px;
+}
+
+.overviewQuestTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.overviewQuestState,
+.overviewQuestProgressLabel,
+.overviewQuestHistoryLine {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.overviewQuestProgressTrack {
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  overflow: hidden;
+}
+
+.overviewQuestProgressFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 48%, transparent),
+    var(--primary)
+  );
+}
+
+.overviewQuestHistory {
+  display: grid;
+  gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 10px;
+  padding: 7px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 .retroAchievements {
@@ -4259,6 +4853,123 @@
   background: color-mix(in srgb, var(--primary) 14%, transparent);
   border-color: var(--primary);
 }
+
+.hotkeysList {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.hotkeysList strong {
+  display: inline-block;
+  min-width: 86px;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.density-comfortable .chatItem {
+  padding: 6px 8px;
+  gap: 8px;
+}
+
+.density-comfortable .chatName {
+  font-size: 12px;
+}
+
+.density-comfortable .chatLastMessage {
+  font-size: 11px;
+}
+
+.density-compact .chatItem {
+  padding: 4px 6px;
+  gap: 6px;
+}
+
+.density-ultra .searchSection {
+  padding: 4px 5px;
+  gap: 3px;
+}
+
+.density-ultra .searchInputRow :global(input) {
+  min-height: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.density-ultra .menuToggleButton,
+.density-ultra .activityToggle {
+  width: 24px;
+  height: 24px;
+}
+
+.density-ultra .searchSelect,
+.density-ultra .densitySelect {
+  height: 22px;
+  font-size: 9px;
+  padding: 0 5px;
+}
+
+.density-ultra .quickFiltersRow,
+.density-ultra .bulkActionsRow,
+.density-ultra .filterTabs,
+.density-ultra .sidebarHeader {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.density-ultra .quickFiltersRow :global(button),
+.density-ultra .hotkeysHintButton,
+.density-ultra .bulkActionButton {
+  min-height: 21px;
+  font-size: 9px;
+  padding: 0 5px;
+}
+
+.density-ultra .chatItem {
+  padding: 3px 5px;
+  gap: 5px;
+  margin-bottom: 3px;
+  border-radius: 8px;
+}
+
+.density-ultra .chatSelectButton {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  font-size: 9px;
+}
+
+.density-ultra .avatarImage,
+.density-ultra .avatarPlaceholder {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.density-ultra .chatName {
+  font-size: 10px;
+}
+
+.density-ultra .chatClientHandle,
+.density-ultra .chatSubtitle,
+.density-ultra .chatTime,
+.density-ultra .slaBadge,
+.density-ultra .unreadBubble,
+.density-ultra .urgentBadge {
+  font-size: 7px;
+}
+
+.density-ultra .chatLastMessage {
+  font-size: 9px;
+}
+
+.density-ultra .messageInputContainer {
+  padding: 8px 10px;
+  gap: 6px;
+}
+
 
 .retroTimeRadar {
   display: inline-flex;
@@ -4519,7 +5230,7 @@
 
 @media (max-width: 1340px) {
   .container {
-    grid-template-columns: 300px 1fr 280px;
+    grid-template-columns: 280px 1fr 280px;
   }
 }
 
@@ -4559,8 +5270,8 @@
   }
 
   .chatItem {
-    padding: 9px 10px;
-    gap: 10px;
+    padding: 6px 8px;
+    gap: 8px;
   }
 
   .message {

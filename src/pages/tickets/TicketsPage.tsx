@@ -23,6 +23,16 @@ const DEFAULT_PAGINATION: TicketPagination = {
 const STATUS_OPTIONS: TicketStatus[] = ['new', 'open', 'in_progress', 'pending', 'resolved', 'closed'];
 const PRIORITY_OPTIONS: TicketPriority[] = ['low', 'normal', 'high', 'urgent'];
 
+type TicketHistoryEntry = {
+  id: string;
+  action: string;
+  createdAt?: string;
+  actor: string;
+  from?: string;
+  to?: string;
+  note?: string;
+};
+
 const formatDate = (value?: string) => {
   if (!value) return '—';
 
@@ -49,6 +59,45 @@ const getErrorText = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const toText = (value: unknown) => {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  return '';
+};
+
+const normalizeHistory = (items: unknown[]): TicketHistoryEntry[] => {
+  return items
+    .reduce<TicketHistoryEntry[]>((acc, raw, index) => {
+      if (!raw || typeof raw !== 'object') {
+        return acc;
+      }
+
+      const row = raw as Record<string, unknown>;
+      const actorData = (row.user ?? row.actor ?? row.by) as Record<string, unknown> | undefined;
+
+      acc.push({
+        id: toText(row.id) || toText(row.historyId) || `history-${index}`,
+        action: toText(row.action) || toText(row.type) || toText(row.event) || 'Обновление тикета',
+        createdAt: toText(row.createdAt) || toText(row.timestamp) || toText(row.date),
+        actor:
+          toText(actorData?.username)
+          || toText(actorData?.email)
+          || toText(actorData?.name)
+          || toText(row.actorName)
+          || 'Система',
+        from: toText(row.from) || toText(row.previousValue),
+        to: toText(row.to) || toText(row.nextValue),
+        note: toText(row.note) || toText(row.reason) || toText(row.message),
+      });
+      return acc;
+    }, [])
+    .sort((a, b) => {
+      const aTs = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTs = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTs - aTs;
+    });
+};
+
 export function TicketsPage() {
   const [searchParams] = useSearchParams();
   const [stats, setStats] = useState<TicketStats | null>(null);
@@ -61,6 +110,12 @@ export function TicketsPage() {
   const [limit, setLimit] = useState(20);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedTicketNumber, setSelectedTicketNumber] = useState<string | null>(null);
+  const [historyItems, setHistoryItems] = useState<TicketHistoryEntry[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const [statusUpdatingTicket, setStatusUpdatingTicket] = useState<string | null>(null);
+  const [statusUpdateError, setStatusUpdateError] = useState('');
 
   useEffect(() => {
     const ticketFromUrl = searchParams.get('ticketNumber') || '';
@@ -80,7 +135,9 @@ export function TicketsPage() {
       if (ticketNumber) {
         const single = await ticketsApi.getTicket(ticketNumber);
         setStats(statsResponse);
-        setTickets(single ? [single] : []);
+        const list = single ? [single] : [];
+        setTickets(list);
+        setSelectedTicketNumber(list[0]?.ticketNumber ?? null);
         setPagination({ ...DEFAULT_PAGINATION, total: single ? 1 : 0, pages: 1 });
         return;
       }
@@ -95,7 +152,12 @@ export function TicketsPage() {
       });
 
       setStats(statsResponse);
-      setTickets(Array.isArray(listResponse.tickets) ? listResponse.tickets : []);
+      const list = Array.isArray(listResponse.tickets) ? listResponse.tickets : [];
+      setTickets(list);
+      setSelectedTicketNumber((prev) => {
+        if (prev && list.some((ticket) => ticket.ticketNumber === prev)) return prev;
+        return list[0]?.ticketNumber ?? null;
+      });
       setPagination(listResponse.pagination ?? DEFAULT_PAGINATION);
     } catch (e) {
       setError(getErrorText(e, 'Ошибка загрузки тикетов'));
@@ -107,6 +169,63 @@ export function TicketsPage() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  const loadHistory = useCallback(async (targetTicketNumber: string) => {
+    setIsHistoryLoading(true);
+    setHistoryError('');
+
+    try {
+      const response = await ticketsApi.getHistory(targetTicketNumber);
+      const normalized = normalizeHistory(Array.isArray(response?.history) ? response.history : []);
+      setHistoryItems(normalized);
+    } catch (e) {
+      setHistoryItems([]);
+      setHistoryError(getErrorText(e, 'Не удалось загрузить историю тикета'));
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedTicketNumber) {
+      setHistoryItems([]);
+      setHistoryError('');
+      return;
+    }
+
+    void loadHistory(selectedTicketNumber);
+  }, [loadHistory, selectedTicketNumber]);
+
+  const handleStatusChange = useCallback(async (ticketNumberValue: string, nextStatus: string) => {
+    const currentTicket = tickets.find((item) => item.ticketNumber === ticketNumberValue);
+    if (!currentTicket || currentTicket.status === nextStatus) return;
+
+    const previousStatus = currentTicket.status;
+
+    setStatusUpdateError('');
+    setStatusUpdatingTicket(ticketNumberValue);
+    setTickets((prev) => prev.map((ticket) => (
+      ticket.ticketNumber === ticketNumberValue
+        ? { ...ticket, status: nextStatus, updatedAt: new Date().toISOString() }
+        : ticket
+    )));
+
+    try {
+      await ticketsApi.setStatus(ticketNumberValue, nextStatus);
+      if (selectedTicketNumber === ticketNumberValue) {
+        void loadHistory(ticketNumberValue);
+      }
+    } catch (e) {
+      setTickets((prev) => prev.map((ticket) => (
+        ticket.ticketNumber === ticketNumberValue
+          ? { ...ticket, status: previousStatus }
+          : ticket
+      )));
+      setStatusUpdateError(getErrorText(e, 'Не удалось обновить статус. Изменение отменено.'));
+    } finally {
+      setStatusUpdatingTicket(null);
+    }
+  }, [loadHistory, selectedTicketNumber, tickets]);
 
   const canPrev = pagination.page > 1;
   const canNext = pagination.page < pagination.pages;
@@ -121,10 +240,28 @@ export function TicketsPage() {
     return Object.entries(stats.byPriority);
   }, [stats?.byPriority]);
 
+  const skeletonRows = useMemo(() => Array.from({ length: 6 }, (_, idx) => idx), []);
+  const selectedTicket = useMemo(
+    () => tickets.find((ticket) => ticket.ticketNumber === selectedTicketNumber) ?? null,
+    [selectedTicketNumber, tickets],
+  );
+  const statusAnnouncement = useMemo(() => {
+    if (isLoading) return 'Загрузка списка тикетов';
+    if (statusUpdatingTicket) return `Обновляем статус тикета ${statusUpdatingTicket}`;
+    if (statusUpdateError) return statusUpdateError;
+    if (error) return error;
+    return '';
+  }, [error, isLoading, statusUpdateError, statusUpdatingTicket]);
+
   return (
     <Layout>
       <div className={styles.page}>
+        <p className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">
+          {statusAnnouncement}
+        </p>
+
         <header className={styles.header}>
+          <p className={styles.kicker}>support center</p>
           <h1 className={styles.title}>Тикеты</h1>
           <p className={styles.subtitle}>Статистика и список тикетов</p>
         </header>
@@ -132,13 +269,15 @@ export function TicketsPage() {
         <section className={styles.statsGrid} aria-label="Статистика тикетов">
           <article className={styles.statCard}>
             <div className={styles.statLabel}>Всего тикетов</div>
-            <div className={styles.statValue}>{stats?.total ?? 0}</div>
+            <div className={styles.statValue}>{isLoading ? <span className={styles.statSkeleton} /> : (stats?.total ?? 0)}</div>
           </article>
 
           <article className={styles.statCard}>
             <div className={styles.statLabel}>По статусам</div>
             <div className={styles.statList}>
-              {totalByStatus.length === 0
+              {isLoading
+                ? <span className={styles.statSkeletonLong} />
+                : totalByStatus.length === 0
                 ? '—'
                 : totalByStatus.map(([key, value]) => `${key}: ${value}`).join(' · ')}
             </div>
@@ -147,7 +286,9 @@ export function TicketsPage() {
           <article className={styles.statCard}>
             <div className={styles.statLabel}>По приоритетам</div>
             <div className={styles.statList}>
-              {totalByPriority.length === 0
+              {isLoading
+                ? <span className={styles.statSkeletonLong} />
+                : totalByPriority.length === 0
                 ? '—'
                 : totalByPriority.map(([key, value]) => `${key}: ${value}`).join(' · ')}
             </div>
@@ -230,34 +371,81 @@ export function TicketsPage() {
             </label>
           </div>
 
-          {isLoading ? <div className={styles.note}>Загрузка тикетов...</div> : null}
+          {isLoading ? (
+            <div className={styles.tableSkeleton} aria-label="Загрузка тикетов">
+              {skeletonRows.map((item) => (
+                <div key={`ticket-row-skeleton-${item}`} className={styles.tableSkeletonRow}>
+                  <span className={styles.tableSkeletonCell} />
+                  <span className={styles.tableSkeletonCell} />
+                  <span className={styles.tableSkeletonCell} />
+                  <span className={styles.tableSkeletonCellWide} />
+                </div>
+              ))}
+            </div>
+          ) : null}
           {!isLoading && error ? <div className={styles.error}>{error}</div> : null}
+          {!isLoading && statusUpdateError ? <div className={styles.error}>{statusUpdateError}</div> : null}
 
           {!isLoading && !error ? (
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>ticketNumber</th>
-                    <th>status</th>
-                    <th>priority</th>
-                    <th>category</th>
-                    <th>assigned</th>
-                    <th>updatedAt</th>
+                    <th scope="col">ticketNumber</th>
+                    <th scope="col">status</th>
+                    <th scope="col">priority</th>
+                    <th scope="col">category</th>
+                    <th scope="col">assigned</th>
+                    <th scope="col">updatedAt</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tickets.length === 0 ? (
                     <tr>
                       <td colSpan={6} className={styles.empty}>
-                        Тикеты не найдены
+                        <div className={styles.emptyState}>
+                          <p className={styles.emptyStateTitle}>Тикеты не найдены</p>
+                          <p className={styles.emptyStateText}>Измените фильтры или сбросьте `ticketNumber`, чтобы увидеть список.</p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     tickets.map((ticket) => (
-                      <tr key={ticket.ticketNumber}>
+                      <tr
+                        key={ticket.ticketNumber}
+                        className={`${styles.tableRow} ${selectedTicketNumber === ticket.ticketNumber ? styles.tableRowActive : ''}`}
+                        onClick={() => setSelectedTicketNumber(ticket.ticketNumber)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setSelectedTicketNumber(ticket.ticketNumber);
+                          }
+                        }}
+                        tabIndex={0}
+                        aria-selected={selectedTicketNumber === ticket.ticketNumber}
+                      >
                         <td className={styles.mono}>{ticket.ticketNumber}</td>
-                        <td>{ticket.status || '—'}</td>
+                        <td>
+                          <label htmlFor={`ticket-status-${ticket.ticketNumber}`} className={styles.srOnly}>
+                            Изменить статус для тикета {ticket.ticketNumber}
+                          </label>
+                          <select
+                            id={`ticket-status-${ticket.ticketNumber}`}
+                            className={styles.statusSelect}
+                            value={ticket.status || ''}
+                            disabled={statusUpdatingTicket === ticket.ticketNumber}
+                            onChange={(event) => {
+                              void handleStatusChange(ticket.ticketNumber, event.target.value);
+                            }}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {STATUS_OPTIONS.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
                         <td>{ticket.priority || '—'}</td>
                         <td>{ticket.category || '—'}</td>
                         <td>{ticket.assignedUser?.username || ticket.assignedUser?.email || '—'}</td>
@@ -269,6 +457,49 @@ export function TicketsPage() {
               </table>
             </div>
           ) : null}
+
+          <section className={styles.historySection} aria-live="polite" aria-busy={isHistoryLoading}>
+            <div className={styles.historySectionHeader}>
+              <h3 className={styles.historyTitle}>История изменений</h3>
+              {selectedTicket ? <p className={styles.historyMeta}>Тикет: {selectedTicket.ticketNumber}</p> : null}
+            </div>
+
+            {isHistoryLoading ? (
+              <div className={styles.historySkeleton} aria-label="Загрузка истории тикета">
+                {skeletonRows.slice(0, 4).map((item) => (
+                  <span key={`history-skeleton-${item}`} className={styles.historySkeletonRow} />
+                ))}
+              </div>
+            ) : null}
+
+            {!isHistoryLoading && historyError ? <p className={styles.historyError}>{historyError}</p> : null}
+
+            {!isHistoryLoading && !historyError && historyItems.length === 0 ? (
+              <p className={styles.historyEmpty}>История по выбранному тикету пока отсутствует.</p>
+            ) : null}
+
+            {!isHistoryLoading && !historyError && historyItems.length > 0 ? (
+              <ol className={styles.historyList}>
+                {historyItems.map((item) => (
+                  <li key={item.id} className={styles.historyItem}>
+                    <div className={styles.historyDot} aria-hidden="true" />
+                    <div className={styles.historyContent}>
+                      <p className={styles.historyAction}>{item.action}</p>
+                      <p className={styles.historyInfo}>
+                        {formatDate(item.createdAt)} · {item.actor}
+                      </p>
+                      {item.from || item.to ? (
+                        <p className={styles.historyDiff}>
+                          {item.from || '—'} → {item.to || '—'}
+                        </p>
+                      ) : null}
+                      {item.note ? <p className={styles.historyNote}>{item.note}</p> : null}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </section>
 
           <div className={styles.paginationRow}>
             <Button

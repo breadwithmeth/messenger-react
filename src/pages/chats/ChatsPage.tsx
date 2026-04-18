@@ -1,4 +1,15 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from 'react';
+import {
+  Fragment,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  useDeferredValue,
+  type ReactNode,
+  type CSSProperties,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../shared/ui/Layout/Layout';
 import { Button } from '../../shared/ui/Button/Button';
@@ -24,6 +35,7 @@ import type { WorkforceActivityDto } from '@/features/workforce/model/types';
 import styles from './ChatsPage.module.css';
 
 type ChatFilter = 'all' | 'my' | 'ignored' | 'open' | 'unread';
+type DensityMode = 'comfortable' | 'compact' | 'ultra';
 
 type MediaType = 'image' | 'document' | 'video' | 'audio';
 
@@ -77,6 +89,23 @@ type AchievementId =
   | 'nightShift'
   | 'urgentHunter';
 
+type TicketHistoryEntry = {
+  id: string;
+  action: string;
+  createdAt?: string;
+  actor: string;
+  from?: string;
+  to?: string;
+  note?: string;
+};
+
+type LocalActionEntry = {
+  id: number;
+  createdAt: string;
+  text: string;
+  tone: 'neutral' | 'success' | 'danger';
+};
+
 const formatTimeAgo = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
@@ -97,6 +126,24 @@ const formatDateTime = (iso: string) => {
     hour: '2-digit',
     minute: '2-digit',
   });
+};
+
+const formatDayLabel = (iso: string) => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: 'long',
+    weekday: 'short',
+  });
+};
+
+const getDayKey = (iso: string) => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 };
 
 const extractPhoneFromJid = (jid: string | null) => {
@@ -120,6 +167,79 @@ const getQuestStatus = (chat: Chat) => {
   return 'COMPLETED';
 };
 
+const getFlowStatus = (chat: Chat) => {
+  if (chat.priority === 'urgent') return 'Срочно';
+  if ((chat.unreadCount ?? 0) > 0) return 'Новый';
+  if (chat.assignedUser) return 'В работе';
+  if (chat.status === 'closed') return 'Закрыт';
+  return 'Готово';
+};
+
+const getRadarLabel = (id: string) => {
+  if (id === 'urgent') return 'Срочные';
+  if (id === 'unread') return 'Непрочитанные';
+  if (id === 'translated') return 'Переводы';
+  if (id === 'voice') return 'Голос';
+  return id;
+};
+
+const formatLastMessagePreview = (lastMessage: Chat['lastMessage']) => {
+  if (!lastMessage) return 'Нет сообщений';
+
+  const text = (lastMessage.content || '').trim();
+  if (text) return text.slice(0, 60);
+
+  const type = (lastMessage.type || '').toLowerCase();
+  if (type === 'image') return '🖼 Фото';
+  if (type === 'video') return '🎬 Видео';
+  if (type === 'audio') return '🎧 Аудио';
+  if (type === 'document') return '📄 Документ';
+  if (type === 'sticker') return '🌟 Стикер';
+
+  return 'Сообщение';
+};
+
+const CANCELLATION_TERMS = ['отмен', 'отмена', 'cancel', 'cancellation'];
+const DISCOUNT_TERMS = ['скидк', 'промокод', 'дисконт', 'бонус', 'купон'];
+const SAFE_CANCELLATION_SUGGESTION =
+  'Понимаю ваш запрос на отмену. Давайте подтвердим детали заказа и выберем корректный вариант решения.';
+
+const hasAnyTerm = (text: string, terms: string[]) => {
+  const normalized = text.toLowerCase();
+  return terms.some((term) => normalized.includes(term));
+};
+
+const sanitizeCancellationPolicySuggestion = (text: string) => {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+
+  const talksAboutCancellation = hasAnyTerm(normalized, CANCELLATION_TERMS);
+  const talksAboutDiscounts = hasAnyTerm(normalized, DISCOUNT_TERMS);
+
+  if (talksAboutCancellation && talksAboutDiscounts) {
+    return SAFE_CANCELLATION_SUGGESTION;
+  }
+
+  return normalized;
+};
+
+const buildSafeSuggestions = (rawSuggestions: string[]) => {
+  const unique = new Set<string>();
+
+  for (const suggestion of rawSuggestions) {
+    const safe = sanitizeCancellationPolicySuggestion(suggestion);
+    if (!safe) continue;
+    unique.add(safe);
+    if (unique.size >= 2) break;
+  }
+
+  if (unique.size === 0) {
+    unique.add(SAFE_CANCELLATION_SUGGESTION);
+  }
+
+  return Array.from(unique).slice(0, 2);
+};
+
 const getNpcRarity = (chat: Chat | null): 'COMMON' | 'ELITE' | 'BOSS' => {
   if (!chat) return 'COMMON';
   if (chat.priority === 'urgent') return 'BOSS';
@@ -130,6 +250,12 @@ const getNpcRarity = (chat: Chat | null): 'COMMON' | 'ELITE' | 'BOSS' => {
 const toSlug = (value?: string | null) => (value || '').toLowerCase().replace(/\s+/g, '_');
 
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
+const CHAT_ITEM_ESTIMATED_HEIGHT_BY_DENSITY: Record<DensityMode, number> = {
+  comfortable: 74,
+  compact: 56,
+  ultra: 48,
+};
+const CHAT_LIST_OVERSCAN = 8;
 const TICKET_STATUS_OPTIONS: Array<TicketStatus | string> = [
   'new',
   'open',
@@ -151,6 +277,46 @@ const formatTicketDuration = (startedAt?: string | null) => {
   if (hours > 0) return `${hours}ч`;
   const minutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
   return `${minutes} мин`;
+};
+
+const toText = (value: unknown) => {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  return '';
+};
+
+const normalizeTicketHistory = (items: unknown[]): TicketHistoryEntry[] => {
+  return items
+    .reduce<TicketHistoryEntry[]>((acc, raw, index) => {
+      if (!raw || typeof raw !== 'object') {
+        return acc;
+      }
+
+      const row = raw as Record<string, unknown>;
+      const actorData = (row.user ?? row.actor ?? row.by) as Record<string, unknown> | undefined;
+
+      acc.push({
+        id: toText(row.id) || toText(row.historyId) || `history-${index}`,
+        action: toText(row.action) || toText(row.type) || toText(row.event) || 'Обновление тикета',
+        createdAt: toText(row.createdAt) || toText(row.timestamp) || toText(row.date),
+        actor:
+          toText(actorData?.username)
+          || toText(actorData?.email)
+          || toText(actorData?.name)
+          || toText(row.actorName)
+          || 'Система',
+        from: toText(row.from) || toText(row.previousValue),
+        to: toText(row.to) || toText(row.nextValue),
+        note: toText(row.note) || toText(row.reason) || toText(row.message),
+      });
+
+      return acc;
+    }, [])
+    .sort((a, b) => {
+      const aTs = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTs = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTs - aTs;
+    });
 };
 
 const formatPhoneInput = (raw: string) => {
@@ -227,6 +393,8 @@ export function ChatsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
+  const deferredChats = useDeferredValue(chats);
+  const [chatListViewport, setChatListViewport] = useState({ scrollTop: 0, height: 0 });
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const selectedChatIdRef = useRef<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -237,6 +405,10 @@ export function ChatsPage() {
   const [isLoadingMoreChats, setIsLoadingMoreChats] = useState(false);
   const [error, setError] = useState<string>('');
   const [activeFilter, setActiveFilter] = useState<ChatFilter>('all');
+  const [densityMode, setDensityMode] = useState<DensityMode>('compact');
+  const [selectedChatIds, setSelectedChatIds] = useState<number[]>([]);
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [isHotkeysHelpOpen, setIsHotkeysHelpOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
@@ -253,10 +425,10 @@ export function ChatsPage() {
   const [previewCaption, setPreviewCaption] = useState('');
   const [viewerMessage, setViewerMessage] = useState<Message | null>(null);
   const [isAssigningChat, setIsAssigningChat] = useState(false);
-  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestionsFromCache, setSuggestionsFromCache] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [sendError, setSendError] = useState('');
   const [activeVoiceMessageId, setActiveVoiceMessageId] = useState<number | null>(null);
@@ -317,6 +489,11 @@ export function ChatsPage() {
   const [isTicketActionLoading, setIsTicketActionLoading] = useState(false);
   const [ticketActionError, setTicketActionError] = useState('');
   const [ticketActionToast, setTicketActionToast] = useState('');
+  const [ticketHistory, setTicketHistory] = useState<TicketHistoryEntry[]>([]);
+  const [isTicketHistoryLoading, setIsTicketHistoryLoading] = useState(false);
+  const [ticketHistoryError, setTicketHistoryError] = useState('');
+  const [localActionTimeline, setLocalActionTimeline] = useState<LocalActionEntry[]>([]);
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
   // pinning disabled
   const [isActivityVisible, setIsActivityVisible] = useState(true);
 
@@ -328,6 +505,53 @@ export function ChatsPage() {
     if (!selectedChatId) return null;
     return chats.find((c) => c.id === selectedChatId) ?? null;
   }, [chats, selectedChatId]);
+
+  const pushLocalAction = useCallback((text: string, tone: LocalActionEntry['tone'] = 'neutral') => {
+    const now = new Date().toISOString();
+    setLocalActionTimeline((prev) => [
+      {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        createdAt: now,
+        text,
+        tone,
+      },
+      ...prev,
+    ].slice(0, 12));
+  }, []);
+
+  const isSelectedChatFresh = useMemo(() => {
+    if (!selectedChat) return false;
+    return selectedChat.status === 'new' || (selectedChat.unreadCount ?? 0) > 0;
+  }, [selectedChat]);
+
+  const isLatestMessageFromClient = useMemo(() => {
+    if (messages.length > 0) {
+      const latest = messages[messages.length - 1];
+      return !latest.fromMe;
+    }
+
+    if (selectedChat?.lastMessage) {
+      return !selectedChat.lastMessage.fromMe;
+    }
+
+    return false;
+  }, [messages, selectedChat?.lastMessage]);
+
+  const canUseAiSuggestions = isSelectedChatFresh && isLatestMessageFromClient;
+
+  const unreadStartMessageIndex = useMemo(() => {
+    const unreadCount = Math.max(0, selectedChat?.unreadCount ?? 0);
+    if (unreadCount === 0 || messages.length === 0) return -1;
+
+    let unreadSeen = 0;
+    for (let idx = messages.length - 1; idx >= 0; idx -= 1) {
+      if (messages[idx].fromMe) continue;
+      unreadSeen += 1;
+      if (unreadSeen === unreadCount) return idx;
+    }
+
+    return -1;
+  }, [messages, selectedChat?.unreadCount]);
 
   const selectedChatPhone = useMemo(() => {
     return extractPhoneFromJid(selectedChat?.remoteJid ?? null);
@@ -482,6 +706,16 @@ export function ChatsPage() {
     });
     if (latest.length > 0) return latest.reverse();
     return ['NO RECENT EVENTS'];
+  }, [messages]);
+
+  const operationalHistory = useMemo(() => {
+    const latest = messages.slice(-4).map((m) => {
+      const stamp = formatDateTime(m.timestamp) || '--:--';
+      const source = m.fromMe ? 'Оператор' : 'Клиент';
+      return `${stamp} ${source}`;
+    });
+    if (latest.length > 0) return latest.reverse();
+    return ['Нет недавних событий'];
   }, [messages]);
 
   const retroAchievementList = useMemo(
@@ -1077,10 +1311,10 @@ export function ChatsPage() {
       setPendingAttachment(null);
       setPreviewCaption('');
       setMediaError('');
-      setIsSuggestionsOpen(false);
       setSuggestions([]);
       setSuggestionsError('');
       setIsLoadingSuggestions(false);
+      setSuggestionsFromCache(false);
       setMessagesPagination((prev) => ({ ...prev, offset: 0, hasMore: false, total: 0 }));
       messagesPaginationRef.current = { ...messagesPaginationRef.current, offset: 0, hasMore: false };
     },
@@ -1088,7 +1322,7 @@ export function ChatsPage() {
   );
 
   const getFilteredChats = useCallback((): Chat[] => {
-    let result = chats;
+    let result = deferredChats;
 
     if (activeFilter === 'my' && user) {
       // Сервер уже возвращает assignedToMe, не фильтруем повторно чтобы не терять чаты из-за несовпадения id
@@ -1110,7 +1344,117 @@ export function ChatsPage() {
     }
 
     return result;
-  }, [activeFilter, channelFilter, chats, priorityFilter, user]);
+  }, [activeFilter, channelFilter, deferredChats, priorityFilter, user]);
+
+  const filteredChats = useMemo(() => getFilteredChats(), [getFilteredChats]);
+  const chatItemEstimatedHeight = CHAT_ITEM_ESTIMATED_HEIGHT_BY_DENSITY[densityMode];
+
+  const getSlaMeta = useCallback((chat: Chat) => {
+    const diffMs = Date.now() - new Date(chat.lastMessageAt).getTime();
+    const minutes = Math.max(0, Math.floor(diffMs / 60000));
+    if (minutes >= 30) return { label: `SLA ${minutes}м`, level: 'critical' as const };
+    if (minutes >= 15) return { label: `SLA ${minutes}м`, level: 'warning' as const };
+    return { label: `SLA ${minutes}м`, level: 'ok' as const };
+  }, []);
+
+  const toggleChatSelection = useCallback((chatId: number) => {
+    setSelectedChatIds((prev) => (prev.includes(chatId) ? prev.filter((id) => id !== chatId) : [...prev, chatId]));
+  }, []);
+
+  const clearBulkSelection = useCallback(() => {
+    setSelectedChatIds([]);
+  }, []);
+
+  const selectAllFilteredChats = useCallback(() => {
+    setSelectedChatIds(filteredChats.map((chat) => chat.id));
+  }, [filteredChats]);
+
+  const handleBulkMarkRead = useCallback(async () => {
+    if (selectedChatIds.length === 0) return;
+    setIsBulkActionLoading(true);
+    try {
+      await Promise.all(selectedChatIds.map((id) => chatsApi.markChatRead(id)));
+      setChats((prev) => prev.map((chat) => (selectedChatIds.includes(chat.id) ? { ...chat, unreadCount: 0 } : chat)));
+      emitToast(`Отмечено прочитанными: ${selectedChatIds.length}`);
+      setSelectedChatIds([]);
+    } catch {
+      emitToast('Не удалось применить массовое действие');
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  }, [selectedChatIds]);
+
+  const handleBulkAssignToMe = useCallback(async () => {
+    if (!user || selectedChatIds.length === 0) return;
+    setIsBulkActionLoading(true);
+    try {
+      const selectedSet = new Set(selectedChatIds);
+      const targets = chats.filter((chat) => selectedSet.has(chat.id) && !chat.assignedUser).map((chat) => chat.id);
+      const assigned = await Promise.all(targets.map((chatId) => chatsApi.assignChat({ chatId, operatorId: user.id })));
+      const map = new Map(assigned.map((item) => [item.chat.id, item.chat]));
+      setChats((prev) => prev.map((chat) => map.get(chat.id) ?? chat));
+      emitToast(`Назначено на вас: ${targets.length}`);
+      setSelectedChatIds([]);
+    } catch {
+      emitToast('Не удалось назначить выбранные чаты');
+    } finally {
+      setIsBulkActionLoading(false);
+    }
+  }, [chats, selectedChatIds, user]);
+
+  const shouldVirtualizeChats = filteredChats.length > 60;
+
+  const virtualChatWindow = useMemo(() => {
+    if (!shouldVirtualizeChats) return null;
+
+    const viewportHeight = chatListViewport.height || 620;
+    const visibleCount = Math.max(1, Math.ceil(viewportHeight / chatItemEstimatedHeight));
+    const start = Math.max(
+      0,
+      Math.floor(chatListViewport.scrollTop / chatItemEstimatedHeight) - CHAT_LIST_OVERSCAN
+    );
+    const end = Math.min(filteredChats.length, start + visibleCount + CHAT_LIST_OVERSCAN * 2);
+
+    return {
+      start,
+      end,
+      paddingTop: start * chatItemEstimatedHeight,
+      paddingBottom: (filteredChats.length - end) * chatItemEstimatedHeight,
+    };
+  }, [chatItemEstimatedHeight, chatListViewport.height, chatListViewport.scrollTop, filteredChats.length, shouldVirtualizeChats]);
+
+  const chatsToRender = useMemo(() => {
+    if (!virtualChatWindow) return filteredChats;
+    return filteredChats.slice(virtualChatWindow.start, virtualChatWindow.end);
+  }, [filteredChats, virtualChatWindow]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('chat-density-mode') as DensityMode | null;
+    if (!stored) return;
+    if (stored === 'comfortable' || stored === 'compact' || stored === 'ultra') {
+      setDensityMode(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('chat-density-mode', densityMode);
+  }, [densityMode]);
+
+  useEffect(() => {
+    const allowed = new Set(filteredChats.map((chat) => chat.id));
+    setSelectedChatIds((prev) => prev.filter((id) => allowed.has(id)));
+  }, [filteredChats]);
+
+  const updateChatListViewport = useCallback(() => {
+    const el = chatListRef.current;
+    if (!el) return;
+
+    setChatListViewport((prev) => {
+      const next = { scrollTop: el.scrollTop, height: el.clientHeight };
+      if (prev.scrollTop === next.scrollTop && prev.height === next.height) return prev;
+      return next;
+    });
+  }, []);
 
   const loadCurrentTicket = useCallback(async () => {
     if (!currentTicketNumber) {
@@ -1130,6 +1474,28 @@ export function ChatsPage() {
       else setTicketError('Не удалось загрузить тикет');
     } finally {
       setIsLoadingTicket(false);
+    }
+  }, [currentTicketNumber]);
+
+  const loadTicketHistory = useCallback(async () => {
+    if (!currentTicketNumber) {
+      setTicketHistory([]);
+      setTicketHistoryError('');
+      return;
+    }
+
+    setIsTicketHistoryLoading(true);
+    setTicketHistoryError('');
+    try {
+      const response = await ticketsApi.getHistory(String(currentTicketNumber));
+      const normalized = normalizeTicketHistory(Array.isArray(response?.history) ? response.history : []);
+      setTicketHistory(normalized);
+    } catch (err) {
+      setTicketHistory([]);
+      if (err instanceof NetworkError) setTicketHistoryError(err.message);
+      else setTicketHistoryError('Не удалось загрузить историю тикета');
+    } finally {
+      setIsTicketHistoryLoading(false);
     }
   }, [currentTicketNumber]);
 
@@ -1200,35 +1566,86 @@ export function ChatsPage() {
     }
   }, [commentInput, selectedChatId]);
 
-  const withTicketAction = useCallback(async (action: () => Promise<unknown>, fallbackError: string) => {
+  const withTicketAction = useCallback(async (
+    action: () => Promise<unknown>,
+    fallbackError: string,
+    options?: {
+      optimisticUpdate?: (prev: Ticket | null) => Ticket | null;
+      onSuccessText?: string;
+      onFailText?: string;
+    }
+  ) => {
+    const snapshot = currentTicket;
+
+    if (options?.optimisticUpdate) {
+      setCurrentTicket((prev) => options.optimisticUpdate?.(prev) ?? prev);
+    }
+
     setIsTicketActionLoading(true);
     setTicketActionError('');
+    setLiveAnnouncement('Выполняем действие по тикету');
+
     try {
       await action();
       await loadCurrentTicket();
+      if (options?.onSuccessText) {
+        pushLocalAction(options.onSuccessText, 'success');
+        setLiveAnnouncement(options.onSuccessText);
+      }
+      void loadTicketHistory();
       return true;
     } catch (err) {
+      setCurrentTicket(snapshot);
       if (err instanceof NetworkError) setTicketActionError(err.message);
       else setTicketActionError(fallbackError);
+
+      const failText = options?.onFailText || fallbackError;
+      pushLocalAction(failText, 'danger');
+      setLiveAnnouncement(failText);
       return false;
     } finally {
       setIsTicketActionLoading(false);
     }
-  }, [loadCurrentTicket]);
+  }, [currentTicket, loadCurrentTicket, loadTicketHistory, pushLocalAction]);
 
   const handleAssignTicketToMe = useCallback(async () => {
     if (!currentTicketNumber || !user?.id) return;
     await withTicketAction(
       () => ticketsApi.assignTicket(currentTicketNumber, user.id),
-      'Не удалось назначить тикет на вас'
+      'Не удалось назначить тикет на вас',
+      {
+        optimisticUpdate: (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            assignedUserId: user.id,
+            assignedUser: {
+              id: user.id,
+              email: user.email,
+            },
+          };
+        },
+        onSuccessText: 'Тикет назначен на вас',
+      }
     );
-  }, [currentTicketNumber, user?.id, withTicketAction]);
+  }, [currentTicketNumber, user, withTicketAction]);
 
   const handleSetTicketStatus = useCallback(async (status: string) => {
     if (!currentTicketNumber) return;
     await withTicketAction(
       () => ticketsApi.setStatus(currentTicketNumber, status),
-      'Не удалось изменить статус тикета'
+      'Не удалось изменить статус тикета',
+      {
+        optimisticUpdate: (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            status,
+            updatedAt: new Date().toISOString(),
+          };
+        },
+        onSuccessText: `Статус тикета обновлен: ${status}`,
+      }
     );
   }, [currentTicketNumber, withTicketAction]);
 
@@ -1236,7 +1653,18 @@ export function ChatsPage() {
     if (!currentTicketNumber) return;
     await withTicketAction(
       () => ticketsApi.setPriority(currentTicketNumber, priority),
-      'Не удалось изменить приоритет тикета'
+      'Не удалось изменить приоритет тикета',
+      {
+        optimisticUpdate: (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            priority,
+            updatedAt: new Date().toISOString(),
+          };
+        },
+        onSuccessText: `Приоритет тикета обновлен: ${priority}`,
+      }
     );
   }, [currentTicketNumber, withTicketAction]);
 
@@ -1244,7 +1672,19 @@ export function ChatsPage() {
     if (!currentTicketNumber) return;
     const success = await withTicketAction(
       () => ticketsApi.closeTicket(currentTicketNumber),
-      'Не удалось закрыть тикет'
+      'Не удалось закрыть тикет',
+      {
+        optimisticUpdate: (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            status: 'closed',
+            closedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        },
+        onSuccessText: 'Тикет закрыт',
+      }
     );
     if (!success) return;
     setTicketActionToast('Boss objective closed');
@@ -1268,6 +1708,7 @@ export function ChatsPage() {
   const messagesRefreshInFlightRef = useRef(false);
   const messagesLoadSeqRef = useRef(0);
   const translationsRef = useRef<Record<number, TranslationState>>({});
+  const suggestionsCacheRef = useRef<Map<number, { signature: string; suggestions: string[] }>>(new Map());
 
   const [messagesPagination, setMessagesPagination] = useState({
     total: 0,
@@ -1328,8 +1769,9 @@ export function ChatsPage() {
     const el = chatListRef.current;
     if (!el) return;
     el.scrollTop = chatListScrollTopRef.current;
+    updateChatListViewport();
     shouldRestoreChatListScrollRef.current = false;
-  }, [chats]);
+  }, [chats, updateChatListViewport]);
 
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId;
@@ -1360,6 +1802,10 @@ export function ChatsPage() {
   }, [loadCurrentTicket]);
 
   useEffect(() => {
+    void loadTicketHistory();
+  }, [loadTicketHistory]);
+
+  useEffect(() => {
     if (!ticketActionError) return;
     setTicketActionToast(ticketActionError);
     const t = setTimeout(() => setTicketActionToast(''), 3500);
@@ -1368,6 +1814,10 @@ export function ChatsPage() {
 
   useEffect(() => {
     setTranslationsByMessageId({});
+  }, [selectedChatId]);
+
+  useEffect(() => {
+    setLocalActionTimeline([]);
   }, [selectedChatId]);
 
   useEffect(() => {
@@ -1382,10 +1832,10 @@ export function ChatsPage() {
   }, [selectedChatId]);
 
   useEffect(() => {
-    setIsSuggestionsOpen(false);
     setIsLoadingSuggestions(false);
     setSuggestionsError('');
     setSuggestions([]);
+    setSuggestionsFromCache(false);
   }, [selectedChatId]);
 
   useEffect(() => {
@@ -1463,6 +1913,7 @@ export function ChatsPage() {
     if (!el) return;
 
     const handleScroll = () => {
+      updateChatListViewport();
       const bottomGap = el.scrollHeight - el.scrollTop - el.clientHeight;
       if (bottomGap > 120) return;
 
@@ -1472,8 +1923,19 @@ export function ChatsPage() {
     };
 
     el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, [isLoading, isLoadingMoreChats, activeFilter]);
+    updateChatListViewport();
+    const handleResize = () => updateChatListViewport();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isLoading, isLoadingMoreChats, activeFilter, updateChatListViewport]);
+
+  useEffect(() => {
+    updateChatListViewport();
+  }, [filteredChats.length, updateChatListViewport]);
 
   const loadChats = async (options?: { silent?: boolean }) => {
     const silent = options?.silent ?? false;
@@ -1678,20 +2140,48 @@ export function ChatsPage() {
   const handleToggleAssignment = async () => {
     if (!selectedChatId || !user) return;
     const current = chats.find((c) => c.id === selectedChatId) || null;
+    if (!current) return;
+
+    const optimisticAssignedUser = current.assignedUser
+      ? null
+      : {
+        id: user.id,
+        email: user.email,
+        name: null,
+      };
+
+    setChats((prev) => prev.map((chat) => (
+      chat.id === selectedChatId
+        ? { ...chat, assignedUser: optimisticAssignedUser }
+        : chat
+    )));
+    const actionText = current.assignedUser ? 'Назначение чата снято' : 'Чат назначен на вас';
+    setLiveAnnouncement(`${actionText}. Сохраняем изменения`);
 
     setIsAssigningChat(true);
     try {
       const resp = current?.assignedUser ? await chatsApi.unassignChat({ chatId: selectedChatId }) : await chatsApi.assignChat({ chatId: selectedChatId, operatorId: user.id });
       updateChatInState(resp.chat);
+      pushLocalAction(actionText, 'success');
+      setLiveAnnouncement(actionText);
     } catch (err) {
+      setChats((prev) => prev.map((chat) => (
+        chat.id === selectedChatId
+          ? { ...chat, assignedUser: current.assignedUser }
+          : chat
+      )));
+
       if (err instanceof NetworkError) {
         setError(err.message);
         emitToast(err.message);
+        setLiveAnnouncement(err.message);
       } else {
         const msg = 'Не удалось изменить назначение чата';
         setError(msg);
         emitToast(msg);
+        setLiveAnnouncement(msg);
       }
+      pushLocalAction('Не удалось обновить назначение чата', 'danger');
     } finally {
       setIsAssigningChat(false);
     }
@@ -1699,20 +2189,32 @@ export function ChatsPage() {
 
   const handleMarkChatRead = useCallback(async () => {
     if (!selectedChatId) return;
+    const current = chats.find((c) => c.id === selectedChatId) || null;
+    const previousUnread = current?.unreadCount ?? 0;
+
+    setChats((prev) => prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: 0 } : c)));
+    setLiveAnnouncement('Помечаем чат как прочитанный');
+
     try {
       await chatsApi.markChatRead(selectedChatId);
-      setChats((prev) => prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: 0 } : c)));
+      pushLocalAction('Чат помечен прочитанным', 'success');
+      setLiveAnnouncement('Чат помечен прочитанным');
     } catch (err) {
+      setChats((prev) => prev.map((c) => (c.id === selectedChatId ? { ...c, unreadCount: previousUnread } : c)));
+
       if (err instanceof NetworkError) {
         setError(err.message);
         emitToast(err.message);
+        setLiveAnnouncement(err.message);
       } else {
         const msg = 'Не удалось отметить чат прочитанным';
         setError(msg);
         emitToast(msg);
+        setLiveAnnouncement(msg);
       }
+      pushLocalAction('Не удалось отметить чат прочитанным', 'danger');
     }
-  }, [selectedChatId]);
+  }, [chats, pushLocalAction, selectedChatId]);
 
   const handleSearchInputChange = useCallback(
     (value: string) => {
@@ -1755,30 +2257,185 @@ export function ChatsPage() {
     }
   };
 
-  const loadSuggestions = async () => {
-    if (!selectedChatId) return;
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      if (!el) return false;
+      if (el.isContentEditable) return true;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    };
 
-    setIsLoadingSuggestions(true);
-    setSuggestionsError('');
-    try {
-      const resp = await aiApi.getSuggestions(selectedChatId, 3);
-      setSuggestions(Array.isArray(resp.suggestions) ? resp.suggestions.slice(0, 3) : []);
-      setIsSuggestionsOpen(true);
-    } catch (err) {
-      if (err instanceof NetworkError) {
-        setSuggestionsError(err.message);
-      } else {
-        setSuggestionsError('Не удалось получить подсказки');
+    const handleGlobalHotkeys = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      const isMod = event.ctrlKey || event.metaKey;
+      const isModShift = isMod && event.shiftKey;
+
+      if (isMod && key === 'k') {
+        event.preventDefault();
+        const searchEl = document.getElementById('chat-search-input') as HTMLInputElement | null;
+        searchEl?.focus();
+        searchEl?.select();
+        return;
       }
-      setIsSuggestionsOpen(true);
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  };
+
+      if (key === '/' && !isEditableTarget(event.target)) {
+        event.preventDefault();
+        const searchEl = document.getElementById('chat-search-input') as HTMLInputElement | null;
+        searchEl?.focus();
+        searchEl?.select();
+        return;
+      }
+
+      if (event.shiftKey && event.key === '?') {
+        event.preventDefault();
+        setIsHotkeysHelpOpen((prev) => !prev);
+        return;
+      }
+
+      if (event.altKey && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        if (key === '1') {
+          event.preventDefault();
+          setActiveFilter('all');
+          return;
+        }
+        if (key === '2') {
+          event.preventDefault();
+          setActiveFilter('my');
+          return;
+        }
+        if (key === '3') {
+          event.preventDefault();
+          setActiveFilter('unread');
+          return;
+        }
+        if (key === 'r' && selectedChatId) {
+          event.preventDefault();
+          void handleMarkChatRead();
+          return;
+        }
+      }
+
+      if (isEditableTarget(event.target)) return;
+
+      if (key === 'escape' && isHotkeysHelpOpen) {
+        event.preventDefault();
+        setIsHotkeysHelpOpen(false);
+        return;
+      }
+
+      if (isModShift && key === 'a') {
+        event.preventDefault();
+        selectAllFilteredChats();
+        return;
+      }
+
+      if (isModShift && key === 'd') {
+        event.preventDefault();
+        clearBulkSelection();
+        return;
+      }
+
+      if (isModShift && key === 'r') {
+        event.preventDefault();
+        void handleBulkMarkRead();
+        return;
+      }
+
+      if (isModShift && key === 'm') {
+        event.preventDefault();
+        void handleBulkAssignToMe();
+        return;
+      }
+
+      if (filteredChats.length === 0) return;
+
+      if (key === 'j' || key === 'k' || key === '[' || key === ']') {
+        event.preventDefault();
+        const currentIndex = filteredChats.findIndex((chat) => chat.id === selectedChatId);
+        const delta = key === 'j' || key === ']' ? 1 : -1;
+        const nextIndex = currentIndex === -1 ? 0 : Math.max(0, Math.min(filteredChats.length - 1, currentIndex + delta));
+        const nextChat = filteredChats[nextIndex];
+        if (nextChat) handleChatClick(nextChat.id);
+        return;
+      }
+
+      if (key === 'enter' && selectedChatId) {
+        event.preventDefault();
+        messageInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalHotkeys);
+    return () => window.removeEventListener('keydown', handleGlobalHotkeys);
+  }, [
+    clearBulkSelection,
+    filteredChats,
+    handleBulkAssignToMe,
+    handleBulkMarkRead,
+    handleChatClick,
+    handleMarkChatRead,
+    isHotkeysHelpOpen,
+    selectAllFilteredChats,
+    selectedChatId,
+  ]);
+
+  const loadSuggestions = useCallback(
+    async (options?: { force?: boolean }) => {
+      if (!selectedChatId || !canUseAiSuggestions) {
+        setSuggestions([]);
+        setSuggestionsError('');
+        setSuggestionsFromCache(false);
+        return;
+      }
+
+      // Token-saving strategy: one AI generation per chat, refresh only on explicit user action.
+      const signature = `${selectedChatId}`;
+      const cached = suggestionsCacheRef.current.get(selectedChatId);
+
+      if (!options?.force && cached && cached.signature === signature) {
+        setSuggestions(buildSafeSuggestions(cached.suggestions));
+        setSuggestionsError('');
+        setSuggestionsFromCache(true);
+        return;
+      }
+
+      setIsLoadingSuggestions(true);
+      setSuggestionsError('');
+      try {
+        const resp = await aiApi.getSuggestions(selectedChatId, 2);
+        const next = buildSafeSuggestions(Array.isArray(resp.suggestions) ? resp.suggestions : []);
+        setSuggestions(next);
+        suggestionsCacheRef.current.set(selectedChatId, { signature, suggestions: next });
+        setSuggestionsFromCache(false);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          setSuggestionsError(err.message);
+        } else {
+          setSuggestionsError('Не удалось получить подсказки');
+        }
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    },
+    [canUseAiSuggestions, selectedChatId]
+  );
+
+  useEffect(() => {
+    if (!selectedChatId || !canUseAiSuggestions) return;
+    void loadSuggestions();
+  }, [canUseAiSuggestions, loadSuggestions, selectedChatId]);
+
+  useEffect(() => {
+    if (canUseAiSuggestions) return;
+    setIsLoadingSuggestions(false);
+    setSuggestionsError('');
+    setSuggestions([]);
+    setSuggestionsFromCache(false);
+  }, [canUseAiSuggestions]);
 
   const handlePickSuggestion = (text: string) => {
-    setMessageInput(text);
-    setIsSuggestionsOpen(false);
+    setMessageInput((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
     messageInputRef.current?.focus();
   };
 
@@ -2135,7 +2792,11 @@ export function ChatsPage() {
 
   return (
     <Layout>
-      <div className={styles.page}>
+      <div className={`${styles.page} ${styles[`density-${densityMode}`]}`}>
+        <p className={styles.srOnly} role="status" aria-live="polite" aria-atomic="true">
+          {liveAnnouncement}
+        </p>
+
         <div
           className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''} ${
             isRetroTheme && selectedChat?.priority === 'urgent' ? styles.retroGlitchEvent : ''
@@ -2157,6 +2818,7 @@ export function ChatsPage() {
                   ☰
                 </button>
                 <Input
+                  id="chat-search-input"
                   value={searchText}
                   onChange={(e) => handleSearchInputChange(e.target.value)}
                   placeholder="Поиск по чатам"
@@ -2273,6 +2935,12 @@ export function ChatsPage() {
               >
                 Мои чаты
               </button>
+              <button
+                className={`${styles.filterTab} ${activeFilter === 'unread' ? styles.filterTabActive : ''}`}
+                onClick={() => setActiveFilter('unread')}
+              >
+                Непрочитанные
+              </button>
             </div>
 
             <div className={styles.quickFiltersRow}>
@@ -2283,21 +2951,77 @@ export function ChatsPage() {
               >
                 🔥 Срочные
               </Button>
+              <select
+                className={styles.densitySelect}
+                value={densityMode}
+                onChange={(e) => setDensityMode(e.target.value as DensityMode)}
+                aria-label="Плотность списка"
+                title="Плотность списка"
+              >
+                <option value="comfortable">Комфорт</option>
+                <option value="compact">Компакт</option>
+                <option value="ultra">Ультра</option>
+              </select>
+              <button
+                type="button"
+                className={styles.hotkeysHintButton}
+                onClick={() => setIsHotkeysHelpOpen(true)}
+                aria-label="Подсказка горячих клавиш"
+                title="Горячие клавиши (Shift+?)"
+              >
+                ⌨
+              </button>
             </div>
 
-            {isRetroTheme && (
-              <div className={styles.retroRadarCard} aria-label="Retro radar">
+            <div className={styles.bulkActionsRow}>
+              <button
+                type="button"
+                className={styles.bulkActionButton}
+                onClick={selectAllFilteredChats}
+                disabled={filteredChats.length === 0 || isBulkActionLoading}
+              >
+                Все ({filteredChats.length})
+              </button>
+              <button
+                type="button"
+                className={styles.bulkActionButton}
+                onClick={clearBulkSelection}
+                disabled={selectedChatIds.length === 0 || isBulkActionLoading}
+              >
+                Снять
+              </button>
+              <button
+                type="button"
+                className={styles.bulkActionButton}
+                onClick={() => void handleBulkMarkRead()}
+                disabled={selectedChatIds.length === 0 || isBulkActionLoading}
+              >
+                Прочесть
+              </button>
+              <button
+                type="button"
+                className={styles.bulkActionButton}
+                onClick={() => void handleBulkAssignToMe()}
+                disabled={selectedChatIds.length === 0 || isBulkActionLoading || !user}
+              >
+                Назначить
+              </button>
+            </div>
+
+            <div className={`${styles.retroRadarCard} ${!isRetroTheme ? styles.overviewCard : ''}`} aria-label="Оперативная сводка">
                 <div className={styles.retroRadarHeader}>
-                  <span>RADAR / QUEUE</span>
-                  <button
-                    type="button"
-                    className={styles.retroMiniToggle}
-                    onClick={() => setIsRetroMiniMode((prev) => !prev)}
-                    aria-label={isRetroMiniMode ? 'Обычный размер HUD' : 'Мини размер HUD'}
-                    title={isRetroMiniMode ? 'HUD: Normal' : 'HUD: Mini'}
-                  >
-                    {isRetroMiniMode ? 'NORMAL' : 'MINI'}
-                  </button>
+                  <span>{isRetroTheme ? 'RADAR / QUEUE' : 'ОПЕРАТИВНАЯ СВОДКА'}</span>
+                  {isRetroTheme ? (
+                    <button
+                      type="button"
+                      className={styles.retroMiniToggle}
+                      onClick={() => setIsRetroMiniMode((prev) => !prev)}
+                      aria-label={isRetroMiniMode ? 'Обычный размер HUD' : 'Мини размер HUD'}
+                      title={isRetroMiniMode ? 'HUD: Normal' : 'HUD: Mini'}
+                    >
+                      {isRetroMiniMode ? 'NORMAL' : 'MINI'}
+                    </button>
+                  ) : null}
                 </div>
                 <div className={styles.retroRadarGrid}>
                   {Array.from({ length: Math.max(6, Math.min(10, retroQueueCount + 4)) }).map((_, idx) => (
@@ -2308,7 +3032,7 @@ export function ChatsPage() {
                   ))}
                 </div>
                 <div className={styles.retroRadarFooter}>
-                  <div className={styles.retroRadarMeta}>ALERTS: {retroUrgentCount}</div>
+                  <div className={styles.retroRadarMeta}>{isRetroTheme ? 'ALERTS' : 'Срочных'}: {retroUrgentCount}</div>
                   <div className={styles.retroRadarEvents}>
                     {retroRadarEvents.slice(0, 2).map((event) => (
                     <span
@@ -2325,14 +3049,13 @@ export function ChatsPage() {
                               : styles.retroRadarEventNeutral
                       }`}
                     >
-                      {event.label}:{' '}
+                      {isRetroTheme ? event.label : getRadarLabel(event.id)}:{' '}
                       <strong>{event.value}</strong>
                     </span>
                     ))}
                   </div>
                 </div>
               </div>
-            )}
             
             <div className={styles.chatList} ref={chatListRef}>
               {isLoading && chats.length === 0 ? (
@@ -2365,7 +3088,7 @@ export function ChatsPage() {
                     Повторить
                   </Button>
                 </div>
-              ) : getFilteredChats().length === 0 ? (
+              ) : filteredChats.length === 0 ? (
                 <div className={styles.empty}>
                   <div className={styles.emptyIcon}>
                     <Icon name="chat" size={56} color="var(--text-muted)" />
@@ -2374,13 +3097,21 @@ export function ChatsPage() {
                 </div>
               ) : (
                 <>
-                  {getFilteredChats().map((chat) => {
+                  {virtualChatWindow ? (
+                    <div className={styles.chatListVirtualSpacer} style={{ height: virtualChatWindow.paddingTop }} aria-hidden="true" />
+                  ) : null}
+                  {chatsToRender.map((chat, idx) => {
+                  const absoluteIdx = virtualChatWindow ? virtualChatWindow.start + idx : idx;
                   const displayName = (chat.displayName || chat.name || '').trim() || `Чат #${chat.id}`;
                   const avatarLetter = displayName.charAt(0).toUpperCase();
                   const timeAgo = formatTimeAgo(chat.lastMessageAt);
                   const clientPhone = extractPhoneFromJid(chat.remoteJid);
+                  const telegramHandle = (chat.telegramUsername || '').trim();
+                  const clientHandle = telegramHandle ? `@${telegramHandle.replace(/^@+/, '')}` : clientPhone;
+                  const showClientHandle = Boolean(clientHandle) && clientHandle !== displayName;
                   const orgPhoneLabel = chat.organizationPhone?.displayName || '';
                   const orgConnLabel = chat.organizationPhone?.connectionType || '';
+                  const slaMeta = getSlaMeta(chat);
                   
                   return (
                     <div
@@ -2388,9 +3119,24 @@ export function ChatsPage() {
                       data-priority={chat.priority || undefined}
                       className={`${styles.chatItem} ${
                         selectedChatId === chat.id ? styles.active : ''
+                      } ${
+                        chat.unreadCount > 0 ? styles.chatItemUnread : ''
                       }`}
+                      style={{ '--item-index': Math.min(absoluteIdx, 18) } as CSSProperties}
                       onClick={() => handleChatClick(chat.id)}
                     >
+                      <button
+                        type="button"
+                        className={`${styles.chatSelectButton} ${selectedChatIds.includes(chat.id) ? styles.chatSelectButtonActive : ''}`}
+                        aria-label={selectedChatIds.includes(chat.id) ? 'Убрать из выбранных' : 'Выбрать чат'}
+                        title={selectedChatIds.includes(chat.id) ? 'Убрать из выбранных' : 'Выбрать чат'}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleChatSelection(chat.id);
+                        }}
+                      >
+                        {selectedChatIds.includes(chat.id) ? '✓' : ''}
+                      </button>
                       <div className={styles.chatAvatar}>
                         {chat.profilePhotoUrl ? (
                           <img src={chat.profilePhotoUrl} alt={displayName} className={styles.avatarImage} />
@@ -2414,6 +3160,11 @@ export function ChatsPage() {
                               >
                                 {displayName}
                               </span>
+                              {showClientHandle ? (
+                                <span className={styles.chatClientHandle} title={clientHandle}>
+                                  {clientHandle}
+                                </span>
+                              ) : null}
                               {/* pin badge removed */}
                               {chat.assignedUser && (
                                 <span className={styles.chatAssignedUser}>
@@ -2423,14 +3174,26 @@ export function ChatsPage() {
                               {user && chat.assignedUser?.id === user.id ? (
                                 <span className={styles.myBadge}>Мой</span>
                               ) : null}
-                              {isRetroTheme ? <span className={styles.questBadge}>{getQuestStatus(chat)}</span> : null}
-                              {isRetroTheme ? (
-                                <span className={styles.statusEffects}>
-                                  {chat.status === 'closed' ? <span className={styles.statusEffectChip}>SILENCED</span> : null}
-                                  {(chat.priority === 'high' || chat.priority === 'urgent') ? (
-                                    <span className={styles.statusEffectChip}>PRIORITY</span>
+                              <span className={`${styles.questBadge} ${!isRetroTheme ? styles.questBadgeNeutral : ''}`}>
+                                {isRetroTheme ? getQuestStatus(chat) : getFlowStatus(chat)}
+                              </span>
+                              {chat.status === 'closed' || chat.assignedUser || chat.priority === 'high' || chat.priority === 'urgent' ? (
+                                <span className={`${styles.statusEffects} ${!isRetroTheme ? styles.statusEffectsNeutral : ''}`}>
+                                  {chat.status === 'closed' ? (
+                                    <span className={`${styles.statusEffectChip} ${!isRetroTheme ? styles.statusEffectChipNeutral : ''}`}>
+                                      {isRetroTheme ? 'SILENCED' : 'Закрыт'}
+                                    </span>
                                   ) : null}
-                                  {chat.assignedUser ? <span className={styles.statusEffectChip}>ASSIGNED</span> : null}
+                                  {(chat.priority === 'high' || chat.priority === 'urgent') ? (
+                                    <span className={`${styles.statusEffectChip} ${!isRetroTheme ? styles.statusEffectChipNeutral : ''}`}>
+                                      {isRetroTheme ? 'PRIORITY' : 'Приоритет'}
+                                    </span>
+                                  ) : null}
+                                  {chat.assignedUser ? (
+                                    <span className={`${styles.statusEffectChip} ${!isRetroTheme ? styles.statusEffectChipNeutral : ''}`}>
+                                      {isRetroTheme ? 'ASSIGNED' : 'Назначен'}
+                                    </span>
+                                  ) : null}
                                 </span>
                               ) : null}
                             </div>
@@ -2444,6 +3207,18 @@ export function ChatsPage() {
                           </div>
                           <div className={styles.chatMeta}>
                             <span className={styles.chatTime}>{timeAgo}</span>
+                            <span
+                              className={`${styles.slaBadge} ${
+                                slaMeta.level === 'critical'
+                                  ? styles.slaBadgeCritical
+                                  : slaMeta.level === 'warning'
+                                    ? styles.slaBadgeWarning
+                                    : styles.slaBadgeOk
+                              }`}
+                              title="SLA по времени без ответа"
+                            >
+                              {slaMeta.label}
+                            </span>
                             {chat.priority === 'urgent' && (
                               <span className={styles.urgentBadge}>URGENT</span>
                             )}
@@ -2458,12 +3233,15 @@ export function ChatsPage() {
                             chat.unreadCount > 0 ? styles.chatLastMessageUnread : ''
                           }`}
                         >
-                          {chat.lastMessage?.content.substring(0, 60) || 'Нет сообщений'}
+                          {formatLastMessagePreview(chat.lastMessage)}
                         </p>
                       </div>
                     </div>
                   );
                   })}
+                  {virtualChatWindow ? (
+                    <div className={styles.chatListVirtualSpacer} style={{ height: virtualChatWindow.paddingBottom }} aria-hidden="true" />
+                  ) : null}
                   {isLoadingMoreChats && <div className={styles.chatsMoreLoading}>Загрузка...</div>}
                 </>
               )}
@@ -2675,13 +3453,11 @@ export function ChatsPage() {
                   </div>
                   </div>
 
-                  {isRetroTheme && (
-                    <div className={styles.retroHudBar}>
-                      <span>FOCUS: {selectedChat ? 100 - Math.min(95, selectedChat.unreadCount * 8) : 0}%</span>
-                      <span>QUEUE: {retroQueueCount}</span>
-                      <span>MODE: {retroSelectedQuest}</span>
-                    </div>
-                  )}
+                  <div className={`${styles.retroHudBar} ${!isRetroTheme ? styles.overviewHudBar : ''}`}>
+                    <span>{isRetroTheme ? 'FOCUS' : 'Фокус'}: {selectedChat ? 100 - Math.min(95, selectedChat.unreadCount * 8) : 0}%</span>
+                    <span>{isRetroTheme ? 'QUEUE' : 'В очереди'}: {retroQueueCount}</span>
+                    <span>{isRetroTheme ? 'MODE' : 'Состояние'}: {isRetroTheme ? retroSelectedQuest : (selectedChat ? getFlowStatus(selectedChat) : 'Нет')}</span>
+                  </div>
                 </div>
                 
                 <div className={styles.messagesContainer} ref={messagesContainerRef}>
@@ -2742,6 +3518,9 @@ export function ChatsPage() {
                           hour: '2-digit',
                           minute: '2-digit',
                         });
+                        const previousMessage = idx > 0 ? messages[idx - 1] : null;
+                        const showDayDivider = !previousMessage || getDayKey(previousMessage.timestamp) !== getDayKey(message.timestamp);
+                        const showUnreadDivider = unreadStartMessageIndex === idx;
 
                         const ticketNumber =
                           message.ticketNumber ??
@@ -2756,65 +3535,83 @@ export function ChatsPage() {
                           : '';
                         
                         return (
-                          <div
-                            key={message.id}
-                            className={`${styles.message} ${
-                              message.fromMe ? styles.messageOwn : styles.messageOther
-                            } ${resolveMessageRarityClass(message)} ${isRetroTheme ? styles.messageAppear : ''} ${
-                              urgentIncomingMessageId === message.id ? styles.messageUrgentPulse : ''
-                            }`}
-                            style={isRetroTheme ? { animationDelay: `${Math.min(idx, 12) * 18}ms` } : undefined}
-                            onContextMenu={(event) => openMessageContextMenu(event, message)}
-                          >
-                            <div className={styles.messageContent}>
-                              {isRetroTheme && !message.fromMe ? (
-                                <div className={styles.messageNpcNameplate}>
-                                  {senderLabel || selectedChat?.displayName || 'NPC UNIT'}
-                                </div>
-                              ) : null}
-                              {senderLabel && (
-                                <div className={styles.messageSender}>{senderLabel}</div>
-                              )}
-                              {ticketNumber ? (
-                                <div className={styles.messageTicket}>
-                                  <span className={styles.messageTicketBadge}>Тикет #{ticketNumber}</span>
-                                  {(ticketStatus || ticketPriority) && (
-                                    <span className={styles.messageTicketMeta}>
-                                      {[ticketStatus, ticketPriority].filter(Boolean).join(' · ')}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : null}
-                              {renderMessageBody(message)}
-                              {renderTranslation(message)}
-                              {message.responsibleUser ? (
-                                <div className={styles.messageResponsible}>
-                                  Ответственный: {message.responsibleUser.name || message.responsibleUser.email}
-                                </div>
-                              ) : null}
-                              <span className={styles.messageTime}>
-                                {isRetroTheme ? renderRetroTimeRadar(message.timestamp) : time}
-                              </span>
+                          <Fragment key={message.id}>
+                            {showDayDivider ? (
+                              <div className={styles.messagesDayDivider}>
+                                <span>{formatDayLabel(message.timestamp)}</span>
+                              </div>
+                            ) : null}
+                            {showUnreadDivider ? (
+                              <div className={styles.messagesUnreadDivider}>
+                                <span>Непрочитанные</span>
+                              </div>
+                            ) : null}
+                            <div
+                              className={`${styles.message} ${
+                                message.fromMe ? styles.messageOwn : styles.messageOther
+                              } ${resolveMessageRarityClass(message)} ${isRetroTheme ? styles.messageAppear : styles.messageAppearSmooth} ${
+                                urgentIncomingMessageId === message.id ? styles.messageUrgentPulse : ''
+                              }`}
+                              style={
+                                isRetroTheme
+                                  ? { animationDelay: `${Math.min(idx, 12) * 18}ms` }
+                                  : ({ '--message-index': Math.min(idx, 20) } as CSSProperties)
+                              }
+                              onContextMenu={(event) => openMessageContextMenu(event, message)}
+                            >
+                              <div className={styles.messageContent}>
+                                {isRetroTheme && !message.fromMe ? (
+                                  <div className={styles.messageNpcNameplate}>
+                                    {senderLabel || selectedChat?.displayName || 'NPC UNIT'}
+                                  </div>
+                                ) : null}
+                                {senderLabel && (
+                                  <div className={styles.messageSender}>{senderLabel}</div>
+                                )}
+                                {ticketNumber ? (
+                                  <div className={styles.messageTicket}>
+                                    <span className={styles.messageTicketBadge}>Тикет #{ticketNumber}</span>
+                                    {(ticketStatus || ticketPriority) && (
+                                      <span className={styles.messageTicketMeta}>
+                                        {[ticketStatus, ticketPriority].filter(Boolean).join(' · ')}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : null}
+                                {renderMessageBody(message)}
+                                {renderTranslation(message)}
+                                {message.responsibleUser ? (
+                                  <div className={styles.messageResponsible}>
+                                    Ответственный: {message.responsibleUser.name || message.responsibleUser.email}
+                                  </div>
+                                ) : null}
+                                <span className={styles.messageTime}>
+                                  {isRetroTheme ? renderRetroTimeRadar(message.timestamp) : time}
+                                </span>
+                              </div>
                             </div>
-                          </div>
+                          </Fragment>
                         );
                       })}
                     </div>
                   )}
                 </div>
 
-                {selectedChatId && isSuggestionsOpen && (
+                {selectedChatId && canUseAiSuggestions && (isLoadingSuggestions || suggestionsError || suggestions.length > 0) && (
                   <div className={styles.suggestionsPanel}>
                     <div className={styles.suggestionsHeader}>
-                      <div className={styles.suggestionsTitle}>Подсказки</div>
+                      <div className={styles.suggestionsTitle}>
+                        AI быстрые ответы {suggestionsFromCache ? '(кэш)' : ''}
+                      </div>
                       <button
                         type="button"
                         className={styles.suggestionsClose}
-                        onClick={() => setIsSuggestionsOpen(false)}
-                        aria-label="Закрыть подсказки"
-                        title="Закрыть"
+                        onClick={() => void loadSuggestions({ force: true })}
+                        disabled={isLoadingSuggestions}
+                        aria-label="Обновить подсказки"
+                        title="Обновить"
                       >
-                        ×
+                        ↻
                       </button>
                     </div>
 
@@ -2939,10 +3736,16 @@ export function ChatsPage() {
                   <button
                     type="button"
                     className={styles.suggestionsButton}
-                    onClick={loadSuggestions}
-                    disabled={!selectedChatId || isLoadingSuggestions}
-                    aria-label="Получить подсказки"
-                    title="Подсказки"
+                    onClick={() => void loadSuggestions({ force: true })}
+                    disabled={!selectedChatId || !canUseAiSuggestions || isLoadingSuggestions}
+                    aria-label="Обновить AI ответы"
+                    title={
+                      !selectedChatId
+                        ? 'Выберите чат'
+                        : !canUseAiSuggestions
+                          ? 'AI доступен только в свежих чатах, когда последнее сообщение от клиента'
+                          : 'Обновить AI ответы'
+                    }
                   >
                     AI
                   </button>
@@ -3157,6 +3960,26 @@ export function ChatsPage() {
             </div>
 
             <div className={styles.callPanelContent}>
+              {!isRetroTheme && selectedChatId ? (
+                <section className={styles.overviewQuestCard} aria-label="Сводка чата">
+                  <div className={styles.overviewQuestTitle}>Сводка чата</div>
+                  <div className={styles.overviewQuestState}>
+                    Статус: {selectedChat ? getFlowStatus(selectedChat) : 'Нет данных'}
+                  </div>
+                  <div className={styles.overviewQuestProgressTrack}>
+                    <div className={styles.overviewQuestProgressFill} style={{ width: `${retroQuestProgress}%` }} />
+                  </div>
+                  <div className={styles.overviewQuestProgressLabel}>Прогресс: {retroQuestProgress}%</div>
+                  <div className={styles.overviewQuestHistory}>
+                    {operationalHistory.slice(0, 3).map((entry, idx) => (
+                      <div key={`oh-${idx}-${entry}`} className={styles.overviewQuestHistoryLine}>
+                        {entry}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
               <CallWidget
                 defaultCallee={callWidgetCallee}
                 defaultCalleeVersion={callWidgetCalleeVersion}
@@ -3219,6 +4042,75 @@ export function ChatsPage() {
                   </Button>
                 </div>
               </div>
+
+              <section className={styles.activityTimelineSection} aria-label="История действий" aria-live="polite">
+                <div className={styles.activityTimelineHeader}>
+                  <div className={styles.activityTimelineTitle}>История действий</div>
+                  {currentTicketNumber ? (
+                    <span className={styles.activityTimelineMeta}>Тикет #{currentTicketNumber}</span>
+                  ) : null}
+                </div>
+
+                {localActionTimeline.length === 0 && !currentTicketNumber ? (
+                  <div className={styles.activityTimelineEmpty}>Выберите чат с тикетом, чтобы увидеть историю.</div>
+                ) : null}
+
+                {localActionTimeline.length > 0 ? (
+                  <ol className={styles.activityTimelineList}>
+                    {localActionTimeline.slice(0, 5).map((item) => (
+                      <li key={item.id} className={styles.activityTimelineItem}>
+                        <span
+                          className={`${styles.activityTimelineDot} ${
+                            item.tone === 'success'
+                              ? styles.activityTimelineDotSuccess
+                              : item.tone === 'danger'
+                                ? styles.activityTimelineDotDanger
+                                : styles.activityTimelineDotNeutral
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <div className={styles.activityTimelineContent}>
+                          <div className={styles.activityTimelineText}>{item.text}</div>
+                          <div className={styles.activityTimelineTime}>{formatDateTime(item.createdAt)}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+
+                {currentTicketNumber ? (
+                  <>
+                    {isTicketHistoryLoading ? <div className={styles.activityTimelineState}>Загрузка истории тикета…</div> : null}
+                    {!isTicketHistoryLoading && ticketHistoryError ? (
+                      <div className={styles.activityTimelineError}>{ticketHistoryError}</div>
+                    ) : null}
+                    {!isTicketHistoryLoading && !ticketHistoryError && ticketHistory.length === 0 ? (
+                      <div className={styles.activityTimelineState}>История тикета пока пустая.</div>
+                    ) : null}
+                    {!isTicketHistoryLoading && !ticketHistoryError && ticketHistory.length > 0 ? (
+                      <ol className={styles.activityTimelineList}>
+                        {ticketHistory.slice(0, 6).map((item) => (
+                          <li key={item.id} className={styles.activityTimelineItem}>
+                            <span className={`${styles.activityTimelineDot} ${styles.activityTimelineDotNeutral}`} aria-hidden="true" />
+                            <div className={styles.activityTimelineContent}>
+                              <div className={styles.activityTimelineText}>{item.action}</div>
+                              <div className={styles.activityTimelineMetaLine}>
+                                {formatDateTime(item.createdAt || '')} · {item.actor}
+                              </div>
+                              {item.from || item.to ? (
+                                <div className={styles.activityTimelineMetaLine}>
+                                  {item.from || '—'} → {item.to || '—'}
+                                </div>
+                              ) : null}
+                              {item.note ? <div className={styles.activityTimelineMetaLine}>{item.note}</div> : null}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : null}
+                  </>
+                ) : null}
+              </section>
             </div>
           </aside>
 
@@ -3294,6 +4186,22 @@ export function ChatsPage() {
         </div>
       </div>
       {isActivityFullscreen && <ActivityFullscreen />}
+      <Modal isOpen={isHotkeysHelpOpen} title="Горячие клавиши" onClose={() => setIsHotkeysHelpOpen(false)}>
+        <div className={styles.hotkeysList}>
+          <div><strong>Ctrl/⌘ + K</strong> - фокус на поиск</div>
+          <div><strong>/</strong> - быстрый фокус на поиск</div>
+          <div><strong>J / K</strong> - следующий / предыдущий чат</div>
+          <div><strong>[ / ]</strong> - предыдущий / следующий чат</div>
+          <div><strong>Alt + 1/2/3</strong> - Все / Мои / Непрочитанные</div>
+          <div><strong>Enter</strong> - фокус в поле ввода</div>
+          <div><strong>Alt + R</strong> - отметить выбранный чат прочитанным</div>
+          <div><strong>Ctrl/⌘ + Shift + A</strong> - выбрать все чаты в фильтре</div>
+          <div><strong>Ctrl/⌘ + Shift + D</strong> - снять массовое выделение</div>
+          <div><strong>Ctrl/⌘ + Shift + R</strong> - массово отметить прочитанными</div>
+          <div><strong>Ctrl/⌘ + Shift + M</strong> - массово назначить на меня</div>
+          <div><strong>Shift + ?</strong> - открыть подсказку клавиш</div>
+        </div>
+      </Modal>
     </Layout>
   );
 }

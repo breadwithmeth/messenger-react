@@ -3,20 +3,31 @@
 }
 
 .header {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
+}
+
+.kicker {
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: 11px;
+  color: var(--text-subtle);
+  font-weight: 700;
 }
 
 .title {
   font-size: 32px;
   font-weight: 700;
   color: var(--text);
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
+  line-height: 1.12;
 }
 
 .subtitle {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text-muted);
   margin: 0;
+  max-width: 60ch;
 }
 
 .stats {
@@ -28,31 +39,57 @@
 
 .statCard {
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: var(--s-4);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease, background-color 0.2s ease;
+  animation: section-enter 340ms var(--motion-ease, cubic-bezier(0.2, 0.7, 0.2, 1)) both;
+}
+
+.statCard:nth-child(1) {
+  animation-delay: 30ms;
+}
+
+.statCard:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.statCard:nth-child(3) {
+  animation-delay: 150ms;
+}
+
+.statCard:hover {
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .statLabel {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 12px;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin: 0 0 8px 0;
+  font-weight: 700;
 }
 
 .statValue {
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 700;
   color: var(--text);
   margin: 0;
+  line-height: 1;
 }
 
 .content {
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: var(--s-5);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
+  animation: section-enter 360ms var(--motion-ease, cubic-bezier(0.2, 0.7, 0.2, 1)) both;
+  animation-delay: 120ms;
 }
 
 .section {
@@ -64,10 +101,11 @@
 }
 
 .sectionTitle {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--text);
-  margin: 0 0 16px 0;
+  margin: 0 0 14px 0;
+  line-height: 1.15;
 }
 
 .list {
@@ -77,11 +115,18 @@
 }
 
 .listItem {
-  padding: 12px 0;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.listItem:hover {
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
 }
 
 .listItem:last-child {
@@ -90,14 +135,74 @@
 
 .listLabel {
   color: var(--text);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .listValue {
-  color: var(--text-muted);
+  color: var(--text-subtle);
+  font-size: 13px;
 }
 
 .note {
   margin: 0;
   color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.emptyStateCard {
+  border: 1px dashed color-mix(in srgb, var(--primary) 34%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  padding: 14px;
+}
+
+.quickActionsSkeleton {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.quickActionsLine {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.45s ease-in-out infinite;
+}
+
+.quickActionsLineShort {
+  width: 72%;
+}
+
+.quickActionsLineTiny {
+  width: 46%;
+}
+
+@keyframes section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statCard,
+  .content,
+  .quickActionsLine {
+    animation: none !important;
+  }
 }

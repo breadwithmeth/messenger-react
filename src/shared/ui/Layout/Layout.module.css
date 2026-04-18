@@ -3,6 +3,25 @@
   display: flex;
 }
 
+.skipLink {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 120;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--primary);
+  background: var(--surface-solid);
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-130%);
+}
+
+.skipLink:focus-visible {
+  transform: translateY(0);
+}
+
 .burgerButton {
   width: 44px;
   height: 44px;
@@ -280,8 +299,10 @@
 }
 
 .sidebar {
+  --surface: var(--surface-solid);
+  --surface-2: var(--surface-2-solid);
   width: 220px;
-  background: var(--surface);
+  background: var(--surface-solid);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
