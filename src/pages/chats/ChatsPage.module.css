@@ -20,10 +20,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  background:
-    radial-gradient(circle at 8% 6%, rgba(31, 111, 235, 0.14), transparent 42%),
-    radial-gradient(circle at 88% 84%, rgba(16, 185, 129, 0.1), transparent 36%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bg) 95%, #ffffff 5%) 0%, var(--bg) 100%);
+  background: var(--bg);
 }
 
 .chatsHeader {
@@ -227,7 +224,7 @@
 
 .container {
   display: grid;
-  grid-template-columns: 292px 1fr 320px;
+  grid-template-columns: 500px 1fr 320px;
   gap: 10px;
   height: 100%;
   min-height: 0;
@@ -235,16 +232,16 @@
   padding: 10px;
   border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  background: var(--surface-solid, var(--surface));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: var(--shadow-md);
   animation: page-enter var(--motion-enter) var(--motion-ease) both;
   will-change: transform, opacity;
 }
 
 .containerCollapsed {
-  grid-template-columns: 272px 1fr 52px;
+  grid-template-columns: 480px 1fr 52px;
 }
 
 .callPanel {
@@ -595,7 +592,7 @@
 }
 
 .searchSection {
-  padding: 5px 6px;
+  padding: 4px 6px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   display: flex;
@@ -613,10 +610,10 @@
 }
 
 .searchInputRow :global(input) {
-  min-height: 28px;
-  height: 28px;
+  min-height: 26px;
+  height: 26px;
   font-size: 11px;
-  padding: 0 8px;
+  padding: 0 7px;
 }
 
 .activityToggle {
@@ -1104,7 +1101,7 @@
 .chatList {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 5px 6px;
+  padding: 2px 4px 4px;
   background: var(--surface);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -1173,16 +1170,16 @@
 }
 
 .chatItem {
-  padding: 4px 6px;
+  padding: 2px 5px;
   cursor: pointer;
   transition: background-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
   border: 1px solid var(--border);
   border-radius: 9px;
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: flex-start;
   background: var(--surface);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(var(--frost-blur));
@@ -1246,13 +1243,13 @@
 }
 
 .chatItem:hover {
-  background-color: var(--surface-2);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
+  background-color: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+  box-shadow: var(--shadow-sm);
+  transform: none;
 }
 
 .chatItem:active {
-  transform: translateY(0) scale(0.995);
+  transform: none;
 }
 
 .chatItem:hover::before {
@@ -1309,22 +1306,22 @@
 }
 
 .avatarImage {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .avatarPlaceholder {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -1373,14 +1370,14 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .chatName {
   font-weight: 600;
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -1394,7 +1391,7 @@
 }
 
 .chatClientHandle {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--text-subtle);
   opacity: 0.9;
   max-width: 100%;
@@ -1427,7 +1424,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
   overflow: visible;
 }
@@ -1437,7 +1434,7 @@
   border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1.2;
   letter-spacing: 0.02em;
   color: var(--text-muted);
@@ -1450,7 +1447,7 @@
 .chatMeta {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
@@ -1458,11 +1455,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 16px;
-  padding: 0 5px;
+  min-height: 14px;
+  padding: 0 4px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1536,10 +1533,10 @@
 }
 
 .chatSubtitle {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--text-muted);
-  font-weight: 500;
-  opacity: 0.86;
+  font-weight: 600;
+  opacity: 1;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1548,7 +1545,7 @@
 .chatAssignedUser {
   display: inline-flex;
   align-items: center;
-  font-size: var(--text-2xs);
+  font-size: 9px;
   color: color-mix(in srgb, var(--primary) 86%, var(--text) 14%);
   font-weight: 600;
   max-width: 74px;
@@ -1562,32 +1559,26 @@
 }
 
 /* Keep the row readable in compact mode: show only primary identifiers by default. */
-.chatAssignedUser,
 .myBadge,
-.questBadge,
 .statusEffects {
   display: none;
 }
 
-.chatItem.active .chatAssignedUser,
 .chatItem.active .myBadge,
-.chatItem.active .questBadge,
 .chatItem.active .statusEffects,
-.chatItem:hover .chatAssignedUser,
 .chatItem:hover .myBadge,
-.chatItem:hover .questBadge,
 .chatItem:hover .statusEffects {
   display: inline-flex;
 }
 
 .chatTime {
-  font-size: 7px;
+  font-size: 9px;
   color: var(--text-muted);
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-left: 3px;
-  padding: 0 4px;
+  margin-left: 2px;
+  padding: 0 3px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface-2) 75%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
@@ -1607,7 +1598,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.1;
   display: -webkit-box;
   line-clamp: 1;
   -webkit-line-clamp: 1;
@@ -4866,12 +4857,12 @@
 }
 
 .density-comfortable .chatItem {
-  padding: 6px 8px;
-  gap: 8px;
+  padding: 4px 7px;
+  gap: 6px;
 }
 
 .density-comfortable .chatName {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .density-comfortable .chatLastMessage {
@@ -4879,8 +4870,9 @@
 }
 
 .density-compact .chatItem {
-  padding: 4px 6px;
-  gap: 6px;
+  padding: 2px 5px;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 
 .density-ultra .searchSection {
@@ -4924,9 +4916,9 @@
 }
 
 .density-ultra .chatItem {
-  padding: 3px 5px;
+  padding: 2px 4px;
   gap: 5px;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   border-radius: 8px;
 }
 
@@ -4939,9 +4931,9 @@
 
 .density-ultra .avatarImage,
 .density-ultra .avatarPlaceholder {
-  width: 24px;
-  height: 24px;
-  font-size: 10px;
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
 }
 
 .density-ultra .chatName {
@@ -4954,11 +4946,11 @@
 .density-ultra .slaBadge,
 .density-ultra .unreadBubble,
 .density-ultra .urgentBadge {
-  font-size: 7px;
+  font-size: 8px;
 }
 
 .density-ultra .chatLastMessage {
-  font-size: 9px;
+  font-size: 8px;
 }
 
 .density-ultra .messageInputContainer {
@@ -5226,19 +5218,19 @@
 
 @media (max-width: 1340px) {
   .container {
-    grid-template-columns: 280px 1fr 280px;
+    grid-template-columns: 420px 1fr 280px;
   }
 }
 
 @media (max-width: 1180px) {
   .container,
   .containerCollapsed {
-    grid-template-columns: minmax(260px, 320px) 1fr;
+    grid-template-columns: minmax(380px, 460px) 1fr;
   }
 
   :global(:root[data-theme='retro8']) .container,
   :global(:root[data-theme='retro8']) .containerCollapsed {
-    grid-template-columns: minmax(260px, 320px) 1fr;
+    grid-template-columns: minmax(380px, 460px) 1fr;
   }
 
   .callPanel,

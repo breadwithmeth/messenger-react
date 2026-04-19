@@ -429,6 +429,10 @@ export function ChatsPage() {
   const [suggestionsError, setSuggestionsError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [suggestionsFromCache, setSuggestionsFromCache] = useState(false);
+  const [isSuggestionsEnabled, setIsSuggestionsEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('chat-ai-suggestions-enabled') !== 'off';
+  });
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [sendError, setSendError] = useState('');
   const [activeVoiceMessageId, setActiveVoiceMessageId] = useState<number | null>(null);
@@ -1402,7 +1406,7 @@ export function ChatsPage() {
     }
   }, [chats, selectedChatIds, user]);
 
-  const shouldVirtualizeChats = filteredChats.length > 60;
+  const shouldVirtualizeChats = false;
 
   const virtualChatWindow = useMemo(() => {
     if (!shouldVirtualizeChats) return null;
@@ -1439,6 +1443,10 @@ export function ChatsPage() {
   useEffect(() => {
     localStorage.setItem('chat-density-mode', densityMode);
   }, [densityMode]);
+
+  useEffect(() => {
+    localStorage.setItem('chat-ai-suggestions-enabled', isSuggestionsEnabled ? 'on' : 'off');
+  }, [isSuggestionsEnabled]);
 
   useEffect(() => {
     const allowed = new Set(filteredChats.map((chat) => chat.id));
@@ -2382,7 +2390,7 @@ export function ChatsPage() {
 
   const loadSuggestions = useCallback(
     async (options?: { force?: boolean }) => {
-      if (!selectedChatId || !canUseAiSuggestions) {
+      if (!isSuggestionsEnabled || !selectedChatId || !canUseAiSuggestions) {
         setSuggestions([]);
         setSuggestionsError('');
         setSuggestionsFromCache(false);
@@ -2418,21 +2426,21 @@ export function ChatsPage() {
         setIsLoadingSuggestions(false);
       }
     },
-    [canUseAiSuggestions, selectedChatId]
+    [canUseAiSuggestions, isSuggestionsEnabled, selectedChatId]
   );
 
   useEffect(() => {
-    if (!selectedChatId || !canUseAiSuggestions) return;
+    if (!isSuggestionsEnabled || !selectedChatId || !canUseAiSuggestions) return;
     void loadSuggestions();
-  }, [canUseAiSuggestions, loadSuggestions, selectedChatId]);
+  }, [canUseAiSuggestions, isSuggestionsEnabled, loadSuggestions, selectedChatId]);
 
   useEffect(() => {
-    if (canUseAiSuggestions) return;
+    if (canUseAiSuggestions && isSuggestionsEnabled) return;
     setIsLoadingSuggestions(false);
     setSuggestionsError('');
     setSuggestions([]);
     setSuggestionsFromCache(false);
-  }, [canUseAiSuggestions]);
+  }, [canUseAiSuggestions, isSuggestionsEnabled]);
 
   const handlePickSuggestion = (text: string) => {
     setMessageInput((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
@@ -3597,7 +3605,7 @@ export function ChatsPage() {
                   )}
                 </div>
 
-                {selectedChatId && canUseAiSuggestions && (isLoadingSuggestions || suggestionsError || suggestions.length > 0) && (
+                {selectedChatId && isSuggestionsEnabled && canUseAiSuggestions && (isLoadingSuggestions || suggestionsError || suggestions.length > 0) && (
                   <div className={styles.suggestionsPanel}>
                     <div className={styles.suggestionsHeader}>
                       <div className={styles.suggestionsTitle}>
@@ -3606,12 +3614,11 @@ export function ChatsPage() {
                       <button
                         type="button"
                         className={styles.suggestionsClose}
-                        onClick={() => void loadSuggestions({ force: true })}
-                        disabled={isLoadingSuggestions}
-                        aria-label="Обновить подсказки"
-                        title="Обновить"
+                        onClick={() => setIsSuggestionsEnabled(false)}
+                        aria-label="Скрыть подсказки"
+                        title="Скрыть"
                       >
-                        ↻
+                        ×
                       </button>
                     </div>
 
@@ -3736,18 +3743,26 @@ export function ChatsPage() {
                   <button
                     type="button"
                     className={styles.suggestionsButton}
-                    onClick={() => void loadSuggestions({ force: true })}
-                    disabled={!selectedChatId || !canUseAiSuggestions || isLoadingSuggestions}
-                    aria-label="Обновить AI ответы"
+                    onClick={() => {
+                      if (!isSuggestionsEnabled) {
+                        setIsSuggestionsEnabled(true);
+                        return;
+                      }
+                      void loadSuggestions({ force: true });
+                    }}
+                    disabled={!selectedChatId || isLoadingSuggestions || (isSuggestionsEnabled && !canUseAiSuggestions)}
+                    aria-label={isSuggestionsEnabled ? 'Обновить AI ответы' : 'Включить AI подсказки'}
                     title={
                       !selectedChatId
                         ? 'Выберите чат'
+                        : !isSuggestionsEnabled
+                          ? 'Включить AI подсказки'
                         : !canUseAiSuggestions
                           ? 'AI доступен только в свежих чатах, когда последнее сообщение от клиента'
                           : 'Обновить AI ответы'
                     }
                   >
-                    AI
+                    {isSuggestionsEnabled ? 'AI' : 'AI OFF'}
                   </button>
                   <button
                     type="button"
