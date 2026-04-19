@@ -2287,7 +2287,7 @@ export function ChatsPage() {
         return;
       }
 
-      if (event.shiftKey && event.key === '?') {
+      if (event.shiftKey && event.key === '?' && !isEditableTarget(event.target)) {
         event.preventDefault();
         setIsHotkeysHelpOpen((prev) => !prev);
         return;

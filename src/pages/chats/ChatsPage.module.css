@@ -1372,6 +1372,7 @@
 .chatTitleRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 3px;
   min-width: 0;
 }
@@ -1396,11 +1397,11 @@
   font-size: 8px;
   color: var(--text-subtle);
   opacity: 0.9;
-  max-width: 72px;
+  max-width: 100%;
   flex-shrink: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   border-radius: 999px;
   padding: 0 4px;
@@ -1423,17 +1424,12 @@
 .priorityDot-urgent { background: var(--state-danger); }
 
 .chatSubtitleRow {
-  display: none;
+  display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 3px;
   min-width: 0;
-  overflow: hidden;
-}
-
-.chatItem.active .chatSubtitleRow,
-.chatItem:hover .chatSubtitleRow {
-  display: flex;
+  overflow: visible;
 }
 
 .channelBadge {
@@ -1544,9 +1540,9 @@
   color: var(--text-muted);
   font-weight: 500;
   opacity: 0.86;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .chatAssignedUser {
