@@ -410,7 +410,7 @@ export function ChatsPage() {
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
   const [isHotkeysHelpOpen, setIsHotkeysHelpOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
   const [channelFilter, setChannelFilter] = useState<'' | 'whatsapp' | 'telegram'>('');
   const [priorityFilter, setPriorityFilter] = useState<'' | ChatPriority>('');
@@ -1726,11 +1726,8 @@ export function ChatsPage() {
   });
   const [isFormatBarOpen, setIsFormatBarOpen] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(searchText.trim());
-    }, 350);
-    return () => clearTimeout(t);
+  const handleApplySearch = useCallback(() => {
+    setAppliedSearch(searchText.trim());
   }, [searchText]);
 
   const buildChatsQuery = (options: { limit: number; offset: number }) => {
@@ -1752,7 +1749,7 @@ export function ChatsPage() {
       assignedToMe,
       priority: priorityFilter || undefined,
       channel: channelFilter || undefined,
-      search: debouncedSearch || undefined,
+      search: appliedSearch || undefined,
       searchType,
       sortBy: sortBy || undefined,
       sortOrder,
@@ -1770,7 +1767,7 @@ export function ChatsPage() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [activeFilter, debouncedSearch, searchType, channelFilter, priorityFilter, sortBy, sortOrder]);
+  }, [activeFilter, appliedSearch, searchType, channelFilter, priorityFilter, sortBy, sortOrder]);
 
   useLayoutEffect(() => {
     if (!shouldRestoreChatListScrollRef.current) return;
@@ -2829,9 +2826,23 @@ export function ChatsPage() {
                   id="chat-search-input"
                   value={searchText}
                   onChange={(e) => handleSearchInputChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleApplySearch();
+                    }
+                  }}
                   placeholder="Поиск по чатам"
                   aria-label="Поиск по чатам"
                 />
+                <button
+                  type="button"
+                  className={styles.searchApplyButton}
+                  onClick={handleApplySearch}
+                  aria-label="Выполнить поиск"
+                >
+                  Поиск
+                </button>
                 <button
                   type="button"
                   className={styles.activityToggle}

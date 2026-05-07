@@ -26,7 +26,7 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-type ThemeName = 'light' | 'dark' | 'retro8' | 'barbie-diary';
+type ThemeName = 'light' | 'dark' | 'calm-oasis' | 'retro8' | 'barbie-diary';
 type CrtLevel = 'soft' | 'arcade' | 'crt' | 'vhs';
 type SecretThemeKey = 'retro8' | 'barbie-diary';
 
@@ -100,6 +100,7 @@ export function Layout({ children }: LayoutProps) {
     const unlocked = readSecretThemesState();
     const saved = localStorage.getItem('theme');
     if (saved === 'dark' || saved === 'light') return saved;
+    if (saved === 'calm-oasis') return saved;
     if (saved === 'retro8' && unlocked.retro8) return saved;
     if (saved === 'barbie-diary' && unlocked['barbie-diary']) return saved;
     return 'light';
@@ -299,7 +300,7 @@ export function Layout({ children }: LayoutProps) {
   }, []);
 
   const availableThemes = useMemo<ThemeName[]>(() => {
-    const themes: ThemeName[] = ['light', 'dark'];
+    const themes: ThemeName[] = ['light', 'calm-oasis', 'dark'];
     if (secretThemes.retro8) themes.push('retro8');
     if (secretThemes['barbie-diary']) themes.push('barbie-diary');
     return themes;
@@ -322,6 +323,8 @@ export function Layout({ children }: LayoutProps) {
   const nextThemeLabel =
     nextTheme === 'light'
       ? '☀️ Светлая'
+      : nextTheme === 'calm-oasis'
+        ? '🍃 Calm Oasis'
       : nextTheme === 'dark'
         ? '🌙 Тёмная'
         : nextTheme === 'retro8'

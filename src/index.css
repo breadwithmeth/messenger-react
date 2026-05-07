@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;700&family=Press+Start+2P&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Quicksand:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&display=swap');
 
 * {
   margin: 0;
@@ -84,6 +85,39 @@
   --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.45), 0 10px 26px rgba(0, 0, 0, 0.42);
   --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.55), 0 18px 44px rgba(0, 0, 0, 0.56);
   --shadow-lg: 0 1px 0 rgba(0, 0, 0, 0.65), 0 26px 64px rgba(0, 0, 0, 0.64);
+}
+
+:root[data-theme='calm-oasis'] {
+  --font-family-base: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-family-display: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-family-body: 'Manrope', 'Avenir Next', 'Segoe UI', sans-serif;
+
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #000000;
+  --surface-solid: #000000;
+  --surface-2-solid: #000000;
+  --text: #ffffff;
+  --text-muted: #d1d5db;
+  --text-subtle: #9ca3af;
+  --border: rgba(255, 255, 255, 0.2);
+
+  --primary: #a2e1d3;
+  --primary-hover: #8dcfbe;
+  --on-primary: #020b09;
+
+  --danger: #ec9a92;
+  --danger-hover: #dd877f;
+  --on-danger: #140404;
+
+  --focus: rgba(162, 225, 211, 0.34);
+
+  --frost-blur: 18px;
+  --frost-shadow: 0 22px 56px rgba(0, 0, 0, 0.72);
+
+  --shadow-sm: 0 0 0 rgba(0, 0, 0, 0);
+  --shadow-md: 0 0 0 rgba(0, 0, 0, 0);
+  --shadow-lg: 0 0 0 rgba(0, 0, 0, 0);
 }
 
 :root[data-theme='barbie-diary'] {
@@ -301,6 +335,32 @@ body,
 :root[data-theme='barbie-diary'] [role='button'] {
   font-family: var(--font-family-display);
   letter-spacing: 0.02em;
+}
+
+:root[data-theme='calm-oasis'] h1,
+:root[data-theme='calm-oasis'] h2,
+:root[data-theme='calm-oasis'] h3,
+:root[data-theme='calm-oasis'] h4,
+:root[data-theme='calm-oasis'] h5,
+:root[data-theme='calm-oasis'] h6,
+:root[data-theme='calm-oasis'] button,
+:root[data-theme='calm-oasis'] label,
+:root[data-theme='calm-oasis'] [role='button'] {
+  font-family: var(--font-family-display);
+  letter-spacing: 0.005em;
+}
+
+:root[data-theme='calm-oasis'] body::before {
+  content: none;
+}
+
+:root[data-theme='calm-oasis'] #root {
+  position: relative;
+  isolation: isolate;
+}
+
+:root[data-theme='calm-oasis'] #root::after {
+  content: none;
 }
 
 :root[data-theme='barbie-diary'] body::before {
@@ -645,5 +705,14 @@ a {
   100% {
     opacity: 0.7;
     filter: saturate(1.15);
+  }
+}
+
+@keyframes oasis-grain-drift {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 180px 120px, -140px 80px, 90px -70px, 0 0;
   }
 }
