@@ -6,6 +6,7 @@ import { ChatsPage } from '@/pages/chats/ChatsPage';
 import { TicketsPage } from '@/pages/tickets/TicketsPage';
 import { EmployeesPage } from '@/pages/employees/EmployeesPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { MassOperationsPage } from '@/pages/mass-operations/MassOperationsPage';
 import { NotFoundPage } from '@/pages/not-found/NotFoundPage';
 import { useAuth } from '@/auth/useAuth';
 
@@ -68,6 +69,15 @@ export function AppRouter() {
           element={
             <ProtectedRoute>
               <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/mass-operations"
+          element={
+            <ProtectedRoute>
+              <MassOperationsPage />
             </ProtectedRoute>
           }
         />

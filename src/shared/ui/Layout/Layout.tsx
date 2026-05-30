@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Area,
   Brush,
@@ -22,31 +22,41 @@ import { LAYOUT_TOGGLE_MENU_EVENT } from '../../utils/layoutMenu';
 import { Icon } from '../Icon/Icon';
 import styles from './Layout.module.css';
 
+const Theme3DBackground = lazy(() =>
+  import('../Theme3DBackground/Theme3DBackground').then((module) => ({
+    default: module.Theme3DBackground,
+  }))
+);
+
 interface LayoutProps {
   children: ReactNode;
 }
 
-type ThemeName = 'light' | 'dark' | 'calm-oasis' | 'retro8' | 'barbie-diary';
+type ThemeName = 'light' | 'dark' | 'calm-oasis' | 'retro8' | 'barbie-diary' | 'minecraft' | 'minecraft-nether';
 type CrtLevel = 'soft' | 'arcade' | 'crt' | 'vhs';
-type SecretThemeKey = 'retro8' | 'barbie-diary';
+type SecretThemeKey = 'retro8' | 'barbie-diary' | 'minecraft' | 'minecraft-nether';
 
 type SecretThemesState = {
   retro8: boolean;
   'barbie-diary': boolean;
+  minecraft: boolean;
+  'minecraft-nether': boolean;
 };
 
 const SECRET_THEMES_STORAGE_KEY = 'secret-themes-unlocked';
 const RETRO_UNLOCK_SEQUENCE = ['r', 'e', 't', 'r', 'o'] as const;
 const BARBIE_UNLOCK_SEQUENCE = ['b', 'a', 'r', 'b', 'i', 'e'] as const;
+const MINECRAFT_UNLOCK_SEQUENCE = ['m', 'i', 'n', 'e', 'c', 'r', 'a', 'f', 't'] as const;
+const NETHER_UNLOCK_SEQUENCE = ['n', 'e', 't', 'h', 'e', 'r'] as const;
 
 const readSecretThemesState = (): SecretThemesState => {
   if (typeof window === 'undefined') {
-    return { retro8: false, 'barbie-diary': false };
+    return { retro8: false, 'barbie-diary': false, minecraft: false, 'minecraft-nether': false };
   }
 
   const raw = localStorage.getItem(SECRET_THEMES_STORAGE_KEY);
   if (!raw) {
-    return { retro8: false, 'barbie-diary': false };
+    return { retro8: false, 'barbie-diary': false, minecraft: false, 'minecraft-nether': false };
   }
 
   try {
@@ -54,9 +64,11 @@ const readSecretThemesState = (): SecretThemesState => {
     return {
       retro8: parsed.retro8 === true,
       'barbie-diary': parsed['barbie-diary'] === true,
+      minecraft: parsed.minecraft === true,
+      'minecraft-nether': parsed['minecraft-nether'] === true,
     };
   } catch {
-    return { retro8: false, 'barbie-diary': false };
+    return { retro8: false, 'barbie-diary': false, minecraft: false, 'minecraft-nether': false };
   }
 };
 
@@ -103,6 +115,8 @@ export function Layout({ children }: LayoutProps) {
     if (saved === 'calm-oasis') return saved;
     if (saved === 'retro8' && unlocked.retro8) return saved;
     if (saved === 'barbie-diary' && unlocked['barbie-diary']) return saved;
+    if (saved === 'minecraft' && unlocked.minecraft) return saved;
+    if (saved === 'minecraft-nether' && unlocked['minecraft-nether']) return saved;
     return 'light';
   });
   const comboBufferRef = useRef<string[]>([]);
@@ -119,7 +133,9 @@ export function Layout({ children }: LayoutProps) {
   useEffect(() => {
     const isRetroLocked = theme === 'retro8' && !secretThemes.retro8;
     const isBarbieLocked = theme === 'barbie-diary' && !secretThemes['barbie-diary'];
-    if (isRetroLocked || isBarbieLocked) {
+    const isMinecraftLocked = theme === 'minecraft' && !secretThemes.minecraft;
+    const isNetherLocked = theme === 'minecraft-nether' && !secretThemes['minecraft-nether'];
+    if (isRetroLocked || isBarbieLocked || isMinecraftLocked || isNetherLocked) {
       setTheme('light');
     }
   }, [secretThemes, theme]);
@@ -290,6 +306,18 @@ export function Layout({ children }: LayoutProps) {
 
       if (endsWithSequence(comboBufferRef.current, BARBIE_UNLOCK_SEQUENCE)) {
         unlockTheme('barbie-diary', 'Секретная тема Barbie Diary разблокирована');
+        return;
+      }
+
+      if (endsWithSequence(comboBufferRef.current, MINECRAFT_UNLOCK_SEQUENCE)) {
+        unlockTheme('minecraft', 'Секретная тема Minecraft разблокирована');
+        setTheme('minecraft');
+        return;
+      }
+
+      if (endsWithSequence(comboBufferRef.current, NETHER_UNLOCK_SEQUENCE)) {
+        unlockTheme('minecraft-nether', 'Секретная тема Minecraft: Nether разблокирована');
+        setTheme('minecraft-nether');
       }
     };
 
@@ -303,6 +331,8 @@ export function Layout({ children }: LayoutProps) {
     const themes: ThemeName[] = ['light', 'calm-oasis', 'dark'];
     if (secretThemes.retro8) themes.push('retro8');
     if (secretThemes['barbie-diary']) themes.push('barbie-diary');
+    if (secretThemes.minecraft) themes.push('minecraft');
+    if (secretThemes['minecraft-nether']) themes.push('minecraft-nether');
     return themes;
   }, [secretThemes]);
 
@@ -329,7 +359,11 @@ export function Layout({ children }: LayoutProps) {
         ? '🌙 Тёмная'
         : nextTheme === 'retro8'
           ? '🕹 8-bit'
-          : '💖 Barbie Diary';
+          : nextTheme === 'barbie-diary'
+            ? '💖 Barbie Diary'
+            : nextTheme === 'minecraft'
+              ? '⛏ Minecraft'
+              : '🔥 Nether';
 
   const toggleFirefoxMode = () => {
     setIsFirefoxModeEnabledState((prev) => {
@@ -417,12 +451,17 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   const userName = user?.displayName || user?.username || user?.email || 'Пользователь';
+  const isThreeDTheme = theme === 'minecraft' || theme === 'minecraft-nether';
 
   return (
     <div className={styles.layout}>
-      <a href="#main-content" className={styles.skipLink}>
-        Перейти к основному содержимому
-      </a>
+      {isThreeDTheme ? (
+        <div className={styles.threeScene} aria-hidden>
+          <Suspense fallback={null}>
+            <Theme3DBackground theme={theme} />
+          </Suspense>
+        </div>
+      ) : null}
 
       {user && (
         <>

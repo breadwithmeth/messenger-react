@@ -12,5 +12,6 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    allowedHosts: ['messenger_f_1.naliv.kz'],
   },
 });

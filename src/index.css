@@ -156,6 +156,82 @@
   --shadow-lg: 0 28px 64px rgba(180, 74, 146, 0.24);
 }
 
+:root[data-theme='minecraft'] {
+  --font-family-base: 'Pixelify Sans', 'Press Start 2P', 'VT323', 'Courier New', Monaco, monospace;
+  --font-family-display: 'Press Start 2P', 'Pixelify Sans', 'Courier New', Monaco, monospace;
+  --font-family-body: 'Pixelify Sans', 'VT323', 'Courier New', Monaco, monospace;
+
+  --bg:
+    linear-gradient(180deg, #70c8ff 0%, #b6e4ff 38%, #65b14f 38%, #65b14f 52%, #7b5735 52%, #68462b 100%);
+  --surface: #c7c7c7;
+  --surface-2: #a9a9a9;
+  --surface-solid: #d2d2d2;
+  --surface-2-solid: #b6b6b6;
+  --text: #111111;
+  --text-muted: #292929;
+  --text-subtle: #3f3f3f;
+  --border: #2e2e2e;
+
+  --primary: #5bbb3b;
+  --primary-hover: #47992f;
+  --on-primary: #f3ffe9;
+
+  --danger: #c2452f;
+  --danger-hover: #a83927;
+  --on-danger: #fff2ed;
+
+  --focus: rgba(91, 187, 59, 0.42);
+
+  --frost-blur: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+
+  --shadow-sm: 3px 3px 0 #222222;
+  --shadow-md: 5px 5px 0 #222222;
+  --shadow-lg: 8px 8px 0 #222222;
+}
+
+:root[data-theme='minecraft-nether'] {
+  --font-family-base: 'Pixelify Sans', 'Press Start 2P', 'VT323', 'Courier New', Monaco, monospace;
+  --font-family-display: 'Press Start 2P', 'Pixelify Sans', 'Courier New', Monaco, monospace;
+  --font-family-body: 'Pixelify Sans', 'VT323', 'Courier New', Monaco, monospace;
+
+  --bg:
+    linear-gradient(180deg, #1a0606 0%, #2a0a0a 38%, #3f0e0e 62%, #200707 100%);
+  --surface: #521818;
+  --surface-2: #401010;
+  --surface-solid: #5a1d1d;
+  --surface-2-solid: #451313;
+  --text: #ffd8bf;
+  --text-muted: #f1b78f;
+  --text-subtle: #d99373;
+  --border: #ff612f;
+
+  --primary: #ff7a2a;
+  --primary-hover: #ff5a1b;
+  --on-primary: #2a0b01;
+
+  --danger: #ff2d2d;
+  --danger-hover: #e01919;
+  --on-danger: #2b0202;
+
+  --focus: rgba(255, 122, 42, 0.46);
+
+  --frost-blur: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+
+  --shadow-sm: 3px 3px 0 #090303;
+  --shadow-md: 6px 6px 0 #090303;
+  --shadow-lg: 9px 9px 0 #090303;
+}
+
 :root[data-theme='retro8'] {
   --font-family-base: 'Pixelify Sans', 'Press Start 2P', 'VT323', 'Courier New', Monaco, monospace;
   --font-family-display: 'Press Start 2P', 'Pixelify Sans', 'Courier New', Monaco, monospace;
@@ -293,6 +369,249 @@ body,
 :root[data-theme='retro8'] select,
 :root[data-theme='retro8'] textarea {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M2 2h8v2H6v4H4V4H2zM18 2v8h-2V6h-4V4h4V2zM2 18v-8h2v4h4v2H4v2zM18 18h-8v-2h4v-4h2v4h2z' fill='%23ffd447'/%3E%3C/svg%3E") 10 10, pointer;
+}
+
+:root[data-theme='minecraft'] body {
+  image-rendering: pixelated;
+  letter-spacing: 0.012em;
+  font-weight: 500;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  filter: saturate(1.12) contrast(1.08);
+  cursor: crosshair;
+}
+
+:root[data-theme='minecraft-nether'] body {
+  image-rendering: pixelated;
+  letter-spacing: 0.012em;
+  font-weight: 500;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  filter: saturate(1.18) contrast(1.14);
+  cursor: crosshair;
+}
+
+:root[data-theme='minecraft'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0 12%, rgba(255, 255, 255, 0) 12% 100%),
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.5) 0 32px, transparent 34px),
+    radial-gradient(circle at 76% 14%, rgba(255, 255, 255, 0.45) 0 26px, transparent 28px),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.16) 0,
+      rgba(0, 0, 0, 0.16) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.16) 0,
+      rgba(0, 0, 0, 0.16) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  background-size: auto, auto, auto, 8px 8px, 8px 8px;
+  opacity: 0.72;
+  animation: minecraft-cloud-shift 26s linear infinite;
+}
+
+:root[data-theme='minecraft-nether'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 18% 84%, rgba(255, 110, 30, 0.34) 0 80px, transparent 84px),
+    radial-gradient(circle at 80% 88%, rgba(255, 70, 20, 0.28) 0 68px, transparent 72px),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.22) 0,
+      rgba(0, 0, 0, 0.22) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.2) 0,
+      rgba(0, 0, 0, 0.2) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+  opacity: 0.78;
+  animation: nether-lava-pulse 2.8s ease-in-out infinite alternate;
+}
+
+:root[data-theme='minecraft'] #root {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - 18px);
+  margin: 9px;
+  border: 4px solid #2d2d2d;
+  box-shadow: 0 0 0 3px #6b6b6b, 10px 10px 0 #1d1d1d;
+  overflow: hidden;
+}
+
+:root[data-theme='minecraft-nether'] #root {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - 18px);
+  margin: 9px;
+  border: 4px solid #280909;
+  box-shadow: 0 0 0 3px #7e2a17, 10px 10px 0 #0a0202;
+  overflow: hidden;
+}
+
+:root[data-theme='minecraft'] #root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.08) 0,
+      rgba(0, 0, 0, 0.08) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+:root[data-theme='minecraft-nether'] #root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.2) 0,
+      rgba(0, 0, 0, 0.2) 2px,
+      transparent 2px,
+      transparent 6px
+    ),
+    linear-gradient(180deg, rgba(255, 86, 26, 0.08), rgba(255, 20, 20, 0.2));
+  mix-blend-mode: multiply;
+  opacity: 0.74;
+}
+
+:root[data-theme='minecraft'] #root,
+:root[data-theme='minecraft-nether'] #root {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+:root[data-theme='minecraft'] .layout,
+:root[data-theme='minecraft-nether'] .layout {
+  transform-style: preserve-3d;
+}
+
+:root[data-theme='minecraft'] .layout > *,
+:root[data-theme='minecraft-nether'] .layout > * {
+  transform: translateZ(0);
+}
+
+:root[data-theme='minecraft'] .sidebar,
+:root[data-theme='minecraft-nether'] .sidebar,
+:root[data-theme='minecraft'] main,
+:root[data-theme='minecraft-nether'] main,
+:root[data-theme='minecraft'] .presencePopover,
+:root[data-theme='minecraft-nether'] .presencePopover {
+  transform: translateZ(18px);
+  box-shadow: var(--shadow-lg);
+}
+
+:root[data-theme='minecraft'] button,
+:root[data-theme='minecraft-nether'] button,
+:root[data-theme='minecraft'] input,
+:root[data-theme='minecraft-nether'] input,
+:root[data-theme='minecraft'] textarea,
+:root[data-theme='minecraft-nether'] textarea,
+:root[data-theme='minecraft'] select,
+:root[data-theme='minecraft-nether'] select,
+:root[data-theme='minecraft'] a,
+:root[data-theme='minecraft-nether'] a,
+:root[data-theme='minecraft'] [role='button'],
+:root[data-theme='minecraft-nether'] [role='button'] {
+  border-width: 2px !important;
+  border-style: solid;
+  border-color: var(--border) !important;
+  box-shadow: 4px 4px 0 #1f1f1f !important;
+  border-radius: 2px !important;
+  transform: translateZ(14px);
+}
+
+:root[data-theme='minecraft'] button:hover,
+:root[data-theme='minecraft-nether'] button:hover,
+:root[data-theme='minecraft'] a:hover,
+:root[data-theme='minecraft-nether'] a:hover,
+:root[data-theme='minecraft'] [role='button']:hover,
+:root[data-theme='minecraft-nether'] [role='button']:hover {
+  transform: translate(2px, 2px) translateZ(22px) !important;
+  box-shadow: 2px 2px 0 #1f1f1f !important;
+}
+
+:root[data-theme='minecraft'] button:active,
+:root[data-theme='minecraft-nether'] button:active,
+:root[data-theme='minecraft'] [role='button']:active,
+:root[data-theme='minecraft-nether'] [role='button']:active {
+  transform: translate(3px, 3px) translateZ(8px) !important;
+  box-shadow: 1px 1px 0 #1f1f1f !important;
+}
+
+:root[data-theme='minecraft'] h1,
+:root[data-theme='minecraft-nether'] h1,
+:root[data-theme='minecraft'] h2,
+:root[data-theme='minecraft-nether'] h2,
+:root[data-theme='minecraft'] h3,
+:root[data-theme='minecraft-nether'] h3,
+:root[data-theme='minecraft'] h4,
+:root[data-theme='minecraft-nether'] h4,
+:root[data-theme='minecraft'] h5,
+:root[data-theme='minecraft-nether'] h5,
+:root[data-theme='minecraft'] h6,
+:root[data-theme='minecraft-nether'] h6,
+:root[data-theme='minecraft'] button,
+:root[data-theme='minecraft-nether'] button,
+:root[data-theme='minecraft'] label,
+:root[data-theme='minecraft-nether'] label,
+:root[data-theme='minecraft'] [role='button'],
+:root[data-theme='minecraft-nether'] [role='button'] {
+  font-family: var(--font-family-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='minecraft'] p,
+:root[data-theme='minecraft-nether'] p,
+:root[data-theme='minecraft'] span,
+:root[data-theme='minecraft-nether'] span,
+:root[data-theme='minecraft'] li,
+:root[data-theme='minecraft-nether'] li,
+:root[data-theme='minecraft'] td,
+:root[data-theme='minecraft-nether'] td,
+:root[data-theme='minecraft'] input,
+:root[data-theme='minecraft-nether'] input,
+:root[data-theme='minecraft'] textarea,
+:root[data-theme='minecraft-nether'] textarea,
+:root[data-theme='minecraft'] select,
+:root[data-theme='minecraft-nether'] select,
+:root[data-theme='minecraft'] small {
+  font-family: var(--font-family-body);
+}
+
+:root[data-theme='minecraft-nether'] small {
+  font-family: var(--font-family-body);
 }
 
 :root[data-theme='retro8'] h1,
@@ -705,6 +1024,26 @@ a {
   100% {
     opacity: 0.7;
     filter: saturate(1.15);
+  }
+}
+
+@keyframes minecraft-cloud-shift {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 0 0, 160px 0, -180px 0, 0 0, 0 0;
+  }
+}
+
+@keyframes nether-lava-pulse {
+  0% {
+    opacity: 0.68;
+    filter: brightness(0.95);
+  }
+  100% {
+    opacity: 0.84;
+    filter: brightness(1.08);
   }
 }
 
