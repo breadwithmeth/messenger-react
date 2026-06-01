@@ -39,3 +39,36 @@ export type BroadcastTemplateResponse = {
   };
   results: BroadcastTemplateResult[];
 };
+
+export type GetWabaTemplatesParams = {
+  organizationPhoneId: number;
+  limit?: number;
+  after?: string;
+  name?: string;
+  language?: string;
+  status?: string;
+  category?: string;
+};
+
+export type WabaTemplateListItem = {
+  id?: string;
+  name?: string;
+  language?: string;
+  status?: string;
+  category?: string;
+  [key: string]: unknown;
+};
+
+export type WabaTemplatesResponse = {
+  data?: WabaTemplateListItem[];
+  templates?: WabaTemplateListItem[];
+  paging?: {
+    cursors?: {
+      after?: string;
+      before?: string;
+    };
+    next?: string;
+  };
+  nextAfter?: string;
+  [key: string]: unknown;
+};

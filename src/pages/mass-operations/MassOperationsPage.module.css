@@ -19,6 +19,12 @@
   margin: 0;
 }
 
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .section {
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -94,6 +100,12 @@
 .preview {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.actionsRow {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .resultWrap {
