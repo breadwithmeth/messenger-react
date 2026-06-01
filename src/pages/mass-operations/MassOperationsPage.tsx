@@ -72,7 +72,7 @@ export function MassOperationsPage() {
     };
   }, [recipientsText]);
 
-  const wabaPhones = useMemo(() => phones.filter((item) => item.phoneJid.includes('whatsapp')), [phones]);
+  const wabaPhones = useMemo(() => phones, [phones]);
 
   useEffect(() => {
     if (!isAllowed) {
