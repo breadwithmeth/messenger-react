@@ -260,6 +260,55 @@
   gap: 8px;
 }
 
+:global(:root[data-theme='dark']) .widget,
+:global(:root[data-theme='dark']) .status,
+:global(:root[data-theme='dark']) .iconAction,
+:global(:root[data-theme='dark']) .select,
+:global(:root[data-theme='dark']) .micMeter,
+:global(:root[data-theme='dark']) .callLogItem,
+:global(:root[data-theme='dark']) .rangeBlock {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .widget {
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .header {
+  background: var(--surface);
+}
+
+:global(:root[data-theme='dark']) .titleMain,
+:global(:root[data-theme='dark']) .selectLabel,
+:global(:root[data-theme='dark']) .sectionTitle {
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .status,
+:global(:root[data-theme='dark']) .select,
+:global(:root[data-theme='dark']) .rangeBlock {
+  background: var(--surface-2);
+}
+
+:global(:root[data-theme='dark']) .iconAction {
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .iconAction:hover {
+  background: transparent;
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .micMeterBar,
+:global(:root[data-theme='dark']) .micMeterBarCall {
+  background: var(--primary);
+}
+
 .rangeLabel {
   font-size: 11px;
   font-weight: 800;
@@ -323,5 +372,4 @@
 .hidden {
   display: none;
 }
-
 

@@ -206,3 +206,109 @@
     animation: none !important;
   }
 }
+
+:global(:root[data-theme='dark']) .page {
+  padding: 32px 0 64px;
+}
+
+:global(:root[data-theme='dark']) .header {
+  margin-bottom: 40px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+:global(:root[data-theme='dark']) .kicker,
+:global(:root[data-theme='dark']) .statLabel {
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.14em;
+  color: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .title {
+  margin-bottom: 14px;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+:global(:root[data-theme='dark']) .subtitle {
+  max-width: 58ch;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+:global(:root[data-theme='dark']) .stats {
+  gap: 16px;
+}
+
+:global(:root[data-theme='dark']) .statCard,
+:global(:root[data-theme='dark']) .content,
+:global(:root[data-theme='dark']) .emptyStateCard {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .statCard {
+  position: relative;
+  padding: 24px;
+}
+
+:global(:root[data-theme='dark']) .statCard::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 24px;
+  width: 64px;
+  height: 3px;
+  background: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .statCard:hover {
+  border-color: var(--primary);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .statValue {
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+
+:global(:root[data-theme='dark']) .content {
+  padding: 32px;
+}
+
+:global(:root[data-theme='dark']) .sectionTitle {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+:global(:root[data-theme='dark']) .listItem {
+  border-radius: 0;
+}
+
+:global(:root[data-theme='dark']) .listItem:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .quickActionsLine,
+:global(:root[data-theme='dark']) .quickActionsLineShort,
+:global(:root[data-theme='dark']) .quickActionsLineTiny {
+  border-radius: 0;
+}
+
+@media (max-width: 720px) {
+  :global(:root[data-theme='dark']) .title {
+    font-size: 40px;
+  }
+
+  :global(:root[data-theme='dark']) .statValue {
+    font-size: 42px;
+  }
+}

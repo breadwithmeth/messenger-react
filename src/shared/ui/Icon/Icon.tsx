@@ -7,6 +7,7 @@ type IconName =
   | 'video'
   | 'gear'
   | 'question'
+  | 'dashboard'
   | 'chat'
   | 'ticket'
   | 'automation'
@@ -107,6 +108,16 @@ export function Icon({ name, size = 20, color = 'currentColor', className, style
         <svg {...props} aria-hidden={!title} role={title ? 'img' : 'presentation'}>
           {title ? <title>{title}</title> : null}
           <path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z" />
+        </svg>
+      );
+    case 'dashboard':
+      return (
+        <svg {...props} aria-hidden={!title} role={title ? 'img' : 'presentation'}>
+          {title ? <title>{title}</title> : null}
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="5" rx="1.5" />
+          <rect x="14" y="12" width="7" height="9" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
         </svg>
       );
     case 'ticket':

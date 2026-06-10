@@ -35,6 +35,7 @@ import type { WorkforceActivityDto } from '@/features/workforce/model/types';
 import styles from './ChatsPage.module.css';
 
 type ChatFilter = 'all' | 'my' | 'ignored' | 'open' | 'unread';
+type ChatHrFilter = 'all' | 'hr' | 'regular';
 type DensityMode = 'comfortable' | 'compact' | 'ultra';
 
 type MediaType = 'image' | 'document' | 'video' | 'audio';
@@ -251,9 +252,9 @@ const toSlug = (value?: string | null) => (value || '').toLowerCase().replace(/\
 
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
 const CHAT_ITEM_ESTIMATED_HEIGHT_BY_DENSITY: Record<DensityMode, number> = {
-  comfortable: 74,
-  compact: 56,
-  ultra: 48,
+  comfortable: 88,
+  compact: 72,
+  ultra: 58,
 };
 const CHAT_LIST_OVERSCAN = 8;
 const TICKET_STATUS_OPTIONS: Array<TicketStatus | string> = [
@@ -265,6 +266,25 @@ const TICKET_STATUS_OPTIONS: Array<TicketStatus | string> = [
   'closed',
 ];
 const TICKET_PRIORITY_OPTIONS: Array<TicketPriority | string> = ['low', 'normal', 'high', 'urgent'];
+
+const formatTicketStatusLabel = (status?: string | null) => {
+  if (status === 'new') return 'Новый';
+  if (status === 'open') return 'Открыт';
+  if (status === 'in_progress') return 'В работе';
+  if (status === 'pending') return 'Ожидает';
+  if (status === 'resolved') return 'Решен';
+  if (status === 'closed') return 'Закрыт';
+  return status || '';
+};
+
+const formatTicketPriorityLabel = (priority?: string | null) => {
+  if (priority === 'low') return 'Низкий';
+  if (priority === 'normal') return 'Обычный';
+  if (priority === 'medium') return 'Средний';
+  if (priority === 'high') return 'Высокий';
+  if (priority === 'urgent') return 'Срочный';
+  return priority || '';
+};
 
 const formatTicketDuration = (startedAt?: string | null) => {
   if (!startedAt) return '';
@@ -391,7 +411,7 @@ const renderIconLabel = (icon: PixelIconName, label: string) => (
 
 export function ChatsPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, roles } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const deferredChats = useDeferredValue(chats);
   const [chatListViewport, setChatListViewport] = useState({ scrollTop: 0, height: 0 });
@@ -414,6 +434,7 @@ export function ChatsPage() {
   const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
   const [channelFilter, setChannelFilter] = useState<'' | 'whatsapp' | 'telegram'>('');
   const [priorityFilter, setPriorityFilter] = useState<'' | ChatPriority>('');
+  const [hrFilter, setHrFilter] = useState<ChatHrFilter>('all');
   const [sortBy, setSortBy] = useState<
     '' | 'lastMessageAt' | 'createdAt' | 'priority' | 'unreadCount' | 'status' | 'name'
   >('lastMessageAt');
@@ -425,6 +446,7 @@ export function ChatsPage() {
   const [previewCaption, setPreviewCaption] = useState('');
   const [viewerMessage, setViewerMessage] = useState<Message | null>(null);
   const [isAssigningChat, setIsAssigningChat] = useState(false);
+  const [isUpdatingChatHr, setIsUpdatingChatHr] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -500,6 +522,12 @@ export function ChatsPage() {
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
   // pinning disabled
   const [isActivityVisible, setIsActivityVisible] = useState(true);
+  const canSeeHrChats = user?.isHr === true;
+  const canManageHrChats = canSeeHrChats || user?.role === 'admin' || roles.includes('admin');
+  const [isHrOutreachModalOpen, setIsHrOutreachModalOpen] = useState(false);
+  const [hrOutreachPhone, setHrOutreachPhone] = useState('');
+  const [isSendingHrOutreach, setIsSendingHrOutreach] = useState(false);
+  const [hrOutreachError, setHrOutreachError] = useState('');
 
   const handleCallWidgetStatus = useCallback((s: CallWidgetStatus) => {
     setCallWidgetStatus(s);
@@ -1347,8 +1375,16 @@ export function ChatsPage() {
       result = result.filter((c) => c.channel === channelFilter);
     }
 
+    if (canSeeHrChats) {
+      if (hrFilter === 'hr') {
+        result = result.filter((c) => c.isHr === true);
+      } else if (hrFilter === 'regular') {
+        result = result.filter((c) => c.isHr !== true);
+      }
+    }
+
     return result;
-  }, [activeFilter, channelFilter, deferredChats, priorityFilter, user]);
+  }, [activeFilter, canSeeHrChats, channelFilter, deferredChats, hrFilter, priorityFilter, user]);
 
   const filteredChats = useMemo(() => getFilteredChats(), [getFilteredChats]);
   const chatItemEstimatedHeight = CHAT_ITEM_ESTIMATED_HEIGHT_BY_DENSITY[densityMode];
@@ -1730,6 +1766,11 @@ export function ChatsPage() {
     setAppliedSearch(searchText.trim());
   }, [searchText]);
 
+  useEffect(() => {
+    if (canSeeHrChats) return;
+    setHrFilter('all');
+  }, [canSeeHrChats]);
+
   const buildChatsQuery = (options: { limit: number; offset: number }) => {
     const { limit, offset } = options;
 
@@ -1742,6 +1783,12 @@ export function ChatsPage() {
 
     const shouldForceMy = activeFilter === 'my';
     const assignedToMe = shouldForceMy ? true : undefined;
+    const isHr =
+      canSeeHrChats && hrFilter === 'hr'
+        ? true
+        : canSeeHrChats && hrFilter === 'regular'
+          ? false
+          : undefined;
 
     return {
       includeProfile: true,
@@ -1749,6 +1796,7 @@ export function ChatsPage() {
       assignedToMe,
       priority: priorityFilter || undefined,
       channel: channelFilter || undefined,
+      isHr,
       search: appliedSearch || undefined,
       searchType,
       sortBy: sortBy || undefined,
@@ -1767,7 +1815,7 @@ export function ChatsPage() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [activeFilter, appliedSearch, searchType, channelFilter, priorityFilter, sortBy, sortOrder]);
+  }, [activeFilter, appliedSearch, searchType, channelFilter, priorityFilter, hrFilter, canSeeHrChats, sortBy, sortOrder]);
 
   useLayoutEffect(() => {
     if (!shouldRestoreChatListScrollRef.current) return;
@@ -2046,6 +2094,12 @@ export function ChatsPage() {
       if (selectedChatIdRef.current !== chatId) return;
       if (seq !== messagesLoadSeqRef.current) return;
 
+      if (response.chat?.id === chatId) {
+        setChats((prev) => prev.map((chat) => (
+          chat.id === chatId ? { ...chat, isHr: response.chat?.isHr === true } : chat
+        )));
+      }
+
       const incomingSorted = (response.messages || []).slice().sort((a, b) => {
         return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
       });
@@ -2117,6 +2171,12 @@ export function ChatsPage() {
         offset: nextOffset,
       });
 
+      if (response.chat?.id === chatId) {
+        setChats((prev) => prev.map((chat) => (
+          chat.id === chatId ? { ...chat, isHr: response.chat?.isHr === true } : chat
+        )));
+      }
+
       setMessages((prev) => {
         const merged = [...prev, ...response.messages];
         return merged.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -2139,6 +2199,64 @@ export function ChatsPage() {
       }
     } finally {
       setIsLoadingMoreMessages(false);
+    }
+  };
+
+  const handleToggleChatHr = async () => {
+    if (!selectedChat || !canManageHrChats || isUpdatingChatHr) return;
+
+    const chatId = selectedChat.id;
+    const previousIsHr = selectedChat.isHr === true;
+    const nextIsHr = !previousIsHr;
+    const successText = nextIsHr ? 'HR-метка поставлена' : 'HR-метка снята';
+    const pendingText = nextIsHr ? 'Ставим HR-метку' : 'Снимаем HR-метку';
+
+    setIsUpdatingChatHr(true);
+    setError('');
+    setMessagesError('');
+    setLiveAnnouncement(pendingText);
+    setChats((prev) => prev.map((chat) => (
+      chat.id === chatId ? { ...chat, isHr: nextIsHr } : chat
+    )));
+
+    try {
+      const response = await chatsApi.setChatHr(chatId, nextIsHr);
+      updateChatInState(response.chat);
+      emitToast(successText);
+      pushLocalAction(successText, 'success');
+      setLiveAnnouncement(successText);
+      await loadChats({ silent: true });
+
+      if (nextIsHr && !canSeeHrChats) {
+        setSelectedChatId(null);
+        setMessages([]);
+      } else if (selectedChatIdRef.current === chatId) {
+        setChats((prev) => (
+          prev.some((chat) => chat.id === response.chat.id)
+            ? prev
+            : [response.chat, ...prev]
+        ));
+        await loadMessages(chatId, { silent: true });
+      }
+    } catch (err) {
+      setChats((prev) => prev.map((chat) => (
+        chat.id === chatId ? { ...chat, isHr: previousIsHr } : chat
+      )));
+
+      let message = 'Не удалось обновить HR-метку чата';
+      if (err instanceof NetworkError) {
+        if (err.status === 400) message = 'Некорректное значение HR-метки';
+        else if (err.status === 403) message = 'Недостаточно прав для изменения HR-метки';
+        else if (err.status === 404) message = 'Чат не найден или недоступен';
+        else message = err.message;
+      }
+
+      setError(message);
+      emitToast(message);
+      pushLocalAction(message, 'danger');
+      setLiveAnnouncement(message);
+    } finally {
+      setIsUpdatingChatHr(false);
     }
   };
 
@@ -2259,6 +2377,54 @@ export function ChatsPage() {
       }
     } finally {
       setIsSendingMessage(false);
+    }
+  };
+
+  const handleSendHrOutreach = async () => {
+    const phone = hrOutreachPhone.trim();
+    if (!phone || isSendingHrOutreach) return;
+
+    setIsSendingHrOutreach(true);
+    setHrOutreachError('');
+    try {
+      await chatsApi.sendHrOutreach(phone);
+
+      // Ищем чаты по номеру телефона и ставим HR-метку
+      let hrMarkedCount = 0;
+      try {
+        const searchResponse = await chatsApi.getChats({ search: phone, searchType: 'phone' });
+        const matchingChats = (searchResponse.chats || []).filter((c) => c.isHr !== true);
+
+        for (const chat of matchingChats) {
+          try {
+            await chatsApi.setChatHr(chat.id, true);
+            hrMarkedCount += 1;
+          } catch {
+            // пропускаем отдельные ошибки
+          }
+        }
+      } catch {
+        // если поиск упал — не фатально
+      }
+
+      // Обновляем список чатов чтобы отразить HR-метки
+      if (hrMarkedCount > 0) {
+        await loadChats({ silent: true });
+      }
+
+      setIsHrOutreachModalOpen(false);
+      setHrOutreachPhone('');
+      emitToast(
+        hrMarkedCount > 0
+          ? `Шаблон hr_outreach отправлен на ${phone}, HR-метка на ${hrMarkedCount} чат(ах)`
+          : `Шаблон hr_outreach отправлен на ${phone}`
+      );
+    } catch (err) {
+      setHrOutreachError(
+        err instanceof NetworkError ? err.message : 'Не удалось отправить шаблон hr_outreach'
+      );
+    } finally {
+      setIsSendingHrOutreach(false);
     }
   };
 
@@ -2803,7 +2969,7 @@ export function ChatsPage() {
         </p>
 
         <div
-          className={`${styles.container} ${isCallPanelCollapsed ? styles.containerCollapsed : ''} ${
+          className={`${styles.container} ${selectedChatId ? styles.mobileChatSelected : ''} ${isCallPanelCollapsed ? styles.containerCollapsed : ''} ${
             isRetroTheme && selectedChat?.priority === 'urgent' ? styles.retroGlitchEvent : ''
           } ${isSceneTransitioning ? styles.sceneTransitioning : ''} ${
             isRetroTheme && isRetroMiniMode ? styles.retroMiniMode : ''
@@ -2846,11 +3012,26 @@ export function ChatsPage() {
                 <button
                   type="button"
                   className={styles.activityToggle}
-                  onClick={() => setIsActivityVisible((v) => !v)}
-                  aria-label={isActivityVisible ? 'Скрыть активность' : 'Показать активность'}
+                  onClick={() => {
+                    setIsActivityVisible(true);
+                    setIsActivityFullscreen(true);
+                  }}
+                  aria-label="Открыть активность"
+                  title="Активность"
                 >
-                  {isActivityVisible ? '🙈' : '📊'}
+                  <Icon name="bell" size={15} />
                 </button>
+                {canSeeHrChats ? (
+                  <button
+                    type="button"
+                    className={styles.hrOutreachButton}
+                    onClick={() => setIsHrOutreachModalOpen(true)}
+                    title="Отправить шаблон hr_outreach"
+                    aria-label="Отправить шаблон hr_outreach"
+                  >
+                    HR
+                  </button>
+                ) : null}
               </div>
               <div className={styles.searchRow}>
                 <select
@@ -2859,12 +3040,12 @@ export function ChatsPage() {
                   onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   aria-label="Сортировка"
                 >
-                  <option value="priority">priority</option>
-                  <option value="unreadCount">unreadCount</option>
-                  <option value="lastMessageAt">lastMessageAt</option>
-                  <option value="createdAt">createdAt</option>
-                  <option value="status">status</option>
-                  <option value="name">name</option>
+                  <option value="priority">Приоритет</option>
+                  <option value="unreadCount">Непрочитанные</option>
+                  <option value="lastMessageAt">Последнее сообщение</option>
+                  <option value="createdAt">Дата создания</option>
+                  <option value="status">Статус</option>
+                  <option value="name">Имя клиента</option>
                 </select>
 
                 <select
@@ -2873,8 +3054,8 @@ export function ChatsPage() {
                   onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
                   aria-label="Порядок сортировки"
                 >
-                  <option value="desc">desc</option>
-                  <option value="asc">asc</option>
+                  <option value="desc">Сначала новые</option>
+                  <option value="asc">Сначала старые</option>
                 </select>
 
                 <select
@@ -2906,10 +3087,10 @@ export function ChatsPage() {
                   aria-label="Приоритет"
                 >
                   <option value="">Любой приоритет</option>
-                  <option value="low">low</option>
-                  <option value="medium">medium</option>
-                  <option value="high">high</option>
-                  <option value="urgent">Передать Администрации</option>
+                  <option value="low">Низкий</option>
+                  <option value="medium">Средний</option>
+                  <option value="high">Высокий</option>
+                  <option value="urgent">Срочный</option>
                 </select>
               </div>
 
@@ -2968,8 +3149,21 @@ export function ChatsPage() {
                 variant={priorityFilter === 'urgent' ? 'primary' : 'secondary'}
                 onClick={() => setPriorityFilter((prev) => (prev === 'urgent' ? '' : 'urgent'))}
               >
-                🔥 Срочные
+                Срочные
               </Button>
+              {canSeeHrChats ? (
+                <select
+                  className={styles.densitySelect}
+                  value={hrFilter}
+                  onChange={(e) => setHrFilter(e.target.value as ChatHrFilter)}
+                  aria-label="Фильтр HR-чатов"
+                  title="Фильтр HR-чатов"
+                >
+                  <option value="all">Все типы</option>
+                  <option value="hr">HR-чаты</option>
+                  <option value="regular">Обычные</option>
+                </select>
+              ) : null}
               <select
                 className={styles.densitySelect}
                 value={densityMode}
@@ -3140,6 +3334,8 @@ export function ChatsPage() {
                         selectedChatId === chat.id ? styles.active : ''
                       } ${
                         chat.unreadCount > 0 ? styles.chatItemUnread : ''
+                      } ${
+                        chat.isHr === true ? styles.chatItemHr : ''
                       }`}
                       style={{ '--item-index': Math.min(absoluteIdx, 18) } as CSSProperties}
                       onClick={() => handleChatClick(chat.id)}
@@ -3174,6 +3370,9 @@ export function ChatsPage() {
                                 className={`${styles.priorityDot} ${styles[`priorityDot-${chat.priority || 'low'}`]}`}
                                 aria-hidden="true"
                               />
+                              {chat.isHr === true ? (
+                                <span className={styles.hrBadge} title="HR-чат">HR</span>
+                              ) : null}
                               <span
                                 className={`${styles.chatName} ${chat.unreadCount > 0 ? styles.chatNameUnread : ''}`}
                               >
@@ -3272,7 +3471,13 @@ export function ChatsPage() {
               <div className={`${styles.chatWindow} ${isSceneTransitioning ? styles.chatWindowSceneTransition : ''}`}>
                 <div className={styles.chatHeaderPanel}>
                   <div className={styles.chatTopBar}>
-                    <button className={styles.chatTopIcon} type="button" aria-label="Назад">
+                    <button
+                      className={styles.chatTopIcon}
+                      type="button"
+                      aria-label="Вернуться к списку чатов"
+                      title="К списку"
+                      onClick={() => setSelectedChatId(null)}
+                    >
                       <Icon name="back" size={20} color="var(--primary)" />
                     </button>
 
@@ -3290,7 +3495,12 @@ export function ChatsPage() {
 
                           return (
                             <>
-                              <div className={styles.chatTopTitle}>{title}</div>
+                              <div className={styles.chatTopTitleRow}>
+                                <div className={styles.chatTopTitle}>{title}</div>
+                                {currentChat?.isHr === true ? (
+                                  <span className={styles.hrBadge}>HR</span>
+                                ) : null}
+                              </div>
                               <div className={styles.chatTopSubtitle}>
                                 {currentChat ? formatChannelLabel(currentChat.channel) : ''}
                                 {clientPhone ? ` • ${clientPhone}` : ''}
@@ -3325,8 +3535,8 @@ export function ChatsPage() {
                               {currentTicketNumber && (
                                 <div className={styles.chatTopTicketMeta}>
                                   Тикет #{currentTicketNumber}
-                                  {currentTicket?.status ? ` • ${currentTicket.status}` : ''}
-                                  {currentTicket?.priority ? ` • ${currentTicket.priority}` : ''}
+                                  {currentTicket?.status ? ` • ${formatTicketStatusLabel(currentTicket.status)}` : ''}
+                                  {currentTicket?.priority ? ` • ${formatTicketPriorityLabel(currentTicket.priority)}` : ''}
                                   {currentTicket?.createdAt ? ` • ${formatTicketDuration(currentTicket.createdAt)}` : ''}
                                 </div>
                               )}
@@ -3348,16 +3558,16 @@ export function ChatsPage() {
                           #{currentTicketNumber}
                         </button>
                         {currentTicket?.status ? (
-                          <span className={statusChipClass(currentTicket.status)} title={`Статус: ${currentTicket.status}`}>
-                            {currentTicket.status}
+                          <span className={statusChipClass(currentTicket.status)} title={`Статус: ${formatTicketStatusLabel(currentTicket.status)}`}>
+                            {formatTicketStatusLabel(currentTicket.status)}
                           </span>
                         ) : null}
                         {currentTicket?.priority ? (
                           <span
                             className={priorityChipClass(currentTicket.priority)}
-                            title={`Приоритет: ${currentTicket.priority}`}
+                            title={`Приоритет: ${formatTicketPriorityLabel(currentTicket.priority)}`}
                           >
-                            {currentTicket.priority}
+                            {formatTicketPriorityLabel(currentTicket.priority)}
                           </span>
                         ) : null}
                       </div>
@@ -3389,7 +3599,7 @@ export function ChatsPage() {
                             >
                               {TICKET_STATUS_OPTIONS.map((item) => (
                                 <option key={item} value={item}>
-                                  {item}
+                                  {formatTicketStatusLabel(String(item))}
                                 </option>
                               ))}
                             </select>
@@ -3403,7 +3613,7 @@ export function ChatsPage() {
                             >
                               {TICKET_PRIORITY_OPTIONS.map((item) => (
                                 <option key={item} value={item}>
-                                  {item}
+                                  {formatTicketPriorityLabel(String(item))}
                                 </option>
                               ))}
                             </select>
@@ -3456,6 +3666,19 @@ export function ChatsPage() {
                     >
                       {renderIconLabel('check', 'Прочесть')}
                     </button>
+
+                    {canManageHrChats && selectedChat ? (
+                      <button
+                        className={`${styles.chatTopAction} ${selectedChat.isHr === true ? styles.chatTopActionActive : ''}`}
+                        type="button"
+                        onClick={() => void handleToggleChatHr()}
+                        disabled={isUpdatingChatHr}
+                        aria-pressed={selectedChat.isHr === true}
+                        title={selectedChat.isHr === true ? 'Снять HR-метку' : 'Поставить HR-метку'}
+                      >
+                        {isUpdatingChatHr ? '...' : selectedChat.isHr === true ? 'HR вкл' : 'HR'}
+                      </button>
+                    ) : null}
 
                     <button
                       className={styles.chatTopAction}
@@ -3592,7 +3815,7 @@ export function ChatsPage() {
                                     <span className={styles.messageTicketBadge}>Тикет #{ticketNumber}</span>
                                     {(ticketStatus || ticketPriority) && (
                                       <span className={styles.messageTicketMeta}>
-                                        {[ticketStatus, ticketPriority].filter(Boolean).join(' · ')}
+                                        {[formatTicketStatusLabel(ticketStatus), formatTicketPriorityLabel(ticketPriority)].filter(Boolean).join(' · ')}
                                       </span>
                                     )}
                                   </div>
@@ -3678,7 +3901,7 @@ export function ChatsPage() {
                     aria-label="Прикрепить файл"
                     title="Прикрепить файл"
                   >
-                    {isSendingMedia ? '…' : '+'}
+                    {isSendingMedia ? '…' : <Icon name="plus" size={20} />}
                   </button>
 
                   <button
@@ -3733,7 +3956,7 @@ export function ChatsPage() {
 
                   <textarea
                     className={styles.messageInput}
-                    placeholder="Сообщение (Enter/Ctrl+Enter — отправить, Shift+Enter — новая строка)"
+                    placeholder="Сообщение"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -3808,7 +4031,7 @@ export function ChatsPage() {
                       onClick={() => void handleCopyMessageText(messageContextMenu.message.content || '')}
                       disabled={!messageContextMenu.message.content?.trim()}
                     >
-                      Copy text
+                      Скопировать текст
                     </button>
                     <button
                       type="button"
@@ -3816,7 +4039,7 @@ export function ChatsPage() {
                       onClick={() => void translateIncomingMessage(messageContextMenu.message)}
                       disabled={messageContextMenu.message.fromMe || !messageContextMenu.message.content?.trim()}
                     >
-                      Translate
+                      Перевести
                     </button>
                     <button
                       type="button"
@@ -3824,14 +4047,14 @@ export function ChatsPage() {
                       onClick={() => handleOpenMessageMedia(messageContextMenu.message)}
                       disabled={!messageContextMenu.message.mediaUrl}
                     >
-                      Open media
+                      Открыть медиа
                     </button>
                     <button
                       type="button"
                       className={styles.messageContextMenuItem}
                       onClick={() => setMessageContextMenu(null)}
                     >
-                      Close
+                      Закрыть
                     </button>
                   </div>
                 )}
@@ -4212,6 +4435,42 @@ export function ChatsPage() {
         </div>
       </div>
       {isActivityFullscreen && <ActivityFullscreen />}
+      <Modal isOpen={isHrOutreachModalOpen} title="HR Outreach" onClose={() => { setIsHrOutreachModalOpen(false); setHrOutreachError(''); }}>
+        <div className={styles.hrOutreachModal}>
+          <p className={styles.hrOutreachDescription}>
+            Отправка шаблона <strong>hr_outreach</strong> на указанный номер телефона.
+          </p>
+          <div className={styles.hrOutreachField}>
+            <label className={styles.hrOutreachLabel} htmlFor="hr-outreach-phone">Номер телефона</label>
+            <input
+              id="hr-outreach-phone"
+              className={styles.hrOutreachInput}
+              type="tel"
+              value={hrOutreachPhone}
+              onChange={(e) => setHrOutreachPhone(e.target.value)}
+              placeholder="+7 (999) 123-45-67"
+            />
+          </div>
+          {hrOutreachError ? (
+            <p className={styles.hrOutreachError}>{hrOutreachError}</p>
+          ) : null}
+          <div className={styles.hrOutreachActions}>
+            <Button
+              variant="secondary"
+              onClick={() => { setIsHrOutreachModalOpen(false); setHrOutreachError(''); }}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => void handleSendHrOutreach()}
+              disabled={!hrOutreachPhone.trim() || isSendingHrOutreach}
+            >
+              {isSendingHrOutreach ? 'Отправка...' : 'Отправить'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
       <Modal isOpen={isHotkeysHelpOpen} title="Горячие клавиши" onClose={() => setIsHotkeysHelpOpen(false)}>
         <div className={styles.hotkeysList}>
           <div><strong>Ctrl/⌘ + K</strong> - фокус на поиск</div>

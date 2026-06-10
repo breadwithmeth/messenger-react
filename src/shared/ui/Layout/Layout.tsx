@@ -80,7 +80,7 @@ type ToastItem = {
 type MenuItem = {
   path: string;
   label: string;
-  icon: 'chat' | 'video' | 'ticket' | 'automation' | 'send' | 'api' | 'gear' | 'question';
+  icon: 'dashboard' | 'chat' | 'ticket' | 'send' | 'gear';
 };
 
 export function Layout({ children }: LayoutProps) {
@@ -427,17 +427,15 @@ export function Layout({ children }: LayoutProps) {
     {
       title: 'Работа',
       items: [
+        { path: '/dashboard', label: 'Главная панель', icon: 'dashboard' as const },
         { path: '/chats', label: 'Чаты', icon: 'chat' as const },
-        { path: '/messenger', label: 'Мессенджер', icon: 'video' as const },
         { path: '/tickets', label: 'Тикеты', icon: 'ticket' as const },
       ],
     },
     {
       title: 'Инструменты',
       items: [
-        { path: '/automation', label: 'Автоматизация', icon: 'automation' as const },
-        { path: '/mass-operations', label: 'Рассылки и масс. операции', icon: 'send' as const },
-        { path: '/api', label: 'API и скрипты', icon: 'api' as const },
+        { path: '/mass-operations', label: 'Рассылки', icon: 'send' as const },
       ],
     },
     {
@@ -445,7 +443,6 @@ export function Layout({ children }: LayoutProps) {
       items: [
         { path: '/employees', label: 'Сотрудники', icon: 'gear' as const },
         { path: '/settings', label: 'Настройки', icon: 'gear' as const },
-        { path: '/help', label: 'Новости и справка', icon: 'question' as const },
       ],
     },
   ];
@@ -455,6 +452,10 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className={styles.layout}>
+      <a className={styles.skipLink} href="#main-content">
+        Перейти к содержимому
+      </a>
+
       {isThreeDTheme ? (
         <div className={styles.threeScene} aria-hidden>
           <Suspense fallback={null}>
@@ -480,7 +481,7 @@ export function Layout({ children }: LayoutProps) {
               className={styles.logo}
               onClick={() => setIsMenuOpen(false)}
             >
-              SaaS
+              Messenger
             </Link>
 
             <nav className={styles.menu}>
@@ -510,8 +511,9 @@ export function Layout({ children }: LayoutProps) {
             </nav>
 
             <div className={styles.sidebarFooter}>
-              <div className={styles.starRating}>
-                <span className={styles.starCount}>0</span>
+              <div className={styles.profileCard}>
+                <span className={styles.profileLabel}>Аккаунт</span>
+                <span className={styles.profileName}>{userName}</span>
               </div>
               <button
                 type="button"
@@ -523,58 +525,6 @@ export function Layout({ children }: LayoutProps) {
               </button>
               <button
                 type="button"
-                className={`${styles.firefoxModeButton} ${isFirefoxModeEnabled ? styles.firefoxModeButtonActive : ''}`}
-                onClick={toggleFirefoxMode}
-                aria-label="Переключить режим фаерфокса"
-              >
-                Режим фаерфокса: {isFirefoxModeEnabled ? 'ON' : 'OFF'}
-              </button>
-              <button
-                type="button"
-                className={styles.simulateErrorButton}
-                onClick={() => {
-                  void handleSimulateError();
-                }}
-              >
-                Симулировать ошибку
-              </button>
-              <button
-                type="button"
-                className={`${styles.trackingLossButton} ${isTrackingLossActive ? styles.trackingLossButtonActive : ''}`}
-                onClick={triggerTrackingLoss}
-                disabled={theme !== 'retro8'}
-                aria-label="Включить VHS tracking loss"
-                title={theme === 'retro8' ? 'Срыв синхронизации VHS' : 'Доступно только в теме 8-bit'}
-              >
-                VHS: Tracking Loss
-              </button>
-              <button
-                type="button"
-                className={`${styles.trackingLossButton} ${isRetroSfxEnabled ? styles.trackingLossButtonActive : ''}`}
-                onClick={() => setIsRetroSfxEnabled((prev) => !prev)}
-                disabled={theme !== 'retro8'}
-                aria-label="Переключить ретро звук"
-                title={theme === 'retro8' ? 'Ретро звуки UI' : 'Доступно только в теме 8-bit'}
-              >
-                SFX: {isRetroSfxEnabled ? 'ON' : 'OFF'}
-              </button>
-              <label className={styles.crtLabel}>
-                Scanline Intensity
-                <select
-                  className={styles.crtSelect}
-                  value={crtLevel}
-                  onChange={(event) => setCrtLevel(event.target.value as CrtLevel)}
-                  disabled={theme !== 'retro8'}
-                  aria-label="CRT intensity"
-                >
-                  <option value="soft">Soft</option>
-                  <option value="arcade">Arcade</option>
-                  <option value="crt">CRT</option>
-                  <option value="vhs">VHS Broken</option>
-                </select>
-              </label>
-              <button
-                type="button"
                 className={styles.themeToggle}
                 onClick={() => setIsPresenceOpen((v) => !v)}
                 aria-expanded={isPresenceOpen}
@@ -582,11 +532,70 @@ export function Layout({ children }: LayoutProps) {
               >
                 Онлайн-активность
               </button>
+              <details className={styles.advancedPanel}>
+                <summary className={styles.advancedSummary}>Дополнительно</summary>
+                <div className={styles.advancedControls}>
+                  <button
+                    type="button"
+                    className={`${styles.firefoxModeButton} ${isFirefoxModeEnabled ? styles.firefoxModeButtonActive : ''}`}
+                    onClick={toggleFirefoxMode}
+                    aria-label="Переключить режим фаерфокса"
+                  >
+                    Режим Firefox: {isFirefoxModeEnabled ? 'ON' : 'OFF'}
+                  </button>
+                  {process.env.NODE_ENV === 'development' ? (
+                    <button
+                      type="button"
+                      className={styles.simulateErrorButton}
+                      onClick={() => {
+                        void handleSimulateError();
+                      }}
+                    >
+                      Симулировать ошибку
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={`${styles.trackingLossButton} ${isTrackingLossActive ? styles.trackingLossButtonActive : ''}`}
+                    onClick={triggerTrackingLoss}
+                    disabled={theme !== 'retro8'}
+                    aria-label="Включить VHS tracking loss"
+                    title={theme === 'retro8' ? 'Срыв синхронизации VHS' : 'Доступно только в теме 8-bit'}
+                  >
+                    VHS: Tracking Loss
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.trackingLossButton} ${isRetroSfxEnabled ? styles.trackingLossButtonActive : ''}`}
+                    onClick={() => setIsRetroSfxEnabled((prev) => !prev)}
+                    disabled={theme !== 'retro8'}
+                    aria-label="Переключить ретро звук"
+                    title={theme === 'retro8' ? 'Ретро звуки UI' : 'Доступно только в теме 8-bit'}
+                  >
+                    SFX: {isRetroSfxEnabled ? 'ON' : 'OFF'}
+                  </button>
+                  <label className={styles.crtLabel}>
+                    Scanline Intensity
+                    <select
+                      className={styles.crtSelect}
+                      value={crtLevel}
+                      onChange={(event) => setCrtLevel(event.target.value as CrtLevel)}
+                      disabled={theme !== 'retro8'}
+                      aria-label="CRT intensity"
+                    >
+                      <option value="soft">Soft</option>
+                      <option value="arcade">Arcade</option>
+                      <option value="crt">CRT</option>
+                      <option value="vhs">VHS Broken</option>
+                    </select>
+                  </label>
+                </div>
+              </details>
               <button
                 className={styles.userButton}
                 onClick={handleLogout}
               >
-                <span className={styles.userName}>{userName}</span>
+                <span className={styles.userName}>Выйти</span>
               </button>
             </div>
           </aside>

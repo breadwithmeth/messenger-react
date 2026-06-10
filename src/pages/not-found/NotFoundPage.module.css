@@ -29,3 +29,43 @@
   color: var(--text-muted);
   margin: 0 0 32px 0;
 }
+
+:global(:root[data-theme='dark']) .page {
+  align-items: flex-start;
+  padding: 80px 64px;
+  text-align: left;
+}
+
+:global(:root[data-theme='dark']) .code {
+  color: var(--primary);
+  font-size: 160px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+
+:global(:root[data-theme='dark']) .title {
+  margin-top: 10px;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+:global(:root[data-theme='dark']) .description {
+  max-width: 42ch;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  :global(:root[data-theme='dark']) .page {
+    padding: 64px 24px;
+  }
+
+  :global(:root[data-theme='dark']) .code {
+    font-size: 96px;
+  }
+
+  :global(:root[data-theme='dark']) .title {
+    font-size: 40px;
+  }
+}

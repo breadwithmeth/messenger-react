@@ -1,7 +1,9 @@
 export interface User {
   id: number;
   email: string;
+  name?: string;
   role?: string;
+  isHr: boolean;
   organizationId?: number;
   createdAt?: string;
 }

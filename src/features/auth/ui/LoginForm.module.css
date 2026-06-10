@@ -110,3 +110,39 @@
   opacity: 0.8;
   text-decoration: underline;
 }
+
+:global(:root[data-theme='dark']) .socialButton,
+:global(:root[data-theme='dark']) .error {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .socialButton {
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .socialButton:hover {
+  border-color: var(--primary);
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .divider {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .forgotPassword,
+:global(:root[data-theme='dark']) .footerLink {
+  position: relative;
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+:global(:root[data-theme='dark']) .forgotPassword:hover,
+:global(:root[data-theme='dark']) .footerLink:hover {
+  opacity: 1;
+}

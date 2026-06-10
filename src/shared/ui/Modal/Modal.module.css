@@ -54,3 +54,41 @@
   overflow: auto;
   max-height: calc(80vh - 54px);
 }
+
+:global(:root[data-theme='dark']) .backdrop {
+  background: rgba(10, 10, 10, 0.82);
+}
+
+:global(:root[data-theme='dark']) .modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .header {
+  padding: 16px 18px;
+}
+
+:global(:root[data-theme='dark']) .title {
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .close {
+  border-radius: 0;
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .close:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .body {
+  padding: 18px;
+}

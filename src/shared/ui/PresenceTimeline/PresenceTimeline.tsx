@@ -55,15 +55,15 @@ type MessagePoint = {
 };
 
 const STATUS_COLORS: Record<PresenceStatus, string> = {
-  ONLINE: '#22c55e',
-  BUSY: '#ef4444',
-  AWAY: '#fbbf24',
-  IDLE: '#8b5cf6',
-  OFFLINE: '#cbd5e1',
+  ONLINE: 'var(--success, #22c55e)',
+  BUSY: 'var(--danger, #ef4444)',
+  AWAY: 'var(--warning, #fbbf24)',
+  IDLE: 'var(--primary, #8b5cf6)',
+  OFFLINE: 'var(--text-subtle, #cbd5e1)',
 };
 
-const INBOUND_COLOR = '#2563eb';
-const OUTBOUND_COLOR = '#f97316';
+const INBOUND_COLOR = 'var(--success, #2563eb)';
+const OUTBOUND_COLOR = 'var(--warning, #f97316)';
 
 const STATUS_LABEL: Record<PresenceStatus, string> = {
   ONLINE: 'Online',
@@ -75,10 +75,11 @@ const STATUS_LABEL: Record<PresenceStatus, string> = {
 
 const tooltipStyle: React.CSSProperties = {
   padding: '8px 10px',
-  background: '#0f172a',
-  color: '#e2e8f0',
-  borderRadius: 8,
-  boxShadow: '0 10px 30px rgba(0,0,0,0.22)',
+  background: 'var(--surface, #0f172a)',
+  color: 'var(--text, #e2e8f0)',
+  border: '1px solid var(--border, #334155)',
+  borderRadius: 0,
+  boxShadow: 'none',
   fontSize: 12,
   lineHeight: 1.4,
 };
@@ -164,7 +165,7 @@ const MessageMarker = (rawProps: MessageMarkerProps) => {
   return (
     <g>
       <line x1={cx} x2={cx} y1={cy - 16} y2={cy + 16} stroke={color} strokeWidth={2} />
-      <circle cx={cx} cy={cy} r={4} fill={color} stroke="#fff" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={4} fill={color} stroke="var(--surface, #fff)" strokeWidth={1.5} />
     </g>
   );
 };

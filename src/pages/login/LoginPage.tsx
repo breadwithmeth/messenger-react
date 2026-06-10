@@ -17,7 +17,7 @@ export function LoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>SaaS</h1>
+        <h1 className={styles.title}>Messenger</h1>
         <LoginForm />
       </div>
     </div>

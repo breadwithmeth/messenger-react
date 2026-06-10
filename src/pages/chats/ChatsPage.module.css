@@ -224,13 +224,13 @@
 
 .container {
   display: grid;
-  grid-template-columns: 500px 1fr 320px;
-  gap: 10px;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr) minmax(300px, 340px);
+  gap: 12px;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding: 10px;
-  border-radius: 16px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   background: var(--surface-solid, var(--surface));
   backdrop-filter: none;
@@ -241,7 +241,7 @@
 }
 
 .containerCollapsed {
-  grid-template-columns: 480px 1fr 52px;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr) 56px;
 }
 
 .callPanel {
@@ -579,6 +579,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -592,33 +593,33 @@
 }
 
 .searchSection {
-  padding: 4px 6px;
+  padding: 8px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
 .searchInputRow {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 4px;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
   align-items: center;
 }
 
 .searchInputRow :global(input) {
-  min-height: 26px;
-  height: 26px;
-  font-size: 11px;
-  padding: 0 7px;
+  min-height: 34px;
+  height: 34px;
+  font-size: 12px;
+  padding: 0 10px;
 }
 
 .activityToggle {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -646,7 +647,7 @@
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
 }
@@ -658,12 +659,12 @@
 
 .searchApplyButton {
   min-width: 56px;
-  height: 28px;
+  height: 34px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   padding: 0 8px;
@@ -679,8 +680,8 @@
 
 .searchRow {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .activityCard {
@@ -943,13 +944,13 @@
 
 .searchSelect {
   width: 100%;
-  height: 26px;
-  padding: 0 6px;
+  height: 32px;
+  padding: 0 8px;
   border-radius: 7px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .searchSelect:focus {
@@ -988,44 +989,44 @@
 }
 
 .filterTabs {
-  padding: 4px 6px;
+  padding: 8px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  gap: 6px;
 }
 
 .quickFiltersRow {
-  padding: 3px 6px;
+  padding: 0 8px 8px;
   background: var(--surface);
   display: flex;
-  gap: 3px;
+  gap: 6px;
   border-bottom: 1px solid var(--border);
 }
 
 .quickFiltersRow :global(button) {
-  min-height: 24px;
+  min-height: 30px;
   padding: 0 8px;
-  font-size: 10px;
+  font-size: 11px;
   border-radius: 7px;
 }
 
 .densitySelect {
-  min-height: 24px;
-  height: 24px;
+  min-height: 30px;
+  height: 30px;
   border-radius: 7px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 10px;
-  padding: 0 6px;
+  font-size: 11px;
+  padding: 0 8px;
   min-width: 88px;
 }
 
 .hotkeysHintButton {
-  min-height: 24px;
-  min-width: 24px;
+  min-height: 30px;
+  min-width: 30px;
   border-radius: 7px;
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -1043,21 +1044,21 @@
 }
 
 .bulkActionsRow {
-  padding: 3px 6px;
+  padding: 0 8px 8px;
   display: flex;
-  gap: 3px;
+  gap: 6px;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   animation: page-enter var(--motion-enter) var(--motion-ease) both;
 }
 
 .bulkActionButton {
-  min-height: 23px;
+  min-height: 28px;
   border-radius: 7px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   padding: 0 6px;
   cursor: pointer;
@@ -1078,9 +1079,10 @@
 .filterTab {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  padding: 5px 6px;
+  min-height: 32px;
+  padding: 6px 8px;
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text);
   cursor: pointer;
   border-radius: 7px;
@@ -1122,7 +1124,7 @@
 .chatList {
   flex: 1;
   overflow-y: auto;
-  padding: 2px 4px 4px;
+  padding: 6px 8px 8px;
   background: var(--surface);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -1191,16 +1193,16 @@
 }
 
 .chatItem {
-  padding: 2px 5px;
+  padding: 8px;
   cursor: pointer;
   transition: background-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
   border: 1px solid var(--border);
   border-radius: 9px;
   display: flex;
-  gap: 4px;
+  gap: 8px;
   align-items: flex-start;
   background: var(--surface);
-  margin-bottom: 2px;
+  margin-bottom: 6px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(var(--frost-blur));
@@ -1217,13 +1219,45 @@
     var(--surface);
 }
 
+.chatItemHr {
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.28), rgba(37, 99, 235, 0.16)),
+    color-mix(in srgb, #2563eb 12%, var(--surface));
+  border-color: color-mix(in srgb, #2563eb 46%, var(--border));
+}
+
+.chatItemHr::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.chatItemHr > * {
+  position: relative;
+  z-index: 1;
+}
+
+.chatItemHr::before {
+  z-index: 2;
+  background: #2563eb;
+  opacity: 0.85;
+}
+
+.chatItemHr:hover::after,
+.chatItemHr.active::after {
+  background: rgba(37, 99, 235, 0.16);
+}
+
 .active {
   outline: none;
 }
 
 .chatSelectButton {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border-radius: 5px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
@@ -1327,22 +1361,22 @@
 }
 
 .avatarImage {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .avatarPlaceholder {
-  width: 24px;
-  height: 24px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1398,7 +1432,7 @@
 .chatName {
   font-weight: 600;
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -1412,7 +1446,7 @@
 }
 
 .chatClientHandle {
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--text-subtle);
   opacity: 0.9;
   max-width: 100%;
@@ -1553,8 +1587,25 @@
   letter-spacing: 0.3px;
 }
 
+.hrBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 16px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
 .chatSubtitle {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 600;
   opacity: 1;
@@ -1593,7 +1644,7 @@
 }
 
 .chatTime {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-muted);
   font-weight: 700;
   white-space: nowrap;
@@ -1613,13 +1664,13 @@
 }
 
 .chatLastMessage {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
   white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.32;
   display: -webkit-box;
   line-clamp: 1;
   -webkit-line-clamp: 1;
@@ -1668,6 +1719,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0;
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
 }
@@ -1732,25 +1784,26 @@
 }
 
 .chatTopBar {
-  min-height: 50px;
-  padding: 2px 4px;
+  min-height: 64px;
+  padding: 8px 10px;
   background: transparent;
   border-bottom: none;
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 8px;
   align-items: center;
 }
 
 .chatTopIcon {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   border: none;
   background: transparent;
   color: var(--primary);
   cursor: pointer;
   font-size: 18px;
-  margin-left: 8px;
+  margin-left: 0;
 }
 
 .chatTopIcon:hover {
@@ -1772,14 +1825,14 @@
 }
 
 .chatTopAction {
-  height: 27px;
-  padding: 0 8px;
+  height: 34px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
@@ -1793,6 +1846,12 @@
   background: var(--surface-2);
 }
 
+.chatTopActionActive {
+  border-color: color-mix(in srgb, var(--state-info) 76%, var(--border));
+  background: color-mix(in srgb, var(--state-info) 12%, var(--surface));
+  color: color-mix(in srgb, var(--state-info) 86%, var(--text));
+}
+
 .chatTopAction:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -1804,10 +1863,11 @@
 
 .chatTopCenter {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .retroHudBar {
@@ -1843,8 +1903,8 @@
 }
 
 .chatTopAvatar {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--surface-2);
   border: 2px solid var(--surface);
@@ -1854,31 +1914,45 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 
 .chatTopTitleBlock {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.chatTopTitleRow {
+  display: flex;
   align-items: center;
+  gap: 6px;
+  min-width: 0;
   max-width: 100%;
 }
 
 .chatTopTitle {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--text);
   font-weight: 600;
   line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chatTopSubtitle {
-  font-size: 9.5px;
+  font-size: 11px;
   color: var(--text-muted);
   font-weight: 400;
   max-width: 100%;
   padding: 0 8px;
   line-height: 1.2;
-  text-align: center;
+  text-align: left;
   overflow: hidden;
   display: -webkit-box;
   line-clamp: 2;
@@ -1893,7 +1967,7 @@
 }
 
 .chatTopTicketMeta {
-  font-size: 9px;
+  font-size: 10.5px;
   color: var(--text-muted);
   margin-top: 2px;
   max-width: 100%;
@@ -1972,7 +2046,7 @@
 
 .statusChip,
 .priorityChip {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   padding: 2px 7px;
   border-radius: 999px;
@@ -2272,10 +2346,10 @@
 
 .messagesList {
   flex: 1;
-  padding: 10px 12px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(var(--frost-blur));
   -webkit-backdrop-filter: blur(var(--frost-blur));
@@ -2384,7 +2458,7 @@
 
 .message {
   display: flex;
-  max-width: 72%;
+  max-width: min(72%, 720px);
   will-change: transform, opacity;
 }
 
@@ -2415,7 +2489,7 @@
   background: linear-gradient(145deg,
       color-mix(in srgb, var(--surface-2) 92%, transparent) 0%,
       color-mix(in srgb, var(--surface-2) 82%, transparent) 100%);
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 12px;
   position: relative;
   box-shadow: var(--shadow-sm);
@@ -2479,8 +2553,8 @@
   margin: 0 0 3px 0;
   word-wrap: break-word;
   white-space: pre-wrap;
-  font-size: 12px;
-  line-height: 1.3;
+  font-size: 13.5px;
+  line-height: 1.45;
 }
 
 .messageResponsible {
@@ -2589,7 +2663,7 @@
 }
 
 .messageTime {
-  font-size: 8px;
+  font-size: 10px;
   opacity: 0.78;
   letter-spacing: 0.04em;
   display: block;
@@ -2653,7 +2727,7 @@
 }
 
 .messageInputContainer {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-top: 1px solid var(--border);
   display: flex;
   gap: 7px;
@@ -3545,9 +3619,9 @@
   height: 40px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: none;
+  border: 1px solid var(--border);
   color: var(--text-muted);
-  font-size: 24px;
+  font-size: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3567,16 +3641,16 @@
   padding: 9px 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
   background: var(--surface);
   color: var(--text);
 
   resize: none;
-  min-height: 34px;
-  max-height: 96px;
-  line-height: 1.3;
+  min-height: 40px;
+  max-height: 112px;
+  line-height: 1.4;
   overflow-y: auto;
 }
 
@@ -3590,11 +3664,11 @@
 }
 
 .voiceButton {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--surface-2);
-  border: none;
+  border: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 18px;
   cursor: pointer;
@@ -4878,22 +4952,22 @@
 }
 
 .density-comfortable .chatItem {
-  padding: 4px 7px;
-  gap: 6px;
+  padding: 10px;
+  gap: 10px;
 }
 
 .density-comfortable .chatName {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .density-comfortable .chatLastMessage {
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .density-compact .chatItem {
-  padding: 2px 5px;
-  gap: 4px;
-  margin-bottom: 2px;
+  padding: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .density-ultra .searchSection {
@@ -4909,7 +4983,8 @@
 
 .density-ultra .menuToggleButton,
 .density-ultra .activityToggle,
-.density-ultra .searchApplyButton {
+.density-ultra .searchApplyButton,
+.density-ultra .hrOutreachButton {
   width: 24px;
   height: 24px;
 }
@@ -4944,9 +5019,9 @@
 }
 
 .density-ultra .chatItem {
-  padding: 2px 4px;
-  gap: 5px;
-  margin-bottom: 2px;
+  padding: 5px 6px;
+  gap: 6px;
+  margin-bottom: 4px;
   border-radius: 8px;
 }
 
@@ -4959,13 +5034,13 @@
 
 .density-ultra .avatarImage,
 .density-ultra .avatarPlaceholder {
-  width: 20px;
-  height: 20px;
-  font-size: 9px;
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
 }
 
 .density-ultra .chatName {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .density-ultra .chatClientHandle,
@@ -4974,11 +5049,11 @@
 .density-ultra .slaBadge,
 .density-ultra .unreadBubble,
 .density-ultra .urgentBadge {
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .density-ultra .chatLastMessage {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .density-ultra .messageInputContainer {
@@ -5246,19 +5321,19 @@
 
 @media (max-width: 1340px) {
   .container {
-    grid-template-columns: 420px 1fr 280px;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr) 300px;
   }
 }
 
 @media (max-width: 1180px) {
   .container,
   .containerCollapsed {
-    grid-template-columns: minmax(380px, 460px) 1fr;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   }
 
   :global(:root[data-theme='retro8']) .container,
   :global(:root[data-theme='retro8']) .containerCollapsed {
-    grid-template-columns: minmax(380px, 460px) 1fr;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   }
 
   .callPanel,
@@ -5271,6 +5346,18 @@
   }
 }
 
+@media (max-width: 900px) {
+  .searchInputRow {
+    grid-template-columns: auto 1fr auto auto;
+  }
+
+  .menuToggleButton {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+  }
+}
+
 @media (max-width: 820px) {
   .container,
   .containerCollapsed {
@@ -5280,9 +5367,38 @@
     border-radius: 12px;
   }
 
+  .mobileChatSelected .sidebar {
+    display: none;
+  }
+
+  .mobileChatSelected .content {
+    min-height: calc(100vh - 16px);
+  }
+
   .sidebar,
   .content {
     border-radius: 12px;
+  }
+
+  .searchRow {
+    grid-template-columns: 1fr;
+  }
+
+  .chatTopBar {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .chatTopCenter {
+    justify-content: flex-start;
+  }
+
+  .chatTopRight {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    border-left: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .chatItem {
@@ -5297,4 +5413,556 @@
   .messagesList {
     padding: 12px;
   }
+}
+
+:global(:root[data-theme='dark']) .page {
+  --state-info: #fafafa;
+  --state-success: #8fb89b;
+  --state-warning: #f5b85f;
+  --state-danger: var(--primary);
+  --state-muted: #737373;
+  --motion-fast: 150ms;
+  --motion-base: 150ms;
+  --motion-enter: 220ms;
+  --motion-ease: cubic-bezier(0.25, 0, 0, 1);
+  background: var(--bg);
+  color: var(--text);
+}
+
+:global(:root[data-theme='dark']) .chatsHeader {
+  background: var(--bg);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+:global(:root[data-theme='dark']) .chatsTitle {
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+:global(:root[data-theme='dark']) .container,
+:global(:root[data-theme='dark']) .containerCollapsed {
+  gap: 0;
+  padding: 0;
+  border-radius: 0;
+  border-color: var(--border);
+  background: transparent;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .callPanel,
+:global(:root[data-theme='dark']) .activityTimelineSection,
+:global(:root[data-theme='dark']) .commentsSection,
+:global(:root[data-theme='dark']) .commentItem,
+:global(:root[data-theme='dark']) .commentsLoadMore,
+:global(:root[data-theme='dark']) .commentTextarea,
+:global(:root[data-theme='dark']) .callPanelToggle,
+:global(:root[data-theme='dark']) .sidebar,
+:global(:root[data-theme='dark']) .activityToggle,
+:global(:root[data-theme='dark']) .menuToggleButton,
+:global(:root[data-theme='dark']) .searchApplyButton,
+:global(:root[data-theme='dark']) .activityCard,
+:global(:root[data-theme='dark']) .activityExpand,
+:global(:root[data-theme='dark']) .activitySkeleton,
+:global(:root[data-theme='dark']) .activityLegendPill,
+:global(:root[data-theme='dark']) .activityOpenButton,
+:global(:root[data-theme='dark']) .activityStat,
+:global(:root[data-theme='dark']) .activityStatTotal,
+:global(:root[data-theme='dark']) .activityFullscreenContent,
+:global(:root[data-theme='dark']) .searchSelect,
+:global(:root[data-theme='dark']) .newBadge,
+:global(:root[data-theme='dark']) .densitySelect,
+:global(:root[data-theme='dark']) .hotkeysHintButton,
+:global(:root[data-theme='dark']) .bulkActionButton,
+:global(:root[data-theme='dark']) .filterTab,
+:global(:root[data-theme='dark']) .skeletonItem,
+:global(:root[data-theme='dark']) .chatItem,
+:global(:root[data-theme='dark']) .chatSelectButton,
+:global(:root[data-theme='dark']) .avatarImage,
+:global(:root[data-theme='dark']) .avatarPlaceholder,
+:global(:root[data-theme='dark']) .unreadBadge,
+:global(:root[data-theme='dark']) .chatClientHandle,
+:global(:root[data-theme='dark']) .priorityDot,
+:global(:root[data-theme='dark']) .channelBadge,
+:global(:root[data-theme='dark']) .slaBadge,
+:global(:root[data-theme='dark']) .pinButton,
+:global(:root[data-theme='dark']) .unreadBubble,
+:global(:root[data-theme='dark']) .urgentBadge,
+:global(:root[data-theme='dark']) .hrBadge,
+:global(:root[data-theme='dark']) .chatAssignedUser,
+:global(:root[data-theme='dark']) .chatTime,
+:global(:root[data-theme='dark']) .myBadge,
+:global(:root[data-theme='dark']) .questBadge,
+:global(:root[data-theme='dark']) .content,
+:global(:root[data-theme='dark']) .chatTopIcon,
+:global(:root[data-theme='dark']) .chatTopAction,
+:global(:root[data-theme='dark']) .retroHudBar span,
+:global(:root[data-theme='dark']) .chatTopAvatar,
+:global(:root[data-theme='dark']) .chatTopTicketBadge,
+:global(:root[data-theme='dark']) .chatTopTicketToast,
+:global(:root[data-theme='dark']) .moreActionsButton,
+:global(:root[data-theme='dark']) .moreActionsMenu,
+:global(:root[data-theme='dark']) .statusChip,
+:global(:root[data-theme='dark']) .priorityChip,
+:global(:root[data-theme='dark']) .ticketSelect,
+:global(:root[data-theme='dark']) .spinner,
+:global(:root[data-theme='dark']) .scrollToBottom,
+:global(:root[data-theme='dark']) .messagesDayDivider span,
+:global(:root[data-theme='dark']) .messagesUnreadDivider span,
+:global(:root[data-theme='dark']) .moreLoading,
+:global(:root[data-theme='dark']) .messageContent,
+:global(:root[data-theme='dark']) .messageTicketBadge,
+:global(:root[data-theme='dark']) .messageCode,
+:global(:root[data-theme='dark']) .messageMediaImage,
+:global(:root[data-theme='dark']) .messageMediaButton:focus-visible,
+:global(:root[data-theme='dark']) .messageMediaVideo,
+:global(:root[data-theme='dark']) .voiceVisualizerBar,
+:global(:root[data-theme='dark']) .translationBox,
+:global(:root[data-theme='dark']) .translateRetry,
+:global(:root[data-theme='dark']) .messageInputContainer,
+:global(:root[data-theme='dark']) .formatBarOpen,
+:global(:root[data-theme='dark']) .messageContextMenu,
+:global(:root[data-theme='dark']) .messageContextMenuItem,
+:global(:root[data-theme='dark']) .previewBody,
+:global(:root[data-theme='dark']) .previewImage,
+:global(:root[data-theme='dark']) .previewVideo,
+:global(:root[data-theme='dark']) .previewDoc,
+:global(:root[data-theme='dark']) .previewCaption,
+:global(:root[data-theme='dark']) .viewerImage,
+:global(:root[data-theme='dark']) .viewerVideo,
+:global(:root[data-theme='dark']) .attachButton,
+:global(:root[data-theme='dark']) .messageInput,
+:global(:root[data-theme='dark']) .voiceButton {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .callPanel,
+:global(:root[data-theme='dark']) .sidebar,
+:global(:root[data-theme='dark']) .content {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+:global(:root[data-theme='dark']) .sidebar,
+:global(:root[data-theme='dark']) .content {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+:global(:root[data-theme='dark']) .sidebarHeader,
+:global(:root[data-theme='dark']) .searchSection,
+:global(:root[data-theme='dark']) .filterTabs,
+:global(:root[data-theme='dark']) .quickFiltersRow,
+:global(:root[data-theme='dark']) .bulkActionsRow,
+:global(:root[data-theme='dark']) .chatList,
+:global(:root[data-theme='dark']) .chatHeaderPanel,
+:global(:root[data-theme='dark']) .messageInputContainer {
+  background: var(--surface);
+}
+
+:global(:root[data-theme='dark']) .sidebarTitle,
+:global(:root[data-theme='dark']) .activityCardTitle,
+:global(:root[data-theme='dark']) .callPanelTitle,
+:global(:root[data-theme='dark']) .commentsTitle,
+:global(:root[data-theme='dark']) .activityFullscreenTitle,
+:global(:root[data-theme='dark']) .chatTopTitle {
+  font-family: var(--font-family-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+:global(:root[data-theme='dark']) .sidebarTitle {
+  font-size: 24px;
+  line-height: 1;
+}
+
+:global(:root[data-theme='dark']) .activityToggle,
+:global(:root[data-theme='dark']) .menuToggleButton,
+:global(:root[data-theme='dark']) .searchApplyButton,
+:global(:root[data-theme='dark']) .activityExpand,
+:global(:root[data-theme='dark']) .commentsLoadMore,
+:global(:root[data-theme='dark']) .callPanelToggle,
+:global(:root[data-theme='dark']) .filterTab,
+:global(:root[data-theme='dark']) .hotkeysHintButton,
+:global(:root[data-theme='dark']) .bulkActionButton,
+:global(:root[data-theme='dark']) .chatTopAction,
+:global(:root[data-theme='dark']) .moreActionsMenu button,
+:global(:root[data-theme='dark']) .messageContextMenuItem,
+:global(:root[data-theme='dark']) .translateRetry,
+:global(:root[data-theme='dark']) .sendButton {
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .activityToggle:hover,
+:global(:root[data-theme='dark']) .menuToggleButton:hover,
+:global(:root[data-theme='dark']) .searchApplyButton:hover,
+:global(:root[data-theme='dark']) .activityExpand:hover,
+:global(:root[data-theme='dark']) .activityOpenButton:hover,
+:global(:root[data-theme='dark']) .commentsLoadMore:hover,
+:global(:root[data-theme='dark']) .callPanelToggle:hover,
+:global(:root[data-theme='dark']) .filterTab:hover,
+:global(:root[data-theme='dark']) .hotkeysHintButton:hover,
+:global(:root[data-theme='dark']) .bulkActionButton:hover:enabled,
+:global(:root[data-theme='dark']) .chatSelectButton:hover,
+:global(:root[data-theme='dark']) .pinButton:hover,
+:global(:root[data-theme='dark']) .chatTopIcon:hover,
+:global(:root[data-theme='dark']) .chatTopAction:hover:enabled,
+:global(:root[data-theme='dark']) .moreActionsButton:hover,
+:global(:root[data-theme='dark']) .attachButton:hover,
+:global(:root[data-theme='dark']) .voiceButton:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .hrOutreachButton {
+  border-color: color-mix(in srgb, #3b82f6 50%, var(--border));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(59, 130, 246, 0.12));
+  color: #60a5fa;
+}
+
+:global(:root[data-theme='dark']) .hrOutreachButton:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+:global(:root[data-theme='dark']) .filterTabActive,
+:global(:root[data-theme='dark']) .chatSelectButtonActive {
+  background: transparent;
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .chatItem {
+  margin-bottom: 0;
+  background: transparent;
+  border-color: transparent;
+  border-bottom-color: var(--border);
+}
+
+:global(:root[data-theme='dark']) .chatItem:hover {
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .chatItem.active,
+:global(:root[data-theme='dark']) .chatList .active {
+  background: transparent;
+  border-color: var(--border);
+  border-left-color: var(--primary);
+  color: var(--primary);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .chatItemUnread {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+:global(:root[data-theme='dark']) .chatItemHr {
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.34), rgba(37, 99, 235, 0.18)),
+    color-mix(in srgb, #2563eb 16%, var(--surface));
+  border-color: color-mix(in srgb, #2563eb 58%, var(--border));
+  border-bottom-color: color-mix(in srgb, #2563eb 58%, var(--border));
+}
+
+:global(:root[data-theme='dark']) .chatItemHr:hover,
+:global(:root[data-theme='dark']) .chatItemHr.active {
+  background:
+    linear-gradient(90deg, rgba(37, 99, 235, 0.42), rgba(37, 99, 235, 0.24)),
+    color-mix(in srgb, #2563eb 20%, var(--surface));
+}
+
+:global(:root[data-theme='dark']) .chatItem::before {
+  width: 2px;
+}
+
+:global(:root[data-theme='dark']) .chatName,
+:global(:root[data-theme='dark']) .chatNameUnread {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+:global(:root[data-theme='dark']) .chatClientHandle,
+:global(:root[data-theme='dark']) .channelBadge,
+:global(:root[data-theme='dark']) .slaBadge,
+:global(:root[data-theme='dark']) .unreadBubble,
+:global(:root[data-theme='dark']) .urgentBadge,
+:global(:root[data-theme='dark']) .hrBadge,
+:global(:root[data-theme='dark']) .chatAssignedUser,
+:global(:root[data-theme='dark']) .chatTime,
+:global(:root[data-theme='dark']) .myBadge,
+:global(:root[data-theme='dark']) .questBadge,
+:global(:root[data-theme='dark']) .statusChip,
+:global(:root[data-theme='dark']) .priorityChip,
+:global(:root[data-theme='dark']) .messageTime,
+:global(:root[data-theme='dark']) .messageTicketBadge,
+:global(:root[data-theme='dark']) .translationTitle {
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .avatarImage,
+:global(:root[data-theme='dark']) .avatarPlaceholder,
+:global(:root[data-theme='dark']) .chatTopAvatar {
+  border: 1px solid var(--border);
+}
+
+:global(:root[data-theme='dark']) .priorityDot {
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .chatHeaderPanel {
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .chatTopTitle {
+  font-size: 24px;
+  line-height: 1;
+}
+
+:global(:root[data-theme='dark']) .chatTopAction,
+:global(:root[data-theme='dark']) .ticketSelect,
+:global(:root[data-theme='dark']) .searchSelect,
+:global(:root[data-theme='dark']) .densitySelect,
+:global(:root[data-theme='dark']) .commentTextarea {
+  background: var(--surface-2);
+}
+
+:global(:root[data-theme='dark']) .sendButton {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .sendButton:hover:enabled {
+  background: var(--primary-hover);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .messagesContainer,
+:global(:root[data-theme='dark']) .messagesList {
+  background: var(--bg);
+}
+
+:global(:root[data-theme='dark']) .messagesContainer::before,
+:global(:root[data-theme='dark']) .messagesContainer::after {
+  opacity: 0;
+  animation: none;
+}
+
+:global(:root[data-theme='dark']) .messagesDayDivider span,
+:global(:root[data-theme='dark']) .messagesUnreadDivider span,
+:global(:root[data-theme='dark']) .moreLoading {
+  background: var(--surface);
+}
+
+:global(:root[data-theme='dark']) .messagesUnreadDivider span {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .messageContent {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: border-color 150ms cubic-bezier(0.25, 0, 0, 1), background-color 150ms cubic-bezier(0.25, 0, 0, 1);
+}
+
+:global(:root[data-theme='dark']) .messageContent:hover {
+  border-color: var(--primary);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .messageOwn .messageContent {
+  border-color: var(--primary);
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .messageOwn .messageTicketBadge,
+:global(:root[data-theme='dark']) .messageOwn .messageResponsible {
+  color: var(--text-muted);
+}
+
+:global(:root[data-theme='dark']) .messageText {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+:global(:root[data-theme='dark']) .messageCode {
+  font-family: var(--font-family-mono);
+  background: var(--bg);
+}
+
+:global(:root[data-theme='dark']) .voiceVisualizerBarActive {
+  background: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .translationBox,
+:global(:root[data-theme='dark']) .previewBody,
+:global(:root[data-theme='dark']) .previewDoc,
+:global(:root[data-theme='dark']) .messageInput,
+:global(:root[data-theme='dark']) .formatBarOpen,
+:global(:root[data-theme='dark']) .messageContextMenu {
+  background: var(--surface-2);
+}
+
+:global(:root[data-theme='dark']) .messageInput {
+  min-height: 44px;
+  font-size: 16px;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .messageInput:focus,
+:global(:root[data-theme='dark']) .previewCaption:focus,
+:global(:root[data-theme='dark']) .commentTextarea:focus,
+:global(:root[data-theme='dark']) .searchSelect:focus {
+  border-color: var(--primary);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .attachButton,
+:global(:root[data-theme='dark']) .voiceButton {
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+:global(:root[data-theme='dark']) .activityDotInbound,
+:global(:root[data-theme='dark']) .activityLegendDotInbound::before {
+  fill: var(--success);
+  background: var(--success);
+}
+
+:global(:root[data-theme='dark']) .activityDotOutbound,
+:global(:root[data-theme='dark']) .activityLegendDotOutbound::before {
+  fill: var(--warning);
+  background: var(--warning);
+}
+
+:global(:root[data-theme='dark']) .activityLegendOnline,
+:global(:root[data-theme='dark']) .activityLegendBusy,
+:global(:root[data-theme='dark']) .activityLegendAway,
+:global(:root[data-theme='dark']) .activityLegendIdle,
+:global(:root[data-theme='dark']) .activityLegendOffline {
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+@media (max-width: 820px) {
+  :global(:root[data-theme='dark']) .container,
+  :global(:root[data-theme='dark']) .containerCollapsed {
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  :global(:root[data-theme='dark']) .sidebar,
+  :global(:root[data-theme='dark']) .content {
+    border-radius: 0;
+  }
+}
+
+/* ---- HR Outreach ---- */
+
+.hrOutreachButton {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #2563eb 50%, var(--border));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.22), rgba(37, 99, 235, 0.1));
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, color 0.2s ease;
+}
+
+.hrOutreachButton:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #2563eb;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.32);
+}
+
+.hrOutreachButton:active {
+  transform: translateY(0);
+}
+
+.hrOutreachModal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 320px;
+}
+
+.hrOutreachDescription {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.hrOutreachField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hrOutreachLabel {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hrOutreachInput {
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--text-md);
+  padding: 0 12px;
+  outline: none;
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+
+.hrOutreachInput:focus {
+  border-color: var(--primary);
+}
+
+.hrOutreachError {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--state-danger);
+  background: rgba(255, 95, 95, 0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.hrOutreachActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }

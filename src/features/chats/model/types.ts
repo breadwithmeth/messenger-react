@@ -39,6 +39,7 @@ export interface LastMessage {
 export interface Chat {
   id: number;
   name: string;
+  isHr: boolean;
   channel: 'whatsapp' | 'telegram';
   remoteJid: string | null;
   receivingPhoneJid: string | null;
@@ -101,6 +102,10 @@ export interface Message {
 }
 
 export interface MessagesResponse {
+  chat?: {
+    id: number;
+    isHr: boolean;
+  };
   messages: Message[];
   pagination: {
     total: number;

@@ -24,3 +24,34 @@
   text-align: center;
   margin: 0 0 var(--s-4) 0;
 }
+
+:global(:root[data-theme='dark']) .page {
+  justify-content: flex-start;
+  padding: 80px 24px;
+}
+
+:global(:root[data-theme='dark']) .card {
+  max-width: 520px;
+  padding: 40px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .title {
+  text-align: left;
+  font-size: 56px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  :global(:root[data-theme='dark']) .card {
+    padding: 28px 0;
+  }
+
+  :global(:root[data-theme='dark']) .title {
+    font-size: 40px;
+  }
+}

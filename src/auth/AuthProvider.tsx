@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { KeycloakTokenParsed } from 'keycloak-js';
+import { authApi } from '@/features/auth/api/authApi';
+import type { User as ApiUser } from '@/features/auth/model/types';
 import { initKeycloak, keycloak, KEYCLOAK_REDIRECT_URI, KEYCLOAK_SCOPE } from './keycloak';
 
 type TokenWithRoles = KeycloakTokenParsed & {
@@ -25,6 +27,9 @@ type TokenWithRoles = KeycloakTokenParsed & {
   id?: number | string;
   user_id?: number | string;
   operator_id?: number | string;
+  role?: string;
+  isHr?: boolean | string | number;
+  is_hr?: boolean | string | number;
 };
 
 export type AuthUser = {
@@ -33,6 +38,8 @@ export type AuthUser = {
   email: string;
   username: string;
   displayName: string;
+  role?: string;
+  isHr: boolean;
 };
 
 export type AuthContextValue = {
@@ -78,6 +85,13 @@ const toNumber = (value: unknown): number => {
   return 0;
 };
 
+const toBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1';
+  return false;
+};
+
 const buildUser = (parsed: TokenWithRoles | undefined): AuthUser | null => {
   if (!parsed) return null;
 
@@ -86,6 +100,8 @@ const buildUser = (parsed: TokenWithRoles | undefined): AuthUser | null => {
   const username = parsed.preferred_username ?? email ?? sub;
   const displayName = parsed.name ?? ([parsed.given_name, parsed.family_name].filter(Boolean).join(' ') || username);
   const id = toNumber(parsed.operator_id ?? parsed.user_id ?? parsed.id ?? sub);
+  const role = typeof parsed.role === 'string' ? parsed.role : undefined;
+  const isHr = toBoolean(parsed.isHr ?? parsed.is_hr);
 
   return {
     id,
@@ -93,6 +109,23 @@ const buildUser = (parsed: TokenWithRoles | undefined): AuthUser | null => {
     email,
     username,
     displayName,
+    role,
+    isHr,
+  };
+};
+
+const mergeApiUser = (base: AuthUser | null, apiUser: ApiUser): AuthUser => {
+  const email = apiUser.email || base?.email || '';
+  const displayName = apiUser.name?.trim() || base?.displayName || email || base?.username || '';
+
+  return {
+    id: toNumber(apiUser.id) || base?.id || 0,
+    sub: base?.sub || '',
+    email,
+    username: base?.username || email,
+    displayName,
+    role: apiUser.role ?? base?.role,
+    isHr: apiUser.isHr === true,
   };
 };
 
@@ -107,6 +140,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const refreshIntervalRef = useRef<number | null>(null);
+
+  const refreshUserFromApi = useCallback(async () => {
+    try {
+      const apiUser = await authApi.getMe();
+      setUser((current) => mergeApiUser(current ?? buildUser(keycloak.tokenParsed as TokenWithRoles | undefined), apiUser));
+    } catch {
+      // Keep token-derived user data if the profile endpoint is unavailable.
+    }
+  }, []);
 
   const syncFromToken = useCallback(() => {
     const parsed = keycloak.tokenParsed as TokenWithRoles | undefined;
@@ -150,9 +192,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         syncFromToken();
+        void refreshUserFromApi();
 
-        keycloak.onAuthSuccess = syncFromToken;
-        keycloak.onAuthRefreshSuccess = syncFromToken;
+        keycloak.onAuthSuccess = () => {
+          syncFromToken();
+          void refreshUserFromApi();
+        };
+        keycloak.onAuthRefreshSuccess = () => {
+          syncFromToken();
+          void refreshUserFromApi();
+        };
         keycloak.onAuthLogout = () => {
           if (!mounted) return;
           setUser(null);
@@ -192,7 +241,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshIntervalRef.current = null;
       }
     };
-  }, [login, logout, syncFromToken]);
+  }, [login, logout, refreshUserFromApi, syncFromToken]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleFocus = () => {
+      void refreshUserFromApi();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isAuthenticated, refreshUserFromApi]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

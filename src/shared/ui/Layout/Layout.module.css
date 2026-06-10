@@ -310,7 +310,7 @@
 .sidebar {
   --surface: var(--surface-solid);
   --surface-2: var(--surface-2-solid);
-  width: 220px;
+  width: 240px;
   background: var(--surface-solid);
   border-right: 1px solid var(--border);
   display: flex;
@@ -326,7 +326,7 @@
 }
 
 .sidebarClosed {
-  transform: translateX(-100%);
+  transform: translateX(0);
 }
 
 .sidebarOpen {
@@ -427,7 +427,7 @@
 }
 
 .menuLabel {
-  font-size: 11px;
+  font-size: 12px;
   word-wrap: break-word;
   max-width: 100%;
 }
@@ -439,6 +439,31 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.profileCard {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+}
+
+.profileLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profileName {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .themeToggle {
@@ -549,6 +574,28 @@
   cursor: not-allowed;
 }
 
+.advancedPanel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  color: var(--text);
+}
+
+.advancedSummary {
+  min-height: 34px;
+  padding: 9px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.advancedControls {
+  display: grid;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+
 .starRating {
   display: flex;
   align-items: center;
@@ -600,6 +647,8 @@
   flex-direction: column;
   position: relative;
   z-index: 3;
+  min-width: 0;
+  margin-left: 240px;
 }
 
 .main {
@@ -641,7 +690,248 @@
 }
 
 @media (max-width: 900px) {
+  .backdrop {
+    display: block;
+  }
+
   .sidebar {
     width: 220px;
+  }
+
+  .sidebarClosed {
+    transform: translateX(-100%);
+  }
+
+  .mainWrapper {
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 901px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+:global(:root[data-theme='dark']) .layout {
+  background: var(--bg);
+}
+
+:global(:root[data-theme='dark']) .skipLink,
+:global(:root[data-theme='dark']) .burgerButton,
+:global(:root[data-theme='dark']) .floatingBurger,
+:global(:root[data-theme='dark']) .presenceToggle,
+:global(:root[data-theme='dark']) .presencePopover,
+:global(:root[data-theme='dark']) .presenceCard,
+:global(:root[data-theme='dark']) .tooltipBox,
+:global(:root[data-theme='dark']) .sidebar,
+:global(:root[data-theme='dark']) .menuItem,
+:global(:root[data-theme='dark']) .themeToggle,
+:global(:root[data-theme='dark']) .firefoxModeButton,
+:global(:root[data-theme='dark']) .simulateErrorButton,
+:global(:root[data-theme='dark']) .trackingLossButton,
+:global(:root[data-theme='dark']) .crtSelect,
+:global(:root[data-theme='dark']) .starRating,
+:global(:root[data-theme='dark']) .profileCard,
+:global(:root[data-theme='dark']) .advancedPanel,
+:global(:root[data-theme='dark']) .userButton,
+:global(:root[data-theme='dark']) .toastError {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .skipLink {
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .burgerButton,
+:global(:root[data-theme='dark']) .floatingBurger,
+:global(:root[data-theme='dark']) .presenceToggle {
+  background: var(--surface);
+}
+
+:global(:root[data-theme='dark']) .burgerButton:hover,
+:global(:root[data-theme='dark']) .floatingBurger:hover,
+:global(:root[data-theme='dark']) .presenceToggle:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .topBar {
+  background: var(--surface);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .presencePopover,
+:global(:root[data-theme='dark']) .presenceCard {
+  background: var(--surface);
+}
+
+:global(:root[data-theme='dark']) .presencePopoverHeader,
+:global(:root[data-theme='dark']) .presenceHeader {
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .presenceSkeleton {
+  border-radius: 0;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
+}
+
+:global(:root[data-theme='dark']) .legendSwatchOnline,
+:global(:root[data-theme='dark']) .legendSwatchOffline,
+:global(:root[data-theme='dark']) .legendDotInbound::before,
+:global(:root[data-theme='dark']) .legendDotOutbound::before {
+  border-radius: 0;
+}
+
+:global(:root[data-theme='dark']) .backdrop {
+  background: rgba(10, 10, 10, 0.76);
+}
+
+:global(:root[data-theme='dark']) .sidebar {
+  --surface: var(--surface-solid);
+  --surface-2: var(--surface-2-solid);
+  width: 240px;
+  background: var(--surface-solid);
+  border-right: 1px solid var(--border);
+  padding: 18px 0;
+}
+
+:global(:root[data-theme='dark']) .logo {
+  position: relative;
+  padding: 8px 18px 22px;
+  margin-bottom: 14px;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .logo::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  bottom: 0;
+  width: 64px;
+  height: 3px;
+  background: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .menu {
+  gap: 18px;
+  padding: 0 12px;
+}
+
+:global(:root[data-theme='dark']) .menuGroup {
+  gap: 8px;
+}
+
+:global(:root[data-theme='dark']) .menuGroupTitle {
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-subtle);
+}
+
+:global(:root[data-theme='dark']) .menuItem {
+  padding: 11px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  border-color: transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 150ms cubic-bezier(0.25, 0, 0, 1), background-color 150ms cubic-bezier(0.25, 0, 0, 1), border-color 150ms cubic-bezier(0.25, 0, 0, 1);
+}
+
+:global(:root[data-theme='dark']) .menuItem:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
+}
+
+:global(:root[data-theme='dark']) .menuItemActive {
+  color: var(--primary);
+  background: transparent;
+  border-color: var(--border);
+  border-left-color: var(--primary);
+  box-shadow: none;
+}
+
+:global(:root[data-theme='dark']) .menuLabel {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+:global(:root[data-theme='dark']) .sidebarFooter {
+  gap: 8px;
+}
+
+:global(:root[data-theme='dark']) .themeToggle,
+:global(:root[data-theme='dark']) .firefoxModeButton,
+:global(:root[data-theme='dark']) .simulateErrorButton,
+:global(:root[data-theme='dark']) .trackingLossButton,
+:global(:root[data-theme='dark']) .crtSelect,
+:global(:root[data-theme='dark']) .advancedSummary,
+:global(:root[data-theme='dark']) .userButton {
+  min-height: 36px;
+  background: transparent;
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:global(:root[data-theme='dark']) .themeToggle:hover,
+:global(:root[data-theme='dark']) .firefoxModeButton:hover,
+:global(:root[data-theme='dark']) .trackingLossButton:hover:enabled,
+:global(:root[data-theme='dark']) .userButton:hover {
+  color: var(--primary);
+  background: transparent;
+  border-color: var(--primary);
+}
+
+:global(:root[data-theme='dark']) .starRating {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+:global(:root[data-theme='dark']) .profileCard,
+:global(:root[data-theme='dark']) .advancedPanel {
+  background: transparent;
+  border-color: var(--border);
+}
+
+:global(:root[data-theme='dark']) .profileLabel {
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.12em;
+}
+
+:global(:root[data-theme='dark']) .main {
+  max-width: 1200px;
+  padding: 48px 64px;
+}
+
+:global(:root[data-theme='dark']) .toastError {
+  background: var(--surface);
+  color: var(--danger);
+}
+
+@media (max-width: 900px) {
+  :global(:root[data-theme='dark']) .main {
+    padding: 32px 24px;
   }
 }
