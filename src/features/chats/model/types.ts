@@ -25,6 +25,14 @@ export interface SenderUser {
   email: string;
 }
 
+export interface WebsiteSession {
+  id: string;
+  visitorName: string | null;
+  visitorEmail: string | null;
+  visitorPhone: string | null;
+  lastSeenAt: string;
+}
+
 export interface LastMessage {
   id: number;
   content: string;
@@ -61,6 +69,7 @@ export interface Chat {
   lastMessage: LastMessage | null;
   displayName: string;
   profilePhotoUrl: string | null;
+  websiteSession?: WebsiteSession;
 }
 
 export interface ChatsResponse {

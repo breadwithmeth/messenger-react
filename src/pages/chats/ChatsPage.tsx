@@ -3324,6 +3324,10 @@ export function ChatsPage() {
                   const showClientHandle = Boolean(clientHandle) && clientHandle !== displayName;
                   const orgPhoneLabel = chat.organizationPhone?.displayName || '';
                   const orgConnLabel = chat.organizationPhone?.connectionType || '';
+                  const webSession = chat.websiteSession;
+                  const webSessionLabel = webSession
+                    ? (webSession.visitorName || webSession.visitorEmail || webSession.visitorPhone || 'Сайт')
+                    : '';
                   const slaMeta = getSlaMeta(chat);
                   
                   return (
@@ -3417,6 +3421,12 @@ export function ChatsPage() {
                             </div>
                             <div className={styles.chatSubtitleRow}>
                               <span className={styles.channelBadge}>{formatChannelLabel(chat.channel)}</span>
+                              {webSessionLabel ? <span className={styles.metaDot}>•</span> : null}
+                              {webSessionLabel ? (
+                                <span className={styles.webSessionBadge} title={`Сайт-сессия: ${webSessionLabel}\nПоследняя активность: ${formatDateTime(webSession!.lastSeenAt)}`}>
+                                  🌐 {webSessionLabel}
+                                </span>
+                              ) : null}
                               {clientPhone ? <span className={styles.metaDot}>•</span> : null}
                               {clientPhone ? <span className={styles.chatSubtitle}>{clientPhone}</span> : null}
                               {orgPhoneLabel ? <span className={styles.chatSubtitle}>• {orgPhoneLabel}</span> : null}
@@ -3492,6 +3502,10 @@ export function ChatsPage() {
                           const clientPhone = extractPhoneFromJid(currentChat?.remoteJid ?? null);
                           const orgPhoneLabel = currentChat?.organizationPhone?.displayName || '';
                           const orgConnLabel = currentChat?.organizationPhone?.connectionType || '';
+                          const webSession = currentChat?.websiteSession;
+                          const webSessionLabel = webSession
+                            ? (webSession.visitorName || webSession.visitorEmail || webSession.visitorPhone || 'Сайт')
+                            : '';
 
                           return (
                             <>
@@ -3503,6 +3517,7 @@ export function ChatsPage() {
                               </div>
                               <div className={styles.chatTopSubtitle}>
                                 {currentChat ? formatChannelLabel(currentChat.channel) : ''}
+                                {webSessionLabel ? ` • 🌐 ${webSessionLabel}` : ''}
                                 {clientPhone ? ` • ${clientPhone}` : ''}
                                 {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
                                 {orgConnLabel ? ` (${orgConnLabel})` : ''}
