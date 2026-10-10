@@ -5,11 +5,11 @@
   --text-sm: 12px;
   --text-md: 13px;
   --text-lg: 14px;
-  --state-info: #4ea3ff;
-  --state-success: #4ad08b;
-  --state-warning: #f3b35d;
-  --state-danger: #ff5f5f;
-  --state-muted: #94a3b8;
+  --state-info: #2f63e4;
+  --state-success: #1f9d55;
+  --state-warning: #b97324;
+  --state-danger: #d5442e;
+  --state-muted: #6b7180;
   --motion-fast: 130ms;
   --motion-base: 190ms;
   --motion-enter: 250ms;
@@ -23,51 +23,11 @@
   background: var(--bg);
 }
 
-.chatsHeader {
-  background: var(--primary);
-  color: var(--on-primary);
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.chatsTitle {
-  margin: 0;
-  font-weight: 500;
-  color: var(--on-primary);
-}
-
-.headerIcons {
-  line-height: 1.2;
-  display: flex;
-  gap: 12px;
-}
-
-.iconButton {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: var(--on-primary);
-  line-height: 1.2;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 0;
-  transition: opacity 0.2s;
-}
-
-.iconButton:hover {
-  opacity: 0.8;
-}
-
 .sendButton {
   width: 40px;
   height: 40px;
   line-height: 1.2;
-  border-radius: 12px;
+  border-radius: var(--radius);
   border: none;
   background: var(--primary);
   color: var(--on-primary);
@@ -76,18 +36,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-  line-height: 1.25;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .sendButton:hover:enabled {
-  background: #2f63e4;
-  box-shadow: 0 10px 24px rgba(31, 111, 235, 0.25);
+  background: var(--primary-hover);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .sendButton:active:enabled {
   transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
 .sendButton:disabled {
@@ -126,101 +87,6 @@
   white-space: nowrap;
   z-index: 5;
 }
-.favoritesSection {
-  padding: var(--s-2) var(--s-2);
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.favoritesSection {
-  scrollbar-width: none;
-}
-
-.favoritesSection::-webkit-scrollbar {
-  display: none;
-}
-
-.addFavorite {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 64px;
-  height: 64px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--text-subtle);
-  cursor: pointer;
-  padding: 8px;
-  transition: all 0.2s;
-}
-
-.addFavoritePlus {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.addFavoriteLabel {
-  font-size: 10px;
-  margin-top: 4px;
-}
-
-.addFavorite:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.favoriteContact {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 64px;
-  cursor: pointer;
-}
-
-.favoriteAvatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary);
-  font-size: 16px;
-  font-weight: 700;
-  border: 2px solid var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.favoriteName {
-  font-size: 11px;
-  color: var(--text);
-  text-align: center;
-  max-width: 56px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-}
-
-.title {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--text);
-  margin: 0;
-}
 
 .container {
   display: grid;
@@ -230,11 +96,9 @@
   min-height: 0;
   overflow: hidden;
   padding: 12px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
   background: var(--surface-solid, var(--surface));
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   box-shadow: var(--shadow-md);
   animation: page-enter var(--motion-enter) var(--motion-ease) both;
   will-change: transform, opacity;
@@ -251,8 +115,6 @@
   padding: 12px;
   overflow: auto;
   min-height: 0;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .callPanelCollapsed {
@@ -430,8 +292,6 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -472,8 +332,6 @@
   padding: 10px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--surface-2) 85%, transparent);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
   box-shadow: var(--shadow-sm);
 }
 
@@ -528,8 +386,6 @@
   background: color-mix(in srgb, var(--surface) 85%, transparent);
   color: var(--text);
   cursor: pointer;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .commentsLoadMore:disabled {
@@ -546,8 +402,6 @@
   background: var(--surface);
   color: var(--text);
   resize: vertical;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .callPanelToggle {
@@ -584,14 +438,6 @@
   -webkit-backdrop-filter: none;
 }
 
-.sidebarHeader {
-  padding: 5px 8px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
 .searchSection {
   padding: 8px;
   border-bottom: 1px solid var(--border);
@@ -604,10 +450,18 @@
 }
 
 .searchInputRow {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
+  display: flex;
   gap: 6px;
   align-items: center;
+}
+
+.searchInputRow > :global(label) {
+  flex: 1;
+  min-width: 0;
+}
+
+.searchInputRow :global(input) {
+  width: 100%;
 }
 
 .searchInputRow :global(input) {
@@ -658,67 +512,22 @@
 }
 
 .searchApplyButton {
-  min-width: 56px;
+  width: 34px;
   height: 34px;
+  flex-shrink: 0;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--text-muted);
   cursor: pointer;
-  padding: 0 8px;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .searchApplyButton:hover {
-  background: var(--surface-2);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.searchRow {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.activityCard {
-  margin-top: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: linear-gradient(120deg, rgba(31, 111, 235, 0.08), rgba(31, 111, 235, 0.02));
-  box-shadow: var(--shadow-sm);
-}
-
-.activityCardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.activityCardTitle {
-  font-weight: 700;
-  font-size: 13px;
-  color: var(--text);
-}
-
-.activityExpand {
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-
-.activityExpand:hover {
   background: var(--surface-2);
   border-color: var(--primary);
   box-shadow: var(--shadow-sm);
@@ -737,32 +546,6 @@
 .activityEmpty {
   font-size: 12px;
   color: var(--text-subtle);
-}
-
-.activityChart {
-  width: 100%;
-  height: 90px;
-}
-
-.activityBarBg {
-  fill: var(--surface-2);
-}
-
-.activityAxisLabel {
-  font-size: 10px;
-  fill: var(--text-subtle);
-}
-
-.activityDotInbound {
-  fill: #2563eb;
-  stroke: var(--surface);
-  stroke-width: 1.5;
-}
-
-.activityDotOutbound {
-  fill: #f97316;
-  stroke: var(--surface);
-  stroke-width: 1.5;
 }
 
 .activityLegend {
@@ -784,7 +567,6 @@
   font-weight: 600;
   border: 1px solid rgba(0, 0, 0, 0.04);
 }
-
 
 .activityOpenButton {
   width: 100%;
@@ -964,52 +746,69 @@
   color: var(--text-muted);
 }
 
-.sidebarTitleRow {
+.sidebarTabsRow {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.sidebarTitle {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  margin: 0;
+.sidebarControlsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.newBadge {
-  background: var(--danger);
-  color: var(--on-danger);
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 999px;
-  min-width: 16px;
-  text-align: center;
+.sidebarControlsRow .densitySelect {
+  margin-left: auto;
 }
 
 .filterTabs {
-  padding: 8px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.quickFiltersRow {
-  padding: 0 8px 8px;
-  background: var(--surface);
   display: flex;
-  gap: 6px;
-  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
-.quickFiltersRow :global(button) {
+.filtersToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.filtersToggle:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.filtersPanel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  animation: page-enter var(--motion-fast) var(--motion-ease) both;
+}
+
+.filtersPanel :global(select),
+.filtersPanel .searchSelect {
+  width: 100%;
   min-height: 30px;
+  height: 30px;
+  font-size: 11.5px;
   padding: 0 8px;
-  font-size: 11px;
-  border-radius: 7px;
 }
 
 .densitySelect {
@@ -1044,11 +843,12 @@
 }
 
 .bulkActionsRow {
-  padding: 0 8px 8px;
+  padding: 8px;
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 40%, var(--surface));
   animation: page-enter var(--motion-enter) var(--motion-ease) both;
 }
 
@@ -1078,47 +878,33 @@
 
 .filterTab {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  min-height: 32px;
-  padding: 6px 8px;
+  border: 1px solid transparent;
+  min-height: 28px;
+  padding: 4px 9px;
   text-align: center;
-  font-size: 11px;
-  color: var(--text);
+  font-size: 11.5px;
+  color: var(--text-muted);
   cursor: pointer;
-  border-radius: 7px;
-  transition: background var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+  border-radius: 999px;
+  transition: background var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease), border-color var(--motion-fast) var(--motion-ease);
   display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: 4px;
   font-weight: 600;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  white-space: nowrap;
 }
 
 .filterTab:hover {
   background: var(--surface);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  border-color: var(--border);
+  color: var(--text);
 }
 
 .filterTabActive {
-  background: rgba(31, 111, 235, 0.12);
-  border-color: var(--primary);
+  background: var(--primary-soft);
+  border-color: color-mix(in srgb, var(--primary) 45%, transparent);
   color: var(--primary);
-  box-shadow: 0 8px 20px rgba(31, 111, 235, 0.18);
-  transform: translateY(-1px);
-}
-
-.filterNumber {
-  font-size: 11px;
-  margin-right: 3px;
-  opacity: 0.55;
-}
-
-.filterCount {
-  font-size: 10px;
-  opacity: 0.8;
-  font-weight: 600;
 }
 
 .chatList {
@@ -1149,8 +935,6 @@
   border-radius: 12px;
   background: var(--surface-2);
   animation: pulse 1.4s ease-in-out infinite;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .skeletonAvatar {
@@ -1193,7 +977,7 @@
 }
 
 .chatItem {
-  padding: 8px;
+  padding: 10px;
   cursor: pointer;
   transition: background-color var(--motion-base) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
   border: 1px solid var(--border);
@@ -1205,8 +989,6 @@
   margin-bottom: 6px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
   will-change: transform, box-shadow, opacity;
   transform: translateZ(0);
   animation: chat-item-enter var(--motion-enter) var(--motion-ease) both;
@@ -1380,24 +1162,6 @@
   font-weight: 600;
 }
 
-.unreadBadge {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  background: var(--danger);
-  color: var(--on-danger);
-  font-size: 9px;
-  font-weight: 700;
-  min-width: 17px;
-  height: 17px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  border: 2px solid var(--surface);
-}
-
 .chatDetails {
   flex: 1;
   min-width: 0;
@@ -1424,9 +1188,17 @@
 .chatTitleRow {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
+}
+
+.chatBadgesRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+  margin-top: 3px;
 }
 
 .chatName {
@@ -1443,21 +1215,6 @@
 .chatNameUnread {
   color: var(--text);
   font-weight: 700;
-}
-
-.chatClientHandle {
-  font-size: 10.5px;
-  color: var(--text-subtle);
-  opacity: 0.9;
-  max-width: 100%;
-  flex-shrink: 1;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 999px;
-  padding: 0 4px;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
 }
 
 .priorityDot {
@@ -1479,9 +1236,10 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
   overflow: visible;
+  margin-top: 3px;
 }
 
 .channelBadge {
@@ -1510,28 +1268,17 @@
   text-overflow: ellipsis;
 }
 
-.metaDot {
-  color: var(--text-muted);
-}
-
-.chatMeta {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
 .slaBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 14px;
-  padding: 0 4px;
+  min-height: 16px;
+  padding: 0 6px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   background: color-mix(in srgb, var(--surface-2) 90%, transparent);
 }
@@ -1551,27 +1298,6 @@
   color: color-mix(in srgb, var(--state-danger) 88%, var(--text));
   background: color-mix(in srgb, var(--state-danger) 16%, var(--surface));
   animation: hud-chip-shift 1.35s var(--motion-ease) infinite;
-}
-
-.pinButton {
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-  display: grid;
-  place-items: center;
-}
-
-.pinButton:hover {
-  background: var(--surface-2);
-}
-
-.pinBadge {
-  font-size: 12px;
 }
 
 .unreadBubble {
@@ -1620,9 +1346,9 @@
 }
 
 .chatSubtitle {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 500;
   opacity: 1;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -1646,31 +1372,26 @@
 }
 
 /* Keep the row readable in compact mode: show only primary identifiers by default. */
-.myBadge,
-.statusEffects {
+.myBadge {
   display: none;
 }
 
 .chatItem.active .myBadge,
-.chatItem.active .statusEffects,
-.chatItem:hover .myBadge,
-.chatItem:hover .statusEffects {
+.chatItem:hover .myBadge {
   display: inline-flex;
 }
 
 .chatTime {
   font-size: 10px;
   color: var(--text-muted);
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
-  margin-left: 2px;
+  margin-left: auto;
   padding: 0 3px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface-2) 75%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .chatItemUnread .chatTime {
@@ -1709,21 +1430,17 @@
 }
 
 .questBadge {
-  font-size: 7.5px;
-  padding: 0 4px;
+  font-size: 10px;
+  padding: 1px 6px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--primary) 60%, var(--border) 40%);
+  border: 1px solid color-mix(in srgb, var(--primary) 46%, var(--border));
   color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  white-space: nowrap;
 }
 
 .questBadgeNeutral {
-  font-size: 8px;
-  padding: 0 4px;
   background: color-mix(in srgb, var(--primary) 10%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 46%, var(--border));
 }
 
 .content {
@@ -1735,8 +1452,6 @@
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .empty {
@@ -1794,8 +1509,6 @@
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .chatTopBar {
@@ -1825,18 +1538,48 @@
   background: var(--surface-2);
 }
 
-.chatTopRight {
+.chatToolbar {
   display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  padding-right: 4px;
   align-items: center;
   flex-wrap: wrap;
-  border-left: 1px solid var(--border);
-  padding-left: 8px;
-  position: relative;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
+  gap: 6px;
+  row-gap: 6px;
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.chatToolbarMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.chatToolbarMeta span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  color: var(--text-subtle);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  white-space: nowrap;
+}
+
+.chatTopIconOnly {
+  width: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chatTopIconOnly .pixelIcon {
+  fill: var(--text-muted);
+}
+
+.chatTopIconOnly:hover:enabled .pixelIcon {
+  fill: var(--text);
 }
 
 .chatTopAction {
@@ -1849,8 +1592,6 @@
   cursor: pointer;
   font-size: 11px;
   font-weight: 600;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .chatTopAction + .chatTopAction {
@@ -1872,49 +1613,13 @@
   cursor: not-allowed;
 }
 
-.chatTopRight .chatTopIcon {
-  margin-left: 0;
-}
-
 .chatTopCenter {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
   min-width: 0;
-}
-
-.retroHudBar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-  padding: 4px 8px;
-  border-top: 1px solid var(--border);
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-.retroHudBar span {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 1px 7px;
-  background: color-mix(in srgb, var(--surface-2) 84%, transparent);
-}
-
-.overviewHudBar {
-  gap: 6px;
-  padding: 6px 10px;
-  font-size: 11px;
-}
-
-.overviewHudBar span {
-  padding: 2px 9px;
-  color: var(--text-subtle);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
 .chatTopAvatar {
@@ -1937,6 +1642,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  flex: 1;
   max-width: 100%;
   min-width: 0;
 }
@@ -1947,6 +1653,7 @@
   gap: 6px;
   min-width: 0;
   max-width: 100%;
+  width: 100%;
 }
 
 .chatTopTitle {
@@ -1958,54 +1665,47 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 0 1 auto;
 }
 
 .chatTopSubtitle {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-muted);
   font-weight: 400;
   max-width: 100%;
-  padding: 0 8px;
-  line-height: 1.2;
+  line-height: 1.3;
   text-align: left;
-  overflow: hidden;
-  display: -webkit-box;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.chatTopUnread {
-  font-size: 11px;
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.chatTopTicketMeta {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  margin-top: 2px;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chatTopTicketBadge {
-  font-size: 9px;
-  font-weight: 700;
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+.chatTopUnread {
+  font-size: 10px;
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 1px 7px;
   border-radius: 999px;
-  padding: 1px 5px;
-  color: var(--text);
-  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-  cursor: pointer;
+  background: var(--primary-soft);
+  flex-shrink: 0;
 }
 
-.ticketInlineGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.chatTopTicketBadge {
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border));
+  border-radius: 999px;
+  padding: 5px 11px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chatTopTicketBadge:hover {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 .chatTopTicketToast {
@@ -2014,63 +1714,6 @@
   background: var(--danger);
   padding: 4px 8px;
   border-radius: 8px;
-}
-
-.moreActionsButton {
-  display: none;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  cursor: pointer;
-}
-
-.moreActionsMenu {
-  position: absolute;
-  right: 8px;
-  top: 42px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-  min-width: 180px;
-  z-index: 5;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
-}
-
-.moreActionsMenu button {
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-}
-
-.moreActionsMenu button:hover {
-  background: var(--surface-2);
-}
-
-.chatTopTicketMetaInline {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.statusChip,
-.priorityChip {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
-  color: var(--text);
-  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-  font-variant: small-caps;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .status-new { border-color: color-mix(in srgb, var(--state-info) 78%, var(--border)); color: var(--state-info); background: color-mix(in srgb, var(--state-info) 14%, transparent); }
@@ -2090,92 +1733,21 @@
   color: var(--text-muted);
 }
 
-.chatTopTicketSkeleton {
-  display: inline-grid;
-  gap: 4px;
-  width: 90px;
-}
-
-.chatTopTicketSkeletonLine,
-.chatTopTicketSkeletonLineShort {
-  height: 7px;
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--surface) 86%, transparent) 0%,
-    color-mix(in srgb, var(--primary) 22%, transparent) 50%,
-    color-mix(in srgb, var(--surface) 86%, transparent) 100%
-  );
-  background-size: 170% 100%;
-  animation: retro-skeleton-scan 1.4s linear infinite;
-}
-
-.chatTopTicketSkeletonLineShort {
-  width: 60%;
-}
-
-.combatBars {
-  display: grid;
-  gap: 3px;
-  margin-top: 4px;
-  width: min(360px, 92%);
-}
-
-.combatBarRow {
-  display: grid;
-  grid-template-columns: 56px 1fr 28px;
-  align-items: center;
-  gap: 6px;
-}
-
-.combatBarLabel,
-.combatBarValue {
-  font-size: 8.5px;
-  line-height: 1;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-}
-
-.combatBarTrack {
-  height: 7px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
-}
-
-.combatBarFill {
-  height: 100%;
-  background: color-mix(in srgb, var(--primary) 62%, transparent);
-}
-
-.combatBarFillGood {
-  background: linear-gradient(90deg, #3ebf7d, #6be8a0);
-}
-
-.combatBarFillDanger {
-  background: linear-gradient(90deg, #a33f3f, #e86f63);
-}
-
-.combatBarFillNeutral {
-  background: linear-gradient(90deg, #4f82df, #7fb3ff);
-}
-
 .chatTopTicketError {
   font-size: 11px;
   color: var(--danger);
 }
 
-.ticketPanel {
-  display: none;
-}
-
 .ticketSelect {
-  height: 30px;
-  min-width: 110px;
-  border-radius: 10px;
+  height: 32px;
+  min-width: 0;
+  max-width: 132px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   padding: 0 8px;
+  font-size: 12px;
 }
 
 .chatTopGhost {
@@ -2281,18 +1853,12 @@
   .ticketSelect {
     max-width: 140px;
   }
-  .chatTopRight {
-    gap: 6px;
-  }
   .chatTopAction {
     padding: 0 10px;
   }
 }
 
 @media (max-width: 780px) {
-  .moreActionsButton {
-    display: inline-flex;
-  }
 }
 
 .messagesContainer {
@@ -2366,8 +1932,6 @@
   flex-direction: column;
   gap: 8px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .messagesDayDivider,
@@ -2420,48 +1984,6 @@
   border: 1px solid color-mix(in srgb, var(--primary) 48%, var(--border));
 }
 
-.retroMessageSkeletonList {
-  flex: 1;
-  display: grid;
-  gap: 8px;
-  padding: 16px;
-  align-content: start;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-}
-
-.retroMessageSkeleton {
-  max-width: 68%;
-  display: grid;
-  gap: 5px;
-  border: 2px solid color-mix(in srgb, var(--border) 74%, transparent);
-  padding: 8px;
-  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
-  box-shadow: 2px 2px 0 rgba(10, 18, 14, 0.7);
-}
-
-.retroMessageSkeletonOwn {
-  justify-self: end;
-  background: color-mix(in srgb, var(--primary) 22%, var(--surface-2));
-}
-
-.retroMessageSkeletonLine,
-.retroMessageSkeletonLineShort {
-  height: 8px;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--surface) 84%, transparent) 0%,
-    color-mix(in srgb, var(--primary) 26%, transparent) 50%,
-    color-mix(in srgb, var(--surface) 84%, transparent) 100%
-  );
-  background-size: 180% 100%;
-  animation: retro-skeleton-scan 1.35s linear infinite;
-}
-
-.retroMessageSkeletonLineShort {
-  width: 62%;
-}
-
 .moreLoading {
   align-self: center;
   font-size: 12px;
@@ -2477,19 +1999,10 @@
   will-change: transform, opacity;
 }
 
-.messageAppear {
-  opacity: 0;
-  animation: message-pop-in 0.34s steps(6, end) forwards;
-}
-
 .messageAppearSmooth {
   opacity: 0;
   animation: message-smooth-in 220ms var(--motion-ease) forwards;
   animation-delay: calc(var(--message-index, 0) * 8ms);
-}
-
-.messageUrgentPulse .messageContent {
-  animation: urgent-incoming-flash 1.2s steps(6, end);
 }
 
 .messageOther {
@@ -2501,15 +2014,12 @@
 }
 
 .messageContent {
-  background: linear-gradient(145deg,
-      color-mix(in srgb, var(--surface-2) 92%, transparent) 0%,
-      color-mix(in srgb, var(--surface-2) 82%, transparent) 100%);
+  background: var(--surface);
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
   position: relative;
   box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
   transition: transform var(--motion-fast) var(--motion-ease), box-shadow var(--motion-base) var(--motion-ease), background var(--motion-base) var(--motion-ease);
 }
 
@@ -2519,11 +2029,10 @@
 }
 
 .messageOwn .messageContent {
-  background: linear-gradient(145deg,
-      color-mix(in srgb, var(--primary) 82%, transparent) 0%,
-      color-mix(in srgb, var(--primary) 68%, transparent) 100%);
+  background: var(--primary);
   color: var(--on-primary);
-  box-shadow: 0 12px 30px rgba(47, 99, 228, 0.22);
+  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .messageSender {
@@ -2549,8 +2058,6 @@
   color: var(--text);
   border-radius: 999px;
   padding: 1px 6px;
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .messageOwn .messageTicketBadge {
@@ -2748,8 +2255,6 @@
   gap: 7px;
   align-items: flex-end;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
   position: relative;
 }
 
@@ -2762,506 +2267,6 @@
 
 .formatBarClosed {
   display: none;
-}
-
-.formatBarOpen {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
-  z-index: 5;
-}
-
-
-.retroRadarCard {
-  margin: 2px 4px 3px;
-  padding: 3px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.overviewCard {
-  padding: 4px;
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-}
-
-.overviewCard .retroRadarHeader {
-  font-size: 9px;
-  margin-bottom: 3px;
-}
-
-.overviewCard .retroRadarGrid {
-  gap: 2px;
-}
-
-.overviewCard .retroRadarDot {
-  width: 9px;
-  height: 6px;
-}
-
-.overviewCard .retroRadarFooter {
-  margin-top: 3px;
-}
-
-.overviewCard .retroRadarMeta {
-  font-size: 8px;
-}
-
-.overviewCard .retroRadarEvent {
-  font-size: 7px;
-  padding: 0 3px;
-}
-
-.retroRadarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  font-size: 8px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.04em;
-  margin-bottom: 2px;
-}
-
-.retroMiniToggle {
-  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  color: var(--text-muted);
-  font-size: 7px;
-  line-height: 1;
-  letter-spacing: 0.06em;
-  padding: 2px 4px;
-  cursor: pointer;
-}
-
-.retroMiniToggle:hover {
-  color: var(--text);
-  border-color: color-mix(in srgb, var(--primary) 65%, var(--border));
-}
-
-.retroRadarGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1px;
-  position: relative;
-  overflow: hidden;
-}
-
-.retroRadarDot {
-  width: 8px;
-  height: 6px;
-  border-radius: 2px;
-  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  background: color-mix(in srgb, var(--surface) 84%, transparent);
-}
-
-.retroRadarDotActive {
-  background: color-mix(in srgb, var(--primary) 55%, transparent);
-  border-color: color-mix(in srgb, var(--primary) 75%, transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 45%, transparent);
-}
-
-.retroRadarDotActive:nth-child(odd) {
-  animation: radar-blip 1.7s steps(3, end) infinite;
-}
-
-.retroRadarDotActive:nth-child(even) {
-  animation: radar-blip 1.7s steps(3, end) infinite 0.22s;
-}
-
-.retroRadarMeta {
-  margin-top: 0;
-  font-size: 7px;
-  color: var(--text-muted);
-}
-
-.retroRadarFooter {
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2px;
-}
-
-.retroRadarEvents {
-  margin-top: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1px;
-  justify-content: flex-end;
-}
-
-.retroRadarEvent {
-  font-size: 6px;
-  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
-  padding: 0 1px;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--surface) 84%, transparent);
-  letter-spacing: 0.05em;
-}
-
-.retroRadarEventActive {
-  color: var(--text);
-}
-
-.retroRadarEventDanger {
-  border-color: color-mix(in srgb, #ff6c66 62%, var(--border));
-}
-
-.retroRadarEventWarn {
-  border-color: color-mix(in srgb, #f0bf62 62%, var(--border));
-}
-
-.retroRadarEventGood {
-  border-color: color-mix(in srgb, #48d18e 62%, var(--border));
-}
-
-.retroRadarEventNeutral {
-  border-color: color-mix(in srgb, var(--primary) 58%, var(--border));
-}
-
-.retroGlitchEvent {
-  position: relative;
-  animation: retro-urgent-glitch 0.42s steps(2, end) infinite;
-}
-
-.panicFlash {
-  position: relative;
-}
-
-.panicFlash::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 8;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(255, 180, 180, 0.42) 0%, rgba(255, 88, 88, 0.34) 45%, rgba(255, 0, 0, 0.06) 100%),
-    repeating-linear-gradient(0deg, rgba(255, 120, 120, 0.16) 0 2px, transparent 2px 5px);
-  mix-blend-mode: screen;
-  animation: panic-fullscreen-flash 0.62s steps(4, end) 1;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  background:
-    radial-gradient(circle at 50% 50%, transparent 50%, rgba(255, 74, 74, 0.18) 100%),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 10px,
-      rgba(255, 96, 96, 0.08) 10px 12px
-    );
-  mix-blend-mode: screen;
-  animation: boss-alarm-overlay 0.42s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 4;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 66, 66, 0.1) 0 2px,
-      transparent 2px 5px
-    ),
-    linear-gradient(180deg, rgba(255, 0, 0, 0.08), transparent 28%, rgba(255, 0, 0, 0.08));
-  mix-blend-mode: lighten;
-  animation: boss-red-strobe 0.26s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .chatHeaderPanel {
-  position: relative;
-  animation: boss-header-pulse 0.72s steps(3, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .chatHeaderPanel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    120deg,
-    transparent 0%,
-    rgba(255, 72, 72, 0.16) 48%,
-    rgba(255, 120, 120, 0.24) 50%,
-    transparent 52%
-  );
-  transform: translateX(-115%);
-  animation: boss-header-sweep 0.82s linear infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .chatWindow {
-  animation: boss-window-quake 0.18s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .messagesContainer {
-  animation: boss-container-tilt 0.48s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .messagesList {
-  animation: boss-list-vibrate 0.12s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .messagesContainer::before {
-  opacity: 1;
-  animation-duration: 1.8s;
-  filter: hue-rotate(-24deg) saturate(1.34);
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .messagesContainer::after {
-  opacity: 0.5;
-  animation-duration: 0.6s;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .urgentBadge,
-:global(:root[data-theme='retro8']) .retroGlitchEvent .priority-urgent,
-:global(:root[data-theme='retro8']) .retroGlitchEvent .priorityDot-urgent {
-  animation: boss-danger-blink 0.2s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .chatTopAction,
-:global(:root[data-theme='retro8']) .retroGlitchEvent .sendButton:enabled {
-  animation: boss-action-shock 0.32s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .chatList .chatItem[data-priority='urgent'] {
-  position: relative;
-  animation: urgent-row-jitter 0.28s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .chatList .chatItem[data-priority='urgent']::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border: 1px solid rgba(255, 109, 109, 0.62);
-  box-shadow: inset 0 0 0 1px rgba(255, 154, 154, 0.25);
-  opacity: 0;
-  animation: urgent-row-scan 0.38s steps(2, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroGlitchEvent .messageUrgentPulse .messageContent {
-  animation: boss-urgent-hit 0.58s steps(8, end);
-}
-
-@keyframes retro-urgent-glitch {
-  0%, 100% {
-    transform: translateX(0);
-    filter: none;
-  }
-  12% {
-    transform: translateX(-1px);
-    filter: hue-rotate(-6deg);
-  }
-  13% {
-    transform: translateX(2px);
-    filter: hue-rotate(8deg);
-  }
-  14% {
-    transform: translateX(0);
-    filter: none;
-  }
-}
-
-@keyframes boss-header-pulse {
-  0%,
-  100% {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  }
-  50% {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), inset 0 0 0 2px rgba(255, 91, 91, 0.3);
-  }
-}
-
-@keyframes panic-fullscreen-flash {
-  0% {
-    opacity: 0;
-  }
-  18% {
-    opacity: 0.95;
-  }
-  36% {
-    opacity: 0.22;
-  }
-  52% {
-    opacity: 0.75;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes boss-alarm-overlay {
-  0%,
-  100% {
-    opacity: 0.12;
-  }
-  50% {
-    opacity: 0.36;
-  }
-}
-
-@keyframes boss-red-strobe {
-  0%,
-  100% {
-    opacity: 0.18;
-  }
-  50% {
-    opacity: 0.62;
-  }
-}
-
-@keyframes boss-header-sweep {
-  0% {
-    transform: translateX(-115%);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(115%);
-    opacity: 0;
-  }
-}
-
-@keyframes boss-list-vibrate {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(0.5px);
-  }
-}
-
-@keyframes boss-window-quake {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  25% {
-    transform: translate(-1px, 0.5px);
-  }
-  50% {
-    transform: translate(1px, -0.5px);
-  }
-  75% {
-    transform: translate(-0.5px, 1px);
-  }
-}
-
-@keyframes boss-container-tilt {
-  0%,
-  100% {
-    transform: skewX(0deg);
-  }
-  50% {
-    transform: skewX(-0.35deg);
-  }
-}
-
-@keyframes boss-danger-blink {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.35);
-  }
-}
-
-@keyframes boss-action-shock {
-  0%,
-  100% {
-    transform: translateY(0);
-    box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.65);
-  }
-  50% {
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.65), 0 0 14px rgba(255, 102, 102, 0.36);
-  }
-}
-
-@keyframes urgent-row-scan {
-  0%,
-  100% {
-    opacity: 0.1;
-  }
-  50% {
-    opacity: 0.75;
-  }
-}
-
-@keyframes boss-urgent-hit {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 92, 92, 0), 0 0 0 0 rgba(255, 148, 88, 0);
-    filter: contrast(1.1);
-  }
-  45% {
-    box-shadow: 0 0 0 2px rgba(255, 92, 92, 0.35), 0 0 22px 0 rgba(255, 92, 92, 0.42);
-    filter: contrast(1.28);
-  }
-  100% {
-    box-shadow: var(--shadow-sm);
-    filter: none;
-  }
-}
-
-.messageNpcNameplate {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 6px;
-  padding: 2px 7px;
-  border: 1px solid color-mix(in srgb, var(--primary) 60%, var(--border) 40%);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
-  color: var(--text);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.retroSpeakerBox {
-  position: absolute;
-  top: -10px;
-  left: 16px;
-  padding: 1px 8px;
-  border: 1px solid color-mix(in srgb, var(--primary) 70%, var(--border) 30%);
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  color: var(--primary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.formatSlot {
-  position: relative;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
 }
 
 .formatToggle {
@@ -3403,109 +2408,6 @@
   background: var(--surface-2);
   border-color: var(--border);
 }
-
-:global(:root[data-theme='barbie-diary']) .chatItem {
-  border-radius: 14px;
-  border-color: color-mix(in srgb, var(--primary) 26%, var(--border));
-  background:
-    linear-gradient(115deg, color-mix(in srgb, #ffffff 80%, transparent) 0%, color-mix(in srgb, var(--surface) 80%, transparent) 46%, color-mix(in srgb, #ffd2ec 42%, var(--surface)) 100%);
-  box-shadow: 0 8px 18px rgba(208, 82, 163, 0.14);
-}
-
-:global(:root[data-theme='barbie-diary']) .chatItem::before {
-  width: 4px;
-  opacity: 0.3;
-  background: linear-gradient(180deg, #ff88cc 0%, #ef4aa8 100%);
-}
-
-:global(:root[data-theme='barbie-diary']) .chatItem:hover {
-  background:
-    linear-gradient(115deg, color-mix(in srgb, #ffffff 88%, transparent) 0%, color-mix(in srgb, var(--surface) 78%, transparent) 44%, color-mix(in srgb, #ffc1e8 50%, var(--surface)) 100%);
-  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
-  box-shadow: 0 14px 30px rgba(208, 82, 163, 0.24);
-}
-
-:global(:root[data-theme='barbie-diary']) .chatItem:nth-child(odd):hover {
-  transform: translateY(-2px) rotate(-0.45deg);
-}
-
-:global(:root[data-theme='barbie-diary']) .chatItem:nth-child(even):hover {
-  transform: translateY(-2px) rotate(0.45deg);
-}
-
-:global(:root[data-theme='barbie-diary']) .chatItem.active {
-  background:
-    linear-gradient(120deg, color-mix(in srgb, #ffffff 72%, transparent) 0%, color-mix(in srgb, #ffc5ea 62%, var(--surface)) 100%);
-  border-color: color-mix(in srgb, var(--primary) 72%, var(--border));
-  box-shadow: 0 16px 32px rgba(208, 82, 163, 0.28);
-}
-
-:global(:root[data-theme='barbie-diary']) .suggestionsPanel {
-  border-radius: 16px;
-  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
-  background:
-    linear-gradient(170deg, color-mix(in srgb, #ffffff 86%, transparent), color-mix(in srgb, #ffd8ef 44%, var(--surface)));
-  box-shadow: 0 16px 36px rgba(208, 82, 163, 0.2);
-}
-
-:global(:root[data-theme='barbie-diary']) .suggestionItem {
-  border-radius: 12px;
-  border-color: color-mix(in srgb, var(--primary) 32%, var(--border));
-}
-
-:global(:root[data-theme='barbie-diary']) .suggestionItem:hover {
-  border-color: color-mix(in srgb, var(--primary) 62%, var(--border));
-  box-shadow: 0 10px 22px rgba(208, 82, 163, 0.16);
-  transform: translateY(-1px);
-}
-
-:global(:root[data-theme='retro8']) .chatWindow {
-  animation: retro-scene-enter 0.28s steps(10, end);
-}
-
-:global(:root[data-theme='retro8']) .suggestionsPanel {
-  border-radius: 0;
-  border-width: 2px;
-  box-shadow: 3px 3px 0 rgba(8, 21, 13, 0.85);
-}
-
-:global(:root[data-theme='retro8']) .suggestionsTitle {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-:global(:root[data-theme='retro8']) .suggestionItem {
-  position: relative;
-  border-radius: 0;
-  border-width: 2px;
-  padding-left: 26px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  background: linear-gradient(180deg, #1c422a 0%, #13341f 100%);
-}
-
-:global(:root[data-theme='retro8']) .suggestionItem::before {
-  content: '>';
-  position: absolute;
-  left: 9px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--primary);
-  font-weight: 700;
-}
-
-@keyframes retro-scene-enter {
-  0% {
-    opacity: 0.5;
-    transform: translateY(5px);
-    filter: blur(1px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
-}
 .fileInput {
   display: none;
 }
@@ -3528,8 +2430,6 @@
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-backdrop-filter: blur(var(--frost-blur));
 }
 
 .messageContextMenuItem {
@@ -3700,584 +2600,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Retro RPG dialogue style: NPC vs Player message framing */
-:global(:root[data-theme='retro8']) .messagesList {
-  background:
-    repeating-linear-gradient(
-      180deg,
-      rgba(15, 43, 26, 0.72) 0,
-      rgba(15, 43, 26, 0.72) 18px,
-      rgba(10, 33, 20, 0.72) 18px,
-      rgba(10, 33, 20, 0.72) 36px
-    );
-  border: 2px solid color-mix(in srgb, var(--border) 92%, transparent);
-  box-shadow: inset 0 0 0 2px rgba(7, 19, 12, 0.9);
-}
-
-:global(:root[data-theme='retro8']) .message {
-  max-width: 86%;
-  position: relative;
-}
-
-:global(:root[data-theme='retro8']) .messageContent {
-  border: 2px solid var(--border);
-  border-radius: 0;
-  padding: 10px 12px 10px;
-  box-shadow: 3px 3px 0 rgba(8, 21, 13, 0.85);
-  position: relative;
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageContent {
-  background: linear-gradient(180deg, #244931 0%, #183723 100%);
-  border-color: #9bd16a;
-  color: #dcffb1;
-  margin-left: 28px;
-}
-
-:global(:root[data-theme='retro8']) .messageOwn .messageContent {
-  background: linear-gradient(180deg, #634f11 0%, #3b2f0b 100%);
-  border-color: #ffd447;
-  color: #fff1b5;
-  margin-right: 28px;
-}
-
-:global(:root[data-theme='retro8']) .messageOther::before,
-:global(:root[data-theme='retro8']) .messageOwn::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  width: 22px;
-  height: 22px;
-  border: 2px solid;
-  box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.85);
-  image-rendering: pixelated;
-}
-
-:global(:root[data-theme='retro8']) .messageOther::before {
-  left: 0;
-  border-color: #9bd16a;
-  background:
-    linear-gradient(90deg, transparent 0 2px, #9bd16a 2px 4px, transparent 4px 6px, #9bd16a 6px 8px, transparent 8px),
-    linear-gradient(180deg, #1a2a1f 0 6px, #9bd16a 6px 10px, #1f442b 10px 100%);
-}
-
-:global(:root[data-theme='retro8']) .messageOwn::before {
-  right: 0;
-  border-color: #ffd447;
-  background:
-    linear-gradient(90deg, transparent 0 2px, #ffd447 2px 4px, transparent 4px 6px, #ffd447 6px 8px, transparent 8px),
-    linear-gradient(180deg, #2d2608 0 6px, #ffd447 6px 10px, #4a3a0d 10px 100%);
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageContent::before,
-:global(:root[data-theme='retro8']) .messageOwn .messageContent::before {
-  content: '';
-  position: absolute;
-  top: 12px;
-  width: 8px;
-  height: 8px;
-  transform: rotate(45deg);
-  border: 2px solid;
-  border-top: none;
-  border-right: none;
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageContent::before {
-  left: -7px;
-  background: #1f442b;
-  border-color: #9bd16a;
-}
-
-:global(:root[data-theme='retro8']) .messageOwn .messageContent::before {
-  right: -7px;
-  background: #4a3a0d;
-  border-color: #ffd447;
-  transform: rotate(225deg);
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageContent {
-  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 7px, 100% 100%, 6px 100%, 0 calc(100% - 7px));
-}
-
-:global(:root[data-theme='retro8']) .messageOwn .messageContent {
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 6px) 100%, 0 100%, 0 7px);
-}
-
-:global(:root[data-theme='retro8']) .npcRarityBoss .messageContent {
-  border-style: double;
-  border-width: 3px;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
-}
-
-:global(:root[data-theme='retro8']) .messageSender {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border: 1px solid currentColor;
-  background: rgba(0, 0, 0, 0.25);
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageSender::before {
-  content: 'NPC';
-  display: inline-block;
-  font-size: 9px;
-  padding: 1px 4px;
-  border: 1px solid #9bd16a;
-  color: #9bd16a;
-  background: rgba(14, 42, 25, 0.7);
-}
-
-:global(:root[data-theme='retro8']) .messageOwn .messageSender::before {
-  content: 'PLAYER';
-  display: inline-block;
-  font-size: 9px;
-  padding: 1px 4px;
-  border: 1px solid #ffd447;
-  color: #ffd447;
-  background: rgba(54, 42, 10, 0.7);
-}
-
-:global(:root[data-theme='retro8']) .messageText {
-  font-size: 13px;
-  line-height: 1.4;
-  letter-spacing: 0.03em;
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageText {
-  animation: retro-type-in 0.7s steps(20, end);
-  clip-path: inset(0 0 0 0);
-}
-
-:global(:root[data-theme='retro8']) .messageTime {
-  font-size: 9px;
-  opacity: 0.9;
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudio {
-  width: min(280px, 100%);
-  padding: 4px;
-  border: 2px solid color-mix(in srgb, var(--primary) 62%, var(--border) 38%);
-  background:
-    linear-gradient(180deg, rgba(12, 36, 22, 0.85) 0%, rgba(8, 26, 16, 0.88) 100%);
-  box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.85);
-  image-rendering: pixelated;
-  display: block;
-  position: relative;
-  margin-bottom: 6px;
-  accent-color: var(--primary);
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudioWrap {
-  border: 2px solid color-mix(in srgb, var(--border) 76%, transparent);
-  padding: 4px 5px 5px;
-  box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.85);
-  background: rgba(0, 0, 0, 0.18);
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudioWrapActive {
-  border-color: color-mix(in srgb, var(--primary) 72%, #ffffff 28%);
-  box-shadow: 0 0 0 2px rgba(124, 198, 79, 0.2), 2px 2px 0 rgba(8, 21, 13, 0.85);
-}
-
-:global(:root[data-theme='retro8']) .voiceVisualizer {
-  gap: 2px;
-  height: 15px;
-  padding: 0 3px;
-}
-
-:global(:root[data-theme='retro8']) .voiceVisualizerBar {
-  width: 4px;
-  border-radius: 0;
-  background: rgba(121, 194, 78, 0.36);
-  box-shadow: inset 0 -1px 0 rgba(6, 18, 10, 0.7);
-}
-
-:global(:root[data-theme='retro8']) .voiceVisualizerBarActive {
-  background: linear-gradient(180deg, #eaffc7 0%, #8fd45c 52%, #3f7f2d 100%);
-  animation-duration: 0.42s;
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudio::before {
-  content: 'VOICE LOG [EQ READY]';
-  display: block;
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--primary) 80%, #ffffff 20%);
-  margin-bottom: 3px;
-}
-
-:global(:root[data-theme='retro8']) .messageOwn .messageMediaAudio {
-  border-color: #ffd447;
-  background: linear-gradient(180deg, rgba(61, 47, 12, 0.9) 0%, rgba(38, 30, 8, 0.92) 100%);
-}
-
-:global(:root[data-theme='retro8']) .messageOwn .messageMediaAudio::before {
-  content: 'PLAYER VOICE';
-  color: #ffd447;
-}
-
-:global(:root[data-theme='retro8']) .messageOther .messageMediaAudio::before {
-  content: 'NPC VOICE';
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudio::-webkit-media-controls-panel {
-  background: color-mix(in srgb, var(--surface-2) 90%, #07140c 10%);
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudio::-webkit-media-controls-current-time-display,
-:global(:root[data-theme='retro8']) .messageMediaAudio::-webkit-media-controls-time-remaining-display {
-  color: var(--text);
-  text-shadow: 1px 1px 0 rgba(8, 21, 13, 0.75);
-  font-size: 10px;
-}
-
-:global(:root[data-theme='retro8']) .messageMediaAudio::-webkit-media-controls-play-button,
-:global(:root[data-theme='retro8']) .messageMediaAudio::-webkit-media-controls-mute-button {
-  filter: contrast(1.2) saturate(0.9);
-}
-
-:global(:root[data-theme='retro8']) .translationBox {
-  border: 2px dashed color-mix(in srgb, var(--primary) 72%, transparent);
-  background: rgba(0, 0, 0, 0.28);
-}
-
-:global(:root[data-theme='retro8']) .messageContextMenu {
-  border-radius: 0;
-  border-width: 2px;
-  border-color: #7cc64f;
-  background: linear-gradient(180deg, rgba(18, 47, 29, 0.95) 0%, rgba(10, 29, 18, 0.96) 100%);
-  box-shadow: 3px 3px 0 rgba(8, 21, 13, 0.85);
-}
-
-:global(:root[data-theme='retro8']) .messageContextMenuItem {
-  border-radius: 0;
-  border-width: 2px;
-  border-color: transparent;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #d9fda9;
-  background: transparent;
-}
-
-:global(:root[data-theme='retro8']) .messageContextMenuItem:hover:enabled {
-  border-color: #ffd447;
-  background: rgba(255, 212, 71, 0.12);
-  color: #fff2c0;
-}
-
-:global(:root[data-theme='retro8']) .questBadge {
-  border-radius: 0;
-  border-width: 2px;
-  background: rgba(0, 0, 0, 0.25);
-}
-
-:global(:root[data-theme='retro8']) .retroSpeakerBox,
-:global(:root[data-theme='retro8']) .messageNpcNameplate,
-:global(:root[data-theme='retro8']) .retroRadarCard,
-:global(:root[data-theme='retro8']) .retroHudBar span {
-  border-radius: 0;
-  border-width: 2px;
-  box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.75);
-}
-
-:global(:root[data-theme='retro8']) .sidebar {
-  animation: depth-left 7.5s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .content {
-  animation: depth-center 8.4s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroQuestSidebar {
-  animation: quest-sidebar-in 0.42s steps(8, end), depth-right 6.9s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroRadarGrid::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  left: -8px;
-  background: linear-gradient(180deg, transparent 0%, rgba(162, 247, 104, 0.8) 50%, transparent 100%);
-  box-shadow: 0 0 12px rgba(162, 247, 104, 0.65);
-  animation: radar-sweep 2.6s linear infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroQuestSidebar {
-  animation: quest-sidebar-in 0.42s steps(8, end);
-}
-
-:global(:root[data-theme='retro8']) .retroAchievementItem {
-  animation: retro-item-in 0.34s steps(6, end) both;
-}
-
-:global(:root[data-theme='retro8']) .retroAchievementItem:nth-child(2) { animation-delay: 0.03s; }
-:global(:root[data-theme='retro8']) .retroAchievementItem:nth-child(3) { animation-delay: 0.06s; }
-:global(:root[data-theme='retro8']) .retroAchievementItem:nth-child(4) { animation-delay: 0.09s; }
-:global(:root[data-theme='retro8']) .retroAchievementItem:nth-child(5) { animation-delay: 0.12s; }
-
-:global(:root[data-theme='retro8']) .chatList .chatItem {
-  animation: retro-item-in 0.32s steps(6, end) both;
-}
-
-:global(:root[data-theme='retro8']) .chatList .chatItem:nth-child(1) { animation-delay: 0.02s; }
-:global(:root[data-theme='retro8']) .chatList .chatItem:nth-child(2) { animation-delay: 0.05s; }
-:global(:root[data-theme='retro8']) .chatList .chatItem:nth-child(3) { animation-delay: 0.08s; }
-:global(:root[data-theme='retro8']) .chatList .chatItem:nth-child(4) { animation-delay: 0.11s; }
-:global(:root[data-theme='retro8']) .chatList .chatItem:nth-child(5) { animation-delay: 0.14s; }
-:global(:root[data-theme='retro8']) .chatList .chatItem:nth-child(n + 6) { animation-delay: 0.17s; }
-
-:global(:root[data-theme='retro8']) .filterTabActive,
-:global(:root[data-theme='retro8']) .quickFiltersRow button,
-:global(:root[data-theme='retro8']) .chatTopAction {
-  animation: retro-soft-pulse 2.4s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .newBadge {
-  animation: retro-badge-pop 1.8s steps(5, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .unreadBubble,
-:global(:root[data-theme='retro8']) .unreadBadge {
-  animation: unread-beacon 1.45s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .urgentBadge {
-  animation: urgent-chip-flash 1.1s steps(4, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .sidebarTitle {
-  animation: retro-title-flicker 4.2s steps(6, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .sendButton:enabled {
-  animation: send-idle-pulse 2.6s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroQuestProgressFill {
-  position: relative;
-  overflow: hidden;
-  animation: quest-progress-breathe 2.8s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroQuestProgressFill::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.22) 45%, transparent 100%);
-  transform: translateX(-120%);
-  animation: quest-progress-scan 2.1s linear infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroHudBar span:nth-child(odd) {
-  animation: hud-chip-shift 3.2s ease-in-out infinite;
-}
-
-:global(:root[data-theme='retro8']) .retroHudBar span:nth-child(even) {
-  animation: hud-chip-shift 3.2s ease-in-out infinite 0.24s;
-}
-
-:global(:root[data-theme='retro8']) .page {
-  animation: retro-bg-drift 12s linear infinite;
-}
-
-:global(:root[data-theme='retro8']) .chatTopAvatar {
-  animation: avatar-bob 2.3s steps(6, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .chatList .chatItem[data-priority='urgent'] {
-  animation: urgent-row-jitter 1.6s steps(4, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .questBadge {
-  position: relative;
-  overflow: hidden;
-}
-
-:global(:root[data-theme='retro8']) .questBadge::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  left: -10px;
-  background: linear-gradient(90deg, transparent, rgba(255, 212, 71, 0.6), transparent);
-  animation: badge-shine 2.8s steps(7, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .messageNpcNameplate {
-  animation: npc-plate-flicker 3.8s steps(5, end) infinite;
-}
-
-:global(:root[data-theme='retro8']) .messagesList {
-  position: relative;
-}
-
-:global(:root[data-theme='retro8']) .messagesList::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.22;
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(123, 211, 78, 0.09) 0 1px,
-    transparent 1px 9px
-  );
-  animation: pixel-grid-crawl 6.5s linear infinite;
-}
-
-@keyframes radar-blip {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
-  50% {
-    transform: scale(1.06);
-    filter: brightness(1.2);
-  }
-}
-
-@keyframes radar-sweep {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  12% {
-    opacity: 0.8;
-  }
-  88% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateX(240px);
-    opacity: 0;
-  }
-}
-
-@keyframes quest-sidebar-in {
-  0% {
-    opacity: 0;
-    transform: translateX(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes retro-item-in {
-  0% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes retro-soft-pulse {
-  0%,
-  100% {
-    box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.65);
-  }
-  50% {
-    box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.65), 0 0 10px rgba(132, 214, 81, 0.28);
-  }
-}
-
-@keyframes retro-badge-pop {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.7);
-  }
-  40% {
-    transform: scale(1.08);
-    box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.7), 0 0 16px rgba(255, 88, 88, 0.3);
-  }
-}
-
-@keyframes unread-beacon {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(255, 97, 97, 0);
-  }
-  50% {
-    transform: scale(1.07);
-    box-shadow: 0 0 0 4px rgba(255, 97, 97, 0.14);
-  }
-}
-
-@keyframes urgent-chip-flash {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.28);
-  }
-}
-
-@keyframes retro-title-flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  18% {
-    opacity: 0.94;
-  }
-  19% {
-    opacity: 1;
-  }
-  67% {
-    opacity: 0.92;
-  }
-  68% {
-    opacity: 1;
-  }
-}
-
-@keyframes send-idle-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(120, 205, 86, 0);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(120, 205, 86, 0.18);
-  }
-}
-
-@keyframes quest-progress-breathe {
-  0%,
-  100% {
-    filter: saturate(1);
-  }
-  50% {
-    filter: saturate(1.18);
-  }
-}
-
-@keyframes quest-progress-scan {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
-}
-
 @keyframes hud-chip-shift {
   0%,
   100% {
@@ -4285,140 +2607,6 @@
   }
   50% {
     transform: translateY(-1px);
-  }
-}
-
-@keyframes retro-bg-drift {
-  0% {
-    background-position: 0 0, 0 0, 0 0;
-  }
-  100% {
-    background-position: 24px 0, -20px 0, 0 0;
-  }
-}
-
-@keyframes avatar-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-1px);
-  }
-}
-
-@keyframes urgent-row-jitter {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-1px);
-  }
-  75% {
-    transform: translateX(1px);
-  }
-}
-
-@keyframes badge-shine {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.85;
-  }
-  100% {
-    transform: translateX(110px);
-    opacity: 0;
-  }
-}
-
-@keyframes npc-plate-flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  42% {
-    opacity: 0.9;
-  }
-  44% {
-    opacity: 1;
-  }
-  82% {
-    opacity: 0.92;
-  }
-  83% {
-    opacity: 1;
-  }
-}
-
-@keyframes pixel-grid-crawl {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(9px);
-  }
-}
-
-@keyframes depth-left {
-  0%,
-  100% {
-    transform: translate3d(-1px, 0, 0);
-  }
-  50% {
-    transform: translate3d(1px, -1px, 0);
-  }
-}
-
-@keyframes depth-center {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(1px, 0, 0);
-  }
-}
-
-@keyframes depth-right {
-  0%,
-  100% {
-    transform: translate3d(1px, 0, 0);
-  }
-  50% {
-    transform: translate3d(-1px, 1px, 0);
-  }
-}
-
-@keyframes pixel-burst-fly {
-  0% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(0, -16px, 0) scale(0.7);
-  }
-}
-
-@keyframes achievement-toast-in {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -10px);
-  }
-  12% {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  86% {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -6px);
   }
 }
 
@@ -4431,51 +2619,8 @@
     transition: none !important;
   }
 
-  .retroRadarDotActive,
-  :global(:root[data-theme='retro8']) .retroRadarGrid::after,
-  :global(:root[data-theme='retro8']) .retroQuestSidebar,
-  :global(:root[data-theme='retro8']) .retroAchievementItem,
-  :global(:root[data-theme='retro8']) .chatList .chatItem,
-  :global(:root[data-theme='retro8']) .filterTabActive,
-  :global(:root[data-theme='retro8']) .quickFiltersRow button,
-  :global(:root[data-theme='retro8']) .chatTopAction,
-  :global(:root[data-theme='retro8']) .newBadge,
-  :global(:root[data-theme='retro8']) .unreadBubble,
-  :global(:root[data-theme='retro8']) .unreadBadge,
-  :global(:root[data-theme='retro8']) .urgentBadge,
-  :global(:root[data-theme='retro8']) .sidebarTitle,
-  :global(:root[data-theme='retro8']) .sendButton:enabled,
-  :global(:root[data-theme='retro8']) .retroQuestProgressFill,
-  :global(:root[data-theme='retro8']) .retroQuestProgressFill::after,
-  :global(:root[data-theme='retro8']) .retroHudBar span,
-  :global(:root[data-theme='retro8']) .page,
-  :global(:root[data-theme='retro8']) .chatTopAvatar,
-  :global(:root[data-theme='retro8']) .chatList .chatItem[data-priority='urgent'],
-  :global(:root[data-theme='retro8']) .questBadge::after,
-  :global(:root[data-theme='retro8']) .messageNpcNameplate,
-  :global(:root[data-theme='retro8']) .messagesList::before,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .chatHeaderPanel,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .chatHeaderPanel::after,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .chatWindow,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .messagesContainer,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .messagesList,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent::before,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent::after,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .messagesContainer::before,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .messagesContainer::after,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .urgentBadge,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .priority-urgent,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .priorityDot-urgent,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .messageUrgentPulse .messageContent,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .chatTopAction,
-  :global(:root[data-theme='retro8']) .retroGlitchEvent .sendButton:enabled,
-  :global(:root[data-theme='retro8']) .chatList .chatItem[data-priority='urgent']::after,
-  .panicFlash::after,
-  :global(:root[data-theme='retro8']) .sidebar,
-  :global(:root[data-theme='retro8']) .content,
-  .pixelBurst,
-  .achievementToast {
-    animation: none !important;
+  .messageAppearSmooth {
+    opacity: 1 !important;
   }
 }
 
@@ -4510,225 +2655,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.bootSequence {
-  border: 2px solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
-  box-shadow: var(--shadow-sm);
-  padding: 10px;
-  display: grid;
-  gap: 6px;
-}
-
-.bootTitle {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text);
-}
-
-.bootLine {
-  font-size: 10px;
-  color: var(--text-subtle);
-}
-
-.bootLineActive {
-  color: var(--primary);
-}
-
-.statusEffects {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: 2px;
-  max-width: 84px;
-  overflow: hidden;
-}
-
-.statusEffectsNeutral {
-  gap: 6px;
-}
-
-.statusEffectChip {
-  font-size: 7px;
-  padding: 0 3px;
-  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  border-radius: 999px;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.statusEffectChipNeutral {
-  font-size: 7px;
-  padding: 0 4px;
-  color: var(--text-subtle);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-}
-
-.sceneTransitioning {
-  animation: retro-scene-dissolve 0.28s steps(8, end);
-}
-
-.chatWindowSceneTransition {
-  position: relative;
-}
-
-.chatWindowSceneTransition::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    color-mix(in srgb, var(--primary) 22%, transparent) 0 3px,
-    transparent 3px 7px
-  );
-  animation: retro-pixel-wipe 0.3s steps(8, end) forwards;
-}
-
-.retroQuestSidebar {
-  width: 220px;
-  min-height: 0;
-  overflow: auto;
-  border: 2px solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 84%, transparent);
-  box-shadow: var(--shadow-sm);
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.retroMiniMode {
-  --retro-mini-font-scale: 0.9;
-}
-
-.retroMiniMode .retroQuestSidebar {
-  width: 148px;
-  padding: 4px;
-  gap: 3px;
-}
-
-.retroMiniMode .retroQuestTitle,
-.retroMiniMode .retroAchievementsTitle {
-  font-size: 8px;
-}
-
-.retroMiniMode .retroQuestActive,
-.retroMiniMode .retroQuestProgressLabel,
-.retroMiniMode .retroQuestHistoryLine,
-.retroMiniMode .retroAchievementItem {
-  font-size: 7px;
-}
-
-.retroMiniMode .retroQuestProgressTrack {
-  height: 5px;
-}
-
-.retroMiniMode .retroQuestHistory {
-  display: none;
-}
-
-.retroMiniMode .retroAchievements {
-  gap: 1px;
-}
-
-.retroMiniMode .retroAchievementItem {
-  padding: 1px 2px;
-}
-
-.retroMiniMode .retroAchievementMeta {
-  display: none;
-}
-
-.retroMiniMode .retroAchievementTier {
-  display: none;
-}
-
-.retroMiniMode .retroRadarCard {
-  margin: 1px 4px 3px;
-  padding: 3px;
-}
-
-.retroMiniMode .retroRadarHeader {
-  font-size: 7px;
-  margin-bottom: 2px;
-}
-
-.retroMiniMode .retroMiniToggle {
-  font-size: 6px;
-  padding: 1px 2px;
-}
-
-.retroMiniMode .retroRadarGrid {
-  gap: 1px;
-}
-
-.retroMiniMode .retroRadarDot {
-  width: 9px;
-  height: 7px;
-}
-
-.retroMiniMode .retroRadarMeta {
-  margin-top: 2px;
-  font-size: 6px;
-}
-
-.retroMiniMode .retroRadarFooter {
-  margin-top: 2px;
-  gap: 2px;
-}
-
-.retroMiniMode .retroRadarEvents {
-  margin-top: 2px;
-  gap: 1px;
-}
-
-.retroMiniMode .retroRadarEvent {
-  font-size: 6px;
-  padding: 0 1px;
-}
-
-.retroMiniMode .retroRadarEvent:nth-child(n + 3) {
-  display: none;
-}
-
-.retroQuestTitle,
-.retroAchievementsTitle {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--text);
-}
-
-.retroQuestActive,
-.retroQuestProgressLabel,
-.retroQuestHistoryLine,
-.retroAchievementItem {
-  font-size: 9px;
-  color: var(--text-muted);
-}
-
-.retroQuestProgressTrack {
-  height: 8px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-}
-
-.retroQuestProgressFill {
-  height: 100%;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 65%, transparent), var(--primary));
-}
-
-.retroQuestHistory {
-  display: grid;
-  gap: 3px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  padding: 5px;
-  background: color-mix(in srgb, var(--surface) 84%, transparent);
 }
 
 .overviewQuestCard {
@@ -4782,175 +2708,6 @@
   background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
-.retroAchievements {
-  display: grid;
-  gap: 3px;
-}
-
-.retroAchievementItem {
-  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
-  padding: 2px 4px;
-  background: color-mix(in srgb, var(--surface) 84%, transparent);
-  display: grid;
-  gap: 2px;
-}
-
-.retroAchievementMeta {
-  font-size: 8px;
-  color: color-mix(in srgb, var(--text-muted) 86%, transparent);
-}
-
-.retroAchievementTier {
-  justify-self: start;
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  color: color-mix(in srgb, var(--primary) 72%, var(--text));
-  border: 1px solid color-mix(in srgb, var(--primary) 56%, transparent);
-  padding: 0 4px;
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
-}
-
-.retroAchievementUnlocked {
-  color: var(--primary);
-  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
-}
-
-.damagePopupLayer {
-  position: fixed;
-  right: 14px;
-  top: 18px;
-  z-index: 260;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  pointer-events: none;
-}
-
-.damagePopup {
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  border: 2px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  box-shadow: 2px 2px 0 rgba(8, 21, 13, 0.75);
-  animation: damage-float 1.4s ease forwards;
-}
-
-.damagePopupAlert {
-  color: var(--primary);
-}
-
-.damagePopupCritical {
-  color: var(--danger);
-  border-color: color-mix(in srgb, var(--danger) 70%, transparent);
-}
-
-.pixelBurstLayer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 275;
-}
-
-.pixelBurst {
-  position: absolute;
-  display: block;
-  border-radius: 0;
-  image-rendering: pixelated;
-  animation: pixel-burst-fly 0.72s steps(6, end) forwards;
-}
-
-.pixelBurstDanger {
-  background: #ff6e6e;
-  box-shadow: 0 0 0 1px rgba(255, 136, 136, 0.5);
-}
-
-.pixelBurstSuccess {
-  background: #9de06d;
-  box-shadow: 0 0 0 1px rgba(194, 255, 152, 0.45);
-}
-
-.pixelBurstNeutral {
-  background: #91c4ff;
-  box-shadow: 0 0 0 1px rgba(180, 217, 255, 0.45);
-}
-
-.achievementToast {
-  position: fixed;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 290;
-  border: 2px solid color-mix(in srgb, var(--primary) 80%, var(--border));
-  background: linear-gradient(180deg, rgba(17, 44, 26, 0.95), rgba(10, 28, 16, 0.95));
-  color: var(--text);
-  min-width: 240px;
-  padding: 8px 12px;
-  box-shadow: 3px 3px 0 rgba(8, 21, 13, 0.8);
-  animation: achievement-toast-in 2.2s steps(8, end) forwards;
-}
-
-.achievementToastTitle {
-  font-size: 8px;
-  letter-spacing: 0.08em;
-  color: color-mix(in srgb, var(--primary) 78%, #ffffff);
-  text-transform: uppercase;
-}
-
-.achievementToastName {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.achievementToastTier {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  color: color-mix(in srgb, var(--state-warning) 76%, var(--text));
-}
-
-.pauseMenuOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 280;
-  background: rgba(2, 8, 5, 0.72);
-  display: grid;
-  place-items: center;
-}
-
-.pauseMenuCard {
-  width: min(360px, calc(100vw - 24px));
-  border: 2px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  box-shadow: 4px 4px 0 rgba(8, 21, 13, 0.85);
-  padding: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.pauseMenuTitle {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: var(--text);
-}
-
-.pauseMenuButton {
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
-  color: var(--text);
-  padding: 9px 10px;
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.pauseMenuButton:hover {
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  border-color: var(--primary);
-}
-
 .hotkeysList {
   display: grid;
   gap: 8px;
@@ -4986,113 +2743,182 @@
 }
 
 .density-ultra .searchSection {
-  padding: 4px 5px;
-  gap: 3px;
+  padding: 2px 3px;
+  gap: 2px;
 }
 
 .density-ultra .searchInputRow :global(input) {
-  min-height: 24px;
-  height: 24px;
-  font-size: 10px;
+  min-height: 20px;
+  height: 20px;
+  font-size: 9px;
 }
 
 .density-ultra .menuToggleButton,
 .density-ultra .activityToggle,
 .density-ultra .searchApplyButton,
 .density-ultra .hrOutreachButton {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .density-ultra .searchApplyButton {
-  min-width: 46px;
-  font-size: 9px;
-  padding: 0 4px;
+  min-width: 40px;
+  font-size: 8px;
+  padding: 0 3px;
 }
 
 .density-ultra .searchSelect,
 .density-ultra .densitySelect {
-  height: 22px;
-  font-size: 9px;
-  padding: 0 5px;
+  height: 20px;
+  font-size: 8px;
+  padding: 0 4px;
 }
 
-.density-ultra .quickFiltersRow,
 .density-ultra .bulkActionsRow,
 .density-ultra .filterTabs,
-.density-ultra .sidebarHeader {
-  padding-top: 2px;
-  padding-bottom: 2px;
+.density-ultra .sidebarTabsRow,
+.density-ultra .filtersPanel {
+  padding-top: 1px;
+  padding-bottom: 1px;
 }
 
-.density-ultra .quickFiltersRow :global(button),
 .density-ultra .hotkeysHintButton,
 .density-ultra .bulkActionButton {
-  min-height: 21px;
-  font-size: 9px;
-  padding: 0 5px;
+  min-height: 18px;
+  font-size: 8px;
+  padding: 0 4px;
 }
 
 .density-ultra .chatItem {
-  padding: 5px 6px;
-  gap: 6px;
-  margin-bottom: 4px;
-  border-radius: 8px;
+  padding: 3px 4px;
+  gap: 3px;
+  margin-bottom: 2px;
+  border-radius: 4px;
 }
 
 .density-ultra .chatSelectButton {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  font-size: 9px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  font-size: 8px;
 }
 
 .density-ultra .avatarImage,
 .density-ultra .avatarPlaceholder {
-  width: 26px;
-  height: 26px;
-  font-size: 10px;
+  width: 20px;
+  height: 20px;
+  font-size: 8px;
 }
 
 .density-ultra .chatName {
-  font-size: 11px;
+  font-size: 10px;
 }
 
-.density-ultra .chatClientHandle,
 .density-ultra .chatSubtitle,
 .density-ultra .chatTime,
 .density-ultra .slaBadge,
 .density-ultra .unreadBubble,
 .density-ultra .urgentBadge {
-  font-size: 9px;
+  font-size: 8px;
 }
 
 .density-ultra .chatLastMessage {
-  font-size: 10px;
+  font-size: 9px;
 }
 
 .density-ultra .messageInputContainer {
+  padding: 6px 8px;
+  gap: 4px;
+}
+
+.density-ultra .messagesList {
   padding: 8px 10px;
-  gap: 6px;
+  gap: 5px;
 }
 
+.density-ultra .messageContent {
+  padding: 6px 8px;
+  border-radius: 8px;
+}
 
-.retroTimeRadar {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
+.density-ultra .messageText {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.density-ultra .messageSender {
+  font-size: 8px;
+  margin-bottom: 2px;
+}
+
+.density-ultra .messageTicketBadge {
+  font-size: 8px;
+  padding: 1px 5px;
+}
+
+.density-ultra .messageTicketMeta {
+  font-size: 8px;
+}
+
+.density-ultra .messageResponsible {
+  font-size: 8px;
+  margin-top: 2px;
+}
+
+.density-ultra .messageCode {
+  font-size: 9px;
+  padding: 3px 5px;
+}
+
+.density-ultra .messageMediaImage {
+  max-width: 160px;
+}
+
+.density-ultra .messageMediaVideo {
+  max-width: 180px;
+}
+
+.density-ultra .messageMediaAudio {
+  width: 160px;
+}
+
+.density-ultra .voiceVisualizer {
   height: 10px;
+  gap: 2px;
 }
 
-.retroTimeDot {
-  width: 3px;
-  height: 4px;
-  background: color-mix(in srgb, var(--text-muted) 70%, transparent);
+.density-ultra .chatWindow .messageInputContainer {
+  padding: 6px 8px;
+  gap: 4px;
 }
 
-.retroTimeDotActive {
-  height: 9px;
-  background: var(--primary);
+.density-ultra .attachButton,
+.density-ultra .voiceButton {
+  width: 32px;
+  height: 32px;
+}
+
+.density-ultra .sendButton {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 9px;
+}
+
+.density-ultra .messageInput {
+  min-height: 32px;
+  max-height: 80px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+.density-ultra .scrollToBottom {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  right: 8px;
+  bottom: 8px;
 }
 
 .npcRarityCommon .messageContent {
@@ -5138,80 +2964,6 @@
   color: #ff8a7d;
 }
 
-:global(:root[data-theme='retro8']) .callPanel {
-  display: none;
-}
-
-:global(:root[data-theme='retro8']) .container,
-:global(:root[data-theme='retro8']) .containerCollapsed {
-  grid-template-columns: 320px 1fr 220px;
-}
-
-:global(:root[data-theme='retro8']) .retroMiniMode {
-  grid-template-columns: 320px 1fr 148px;
-}
-
-@keyframes retro-scene-dissolve {
-  0% {
-    opacity: 0.52;
-    filter: contrast(1.35) saturate(0.72);
-  }
-  100% {
-    opacity: 1;
-    filter: none;
-  }
-}
-
-@keyframes retro-pixel-wipe {
-  0% {
-    opacity: 0.8;
-    transform: translateX(-8px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(8px);
-  }
-}
-
-@keyframes message-pop-in {
-  0% {
-    opacity: 0;
-    transform: translateY(7px);
-    filter: saturate(0.7);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    filter: none;
-  }
-}
-
-@keyframes urgent-incoming-flash {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, #ff5b52 70%, transparent), 0 0 0 0 color-mix(in srgb, #ffb35a 40%, transparent);
-    border-color: color-mix(in srgb, #ff5b52 70%, var(--border));
-    filter: saturate(1.25);
-  }
-  35% {
-    box-shadow: 0 0 0 2px color-mix(in srgb, #ff5b52 42%, transparent), 0 0 18px 0 color-mix(in srgb, #ff5b52 44%, transparent);
-    border-color: color-mix(in srgb, #ff5b52 92%, var(--border));
-  }
-  100% {
-    box-shadow: var(--shadow-sm);
-    border-color: color-mix(in srgb, var(--border) 62%, transparent);
-    filter: none;
-  }
-}
-
-@keyframes retro-skeleton-scan {
-  0% {
-    background-position: 180% 0;
-  }
-  100% {
-    background-position: -180% 0;
-  }
-}
-
 @keyframes network-pan {
   0% {
     background-position: 0% 0%;
@@ -5232,106 +2984,28 @@
   70% {
     opacity: 0.08;
   }
-}
-
-:global(:root[data-theme='retro8']) .messagesContainer::before,
-:global(:root[data-theme='retro8']) .messagesContainer::after {
-  opacity: 1;
-}
-
-@keyframes damage-float {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-16px);
-    opacity: 0;
-  }
-}
-
-:global(:root[data-theme='retro8']) .bootSequence,
-:global(:root[data-theme='retro8']) .statusEffectChip,
-:global(:root[data-theme='retro8']) .pauseMenuCard,
-:global(:root[data-theme='retro8']) .pauseMenuButton,
-:global(:root[data-theme='retro8']) .retroQuestSidebar,
-:global(:root[data-theme='retro8']) .retroAchievementItem,
-:global(:root[data-theme='retro8']) .retroQuestHistory,
-:global(:root[data-theme='retro8']) .retroQuestProgressTrack,
-:global(:root[data-theme='retro8']) .damagePopup {
-  border-radius: 0;
-}
-
-.chatList,
-.messagesContainer,
-.retroQuestSidebar,
-.callPanel,
-.commentsList {
+}.chatList, .messagesContainer, .callPanel, .commentsList {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--primary) 70%, var(--border)) color-mix(in srgb, var(--surface-2) 82%, transparent);
-}
-
-.chatList::-webkit-scrollbar,
-.messagesContainer::-webkit-scrollbar,
-.retroQuestSidebar::-webkit-scrollbar,
-.callPanel::-webkit-scrollbar,
-.commentsList::-webkit-scrollbar {
+}.chatList::-webkit-scrollbar, .messagesContainer::-webkit-scrollbar, .callPanel::-webkit-scrollbar, .commentsList::-webkit-scrollbar {
   width: 10px;
   height: 10px;
-}
-
-.chatList::-webkit-scrollbar-track,
-.messagesContainer::-webkit-scrollbar-track,
-.retroQuestSidebar::-webkit-scrollbar-track,
-.callPanel::-webkit-scrollbar-track,
-.commentsList::-webkit-scrollbar-track {
+}.chatList::-webkit-scrollbar-track, .messagesContainer::-webkit-scrollbar-track, .callPanel::-webkit-scrollbar-track, .commentsList::-webkit-scrollbar-track {
   background: color-mix(in srgb, var(--surface-2) 84%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-}
-
-.chatList::-webkit-scrollbar-thumb,
-.messagesContainer::-webkit-scrollbar-thumb,
-.retroQuestSidebar::-webkit-scrollbar-thumb,
-.callPanel::-webkit-scrollbar-thumb,
-.commentsList::-webkit-scrollbar-thumb {
+}.chatList::-webkit-scrollbar-thumb, .messagesContainer::-webkit-scrollbar-thumb, .callPanel::-webkit-scrollbar-thumb, .commentsList::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--primary) 72%, var(--surface)),
     color-mix(in srgb, var(--primary) 58%, var(--surface-2))
   );
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-}
-
-.chatList::-webkit-scrollbar-thumb:hover,
-.messagesContainer::-webkit-scrollbar-thumb:hover,
-.retroQuestSidebar::-webkit-scrollbar-thumb:hover,
-.callPanel::-webkit-scrollbar-thumb:hover,
-.commentsList::-webkit-scrollbar-thumb:hover {
+}.chatList::-webkit-scrollbar-thumb:hover, .messagesContainer::-webkit-scrollbar-thumb:hover, .callPanel::-webkit-scrollbar-thumb:hover, .commentsList::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--primary) 88%, var(--surface)),
     color-mix(in srgb, var(--primary) 66%, var(--surface-2))
   );
-}
-
-:global(:root[data-theme='retro8']) .statusEffectChip,
-:global(:root[data-theme='retro8']) .bootLine,
-:global(:root[data-theme='retro8']) .retroQuestHistoryLine,
-:global(:root[data-theme='retro8']) .retroAchievementItem {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-@keyframes retro-type-in {
-  0% {
-    clip-path: inset(0 100% 0 0);
-  }
-  100% {
-    clip-path: inset(0 0 0 0);
-  }
 }
 
 @media (max-width: 1340px) {
@@ -5346,17 +3020,8 @@
     grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   }
 
-  :global(:root[data-theme='retro8']) .container,
-  :global(:root[data-theme='retro8']) .containerCollapsed {
-    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
-  }
-
   .callPanel,
   .callPanelCollapsed {
-    display: none;
-  }
-
-  .retroQuestSidebar {
     display: none;
   }
 }
@@ -5395,10 +3060,6 @@
     border-radius: 12px;
   }
 
-  .searchRow {
-    grid-template-columns: 1fr;
-  }
-
   .chatTopBar {
     grid-template-columns: 40px minmax(0, 1fr);
     align-items: start;
@@ -5406,14 +3067,6 @@
 
   .chatTopCenter {
     justify-content: flex-start;
-  }
-
-  .chatTopRight {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    border-left: 0;
-    padding-left: 0;
-    padding-right: 0;
   }
 
   .chatItem {
@@ -5430,467 +3083,7 @@
   }
 }
 
-:global(:root[data-theme='dark']) .page {
-  --state-info: #fafafa;
-  --state-success: #8fb89b;
-  --state-warning: #f5b85f;
-  --state-danger: var(--primary);
-  --state-muted: #737373;
-  --motion-fast: 150ms;
-  --motion-base: 150ms;
-  --motion-enter: 220ms;
-  --motion-ease: cubic-bezier(0.25, 0, 0, 1);
-  background: var(--bg);
-  color: var(--text);
-}
-
-:global(:root[data-theme='dark']) .chatsHeader {
-  background: var(--bg);
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
-}
-
-:global(:root[data-theme='dark']) .chatsTitle {
-  color: var(--text);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
-
-:global(:root[data-theme='dark']) .container,
-:global(:root[data-theme='dark']) .containerCollapsed {
-  gap: 0;
-  padding: 0;
-  border-radius: 0;
-  border-color: var(--border);
-  background: transparent;
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .callPanel,
-:global(:root[data-theme='dark']) .activityTimelineSection,
-:global(:root[data-theme='dark']) .commentsSection,
-:global(:root[data-theme='dark']) .commentItem,
-:global(:root[data-theme='dark']) .commentsLoadMore,
-:global(:root[data-theme='dark']) .commentTextarea,
-:global(:root[data-theme='dark']) .callPanelToggle,
-:global(:root[data-theme='dark']) .sidebar,
-:global(:root[data-theme='dark']) .activityToggle,
-:global(:root[data-theme='dark']) .menuToggleButton,
-:global(:root[data-theme='dark']) .searchApplyButton,
-:global(:root[data-theme='dark']) .activityCard,
-:global(:root[data-theme='dark']) .activityExpand,
-:global(:root[data-theme='dark']) .activitySkeleton,
-:global(:root[data-theme='dark']) .activityLegendPill,
-:global(:root[data-theme='dark']) .activityOpenButton,
-:global(:root[data-theme='dark']) .activityStat,
-:global(:root[data-theme='dark']) .activityStatTotal,
-:global(:root[data-theme='dark']) .activityFullscreenContent,
-:global(:root[data-theme='dark']) .searchSelect,
-:global(:root[data-theme='dark']) .newBadge,
-:global(:root[data-theme='dark']) .densitySelect,
-:global(:root[data-theme='dark']) .hotkeysHintButton,
-:global(:root[data-theme='dark']) .bulkActionButton,
-:global(:root[data-theme='dark']) .filterTab,
-:global(:root[data-theme='dark']) .skeletonItem,
-:global(:root[data-theme='dark']) .chatItem,
-:global(:root[data-theme='dark']) .chatSelectButton,
-:global(:root[data-theme='dark']) .avatarImage,
-:global(:root[data-theme='dark']) .avatarPlaceholder,
-:global(:root[data-theme='dark']) .unreadBadge,
-:global(:root[data-theme='dark']) .chatClientHandle,
-:global(:root[data-theme='dark']) .priorityDot,
-:global(:root[data-theme='dark']) .channelBadge,
-:global(:root[data-theme='dark']) .slaBadge,
-:global(:root[data-theme='dark']) .pinButton,
-:global(:root[data-theme='dark']) .unreadBubble,
-:global(:root[data-theme='dark']) .urgentBadge,
-:global(:root[data-theme='dark']) .hrBadge,
-:global(:root[data-theme='dark']) .chatAssignedUser,
-:global(:root[data-theme='dark']) .chatTime,
-:global(:root[data-theme='dark']) .myBadge,
-:global(:root[data-theme='dark']) .questBadge,
-:global(:root[data-theme='dark']) .content,
-:global(:root[data-theme='dark']) .chatTopIcon,
-:global(:root[data-theme='dark']) .chatTopAction,
-:global(:root[data-theme='dark']) .retroHudBar span,
-:global(:root[data-theme='dark']) .chatTopAvatar,
-:global(:root[data-theme='dark']) .chatTopTicketBadge,
-:global(:root[data-theme='dark']) .chatTopTicketToast,
-:global(:root[data-theme='dark']) .moreActionsButton,
-:global(:root[data-theme='dark']) .moreActionsMenu,
-:global(:root[data-theme='dark']) .statusChip,
-:global(:root[data-theme='dark']) .priorityChip,
-:global(:root[data-theme='dark']) .ticketSelect,
-:global(:root[data-theme='dark']) .spinner,
-:global(:root[data-theme='dark']) .scrollToBottom,
-:global(:root[data-theme='dark']) .messagesDayDivider span,
-:global(:root[data-theme='dark']) .messagesUnreadDivider span,
-:global(:root[data-theme='dark']) .moreLoading,
-:global(:root[data-theme='dark']) .messageContent,
-:global(:root[data-theme='dark']) .messageTicketBadge,
-:global(:root[data-theme='dark']) .messageCode,
-:global(:root[data-theme='dark']) .messageMediaImage,
-:global(:root[data-theme='dark']) .messageMediaButton:focus-visible,
-:global(:root[data-theme='dark']) .messageMediaVideo,
-:global(:root[data-theme='dark']) .voiceVisualizerBar,
-:global(:root[data-theme='dark']) .translationBox,
-:global(:root[data-theme='dark']) .translateRetry,
-:global(:root[data-theme='dark']) .messageInputContainer,
-:global(:root[data-theme='dark']) .formatBarOpen,
-:global(:root[data-theme='dark']) .messageContextMenu,
-:global(:root[data-theme='dark']) .messageContextMenuItem,
-:global(:root[data-theme='dark']) .previewBody,
-:global(:root[data-theme='dark']) .previewImage,
-:global(:root[data-theme='dark']) .previewVideo,
-:global(:root[data-theme='dark']) .previewDoc,
-:global(:root[data-theme='dark']) .previewCaption,
-:global(:root[data-theme='dark']) .viewerImage,
-:global(:root[data-theme='dark']) .viewerVideo,
-:global(:root[data-theme='dark']) .attachButton,
-:global(:root[data-theme='dark']) .messageInput,
-:global(:root[data-theme='dark']) .voiceButton {
-  border-radius: 0;
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .callPanel,
-:global(:root[data-theme='dark']) .sidebar,
-:global(:root[data-theme='dark']) .content {
-  background: var(--surface);
-  border-color: var(--border);
-}
-
-:global(:root[data-theme='dark']) .sidebar,
-:global(:root[data-theme='dark']) .content {
-  border-top: 0;
-  border-bottom: 0;
-}
-
-:global(:root[data-theme='dark']) .sidebarHeader,
-:global(:root[data-theme='dark']) .searchSection,
-:global(:root[data-theme='dark']) .filterTabs,
-:global(:root[data-theme='dark']) .quickFiltersRow,
-:global(:root[data-theme='dark']) .bulkActionsRow,
-:global(:root[data-theme='dark']) .chatList,
-:global(:root[data-theme='dark']) .chatHeaderPanel,
-:global(:root[data-theme='dark']) .messageInputContainer {
-  background: var(--surface);
-}
-
-:global(:root[data-theme='dark']) .sidebarTitle,
-:global(:root[data-theme='dark']) .activityCardTitle,
-:global(:root[data-theme='dark']) .callPanelTitle,
-:global(:root[data-theme='dark']) .commentsTitle,
-:global(:root[data-theme='dark']) .activityFullscreenTitle,
-:global(:root[data-theme='dark']) .chatTopTitle {
-  font-family: var(--font-family-display);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
-
-:global(:root[data-theme='dark']) .sidebarTitle {
-  font-size: 24px;
-  line-height: 1;
-}
-
-:global(:root[data-theme='dark']) .activityToggle,
-:global(:root[data-theme='dark']) .menuToggleButton,
-:global(:root[data-theme='dark']) .searchApplyButton,
-:global(:root[data-theme='dark']) .activityExpand,
-:global(:root[data-theme='dark']) .commentsLoadMore,
-:global(:root[data-theme='dark']) .callPanelToggle,
-:global(:root[data-theme='dark']) .filterTab,
-:global(:root[data-theme='dark']) .hotkeysHintButton,
-:global(:root[data-theme='dark']) .bulkActionButton,
-:global(:root[data-theme='dark']) .chatTopAction,
-:global(:root[data-theme='dark']) .moreActionsMenu button,
-:global(:root[data-theme='dark']) .messageContextMenuItem,
-:global(:root[data-theme='dark']) .translateRetry,
-:global(:root[data-theme='dark']) .sendButton {
-  font-family: var(--font-family-mono);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .activityToggle:hover,
-:global(:root[data-theme='dark']) .menuToggleButton:hover,
-:global(:root[data-theme='dark']) .searchApplyButton:hover,
-:global(:root[data-theme='dark']) .activityExpand:hover,
-:global(:root[data-theme='dark']) .activityOpenButton:hover,
-:global(:root[data-theme='dark']) .commentsLoadMore:hover,
-:global(:root[data-theme='dark']) .callPanelToggle:hover,
-:global(:root[data-theme='dark']) .filterTab:hover,
-:global(:root[data-theme='dark']) .hotkeysHintButton:hover,
-:global(:root[data-theme='dark']) .bulkActionButton:hover:enabled,
-:global(:root[data-theme='dark']) .chatSelectButton:hover,
-:global(:root[data-theme='dark']) .pinButton:hover,
-:global(:root[data-theme='dark']) .chatTopIcon:hover,
-:global(:root[data-theme='dark']) .chatTopAction:hover:enabled,
-:global(:root[data-theme='dark']) .moreActionsButton:hover,
-:global(:root[data-theme='dark']) .attachButton:hover,
-:global(:root[data-theme='dark']) .voiceButton:hover {
-  background: var(--surface-2);
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: none;
-  transform: none;
-}
-
-:global(:root[data-theme='dark']) .hrOutreachButton {
-  border-color: color-mix(in srgb, #3b82f6 50%, var(--border));
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(59, 130, 246, 0.12));
-  color: #60a5fa;
-}
-
-:global(:root[data-theme='dark']) .hrOutreachButton:hover {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border-color: #3b82f6;
-  color: #fff;
-}
-
-:global(:root[data-theme='dark']) .filterTabActive,
-:global(:root[data-theme='dark']) .chatSelectButtonActive {
-  background: transparent;
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: none;
-  transform: none;
-}
-
-:global(:root[data-theme='dark']) .chatItem {
-  margin-bottom: 0;
-  background: transparent;
-  border-color: transparent;
-  border-bottom-color: var(--border);
-}
-
-:global(:root[data-theme='dark']) .chatItem:hover {
-  background: var(--surface-2);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .chatItem.active,
-:global(:root[data-theme='dark']) .chatList .active {
-  background: transparent;
-  border-color: var(--border);
-  border-left-color: var(--primary);
-  color: var(--primary);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .chatItemUnread {
-  background: color-mix(in srgb, var(--primary) 7%, transparent);
-}
-
-:global(:root[data-theme='dark']) .chatItemHr {
-  background:
-    linear-gradient(90deg, rgba(37, 99, 235, 0.34), rgba(37, 99, 235, 0.18)),
-    color-mix(in srgb, #2563eb 16%, var(--surface));
-  border-color: color-mix(in srgb, #2563eb 58%, var(--border));
-  border-bottom-color: color-mix(in srgb, #2563eb 58%, var(--border));
-}
-
-:global(:root[data-theme='dark']) .chatItemHr:hover,
-:global(:root[data-theme='dark']) .chatItemHr.active {
-  background:
-    linear-gradient(90deg, rgba(37, 99, 235, 0.42), rgba(37, 99, 235, 0.24)),
-    color-mix(in srgb, #2563eb 20%, var(--surface));
-}
-
-:global(:root[data-theme='dark']) .chatItem::before {
-  width: 2px;
-}
-
-:global(:root[data-theme='dark']) .chatName,
-:global(:root[data-theme='dark']) .chatNameUnread {
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-:global(:root[data-theme='dark']) .chatClientHandle,
-:global(:root[data-theme='dark']) .channelBadge,
-:global(:root[data-theme='dark']) .slaBadge,
-:global(:root[data-theme='dark']) .unreadBubble,
-:global(:root[data-theme='dark']) .urgentBadge,
-:global(:root[data-theme='dark']) .hrBadge,
-:global(:root[data-theme='dark']) .chatAssignedUser,
-:global(:root[data-theme='dark']) .chatTime,
-:global(:root[data-theme='dark']) .myBadge,
-:global(:root[data-theme='dark']) .questBadge,
-:global(:root[data-theme='dark']) .statusChip,
-:global(:root[data-theme='dark']) .priorityChip,
-:global(:root[data-theme='dark']) .messageTime,
-:global(:root[data-theme='dark']) .messageTicketBadge,
-:global(:root[data-theme='dark']) .translationTitle {
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .avatarImage,
-:global(:root[data-theme='dark']) .avatarPlaceholder,
-:global(:root[data-theme='dark']) .chatTopAvatar {
-  border: 1px solid var(--border);
-}
-
-:global(:root[data-theme='dark']) .priorityDot {
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .chatHeaderPanel {
-  border-bottom: 1px solid var(--border);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .chatTopTitle {
-  font-size: 24px;
-  line-height: 1;
-}
-
-:global(:root[data-theme='dark']) .chatTopAction,
-:global(:root[data-theme='dark']) .ticketSelect,
-:global(:root[data-theme='dark']) .searchSelect,
-:global(:root[data-theme='dark']) .densitySelect,
-:global(:root[data-theme='dark']) .commentTextarea {
-  background: var(--surface-2);
-}
-
-:global(:root[data-theme='dark']) .sendButton {
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  color: var(--on-primary);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .sendButton:hover:enabled {
-  background: var(--primary-hover);
-  box-shadow: none;
-  transform: none;
-}
-
-:global(:root[data-theme='dark']) .messagesContainer,
-:global(:root[data-theme='dark']) .messagesList {
-  background: var(--bg);
-}
-
-:global(:root[data-theme='dark']) .messagesContainer::before,
-:global(:root[data-theme='dark']) .messagesContainer::after {
-  opacity: 0;
-  animation: none;
-}
-
-:global(:root[data-theme='dark']) .messagesDayDivider span,
-:global(:root[data-theme='dark']) .messagesUnreadDivider span,
-:global(:root[data-theme='dark']) .moreLoading {
-  background: var(--surface);
-}
-
-:global(:root[data-theme='dark']) .messagesUnreadDivider span {
-  color: var(--primary);
-  border-color: var(--primary);
-}
-
-:global(:root[data-theme='dark']) .messageContent {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  transition: border-color 150ms cubic-bezier(0.25, 0, 0, 1), background-color 150ms cubic-bezier(0.25, 0, 0, 1);
-}
-
-:global(:root[data-theme='dark']) .messageContent:hover {
-  border-color: var(--primary);
-  box-shadow: none;
-  transform: none;
-}
-
-:global(:root[data-theme='dark']) .messageOwn .messageContent {
-  border-color: var(--primary);
-  background: var(--surface-2);
-  color: var(--text);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .messageOwn .messageTicketBadge,
-:global(:root[data-theme='dark']) .messageOwn .messageResponsible {
-  color: var(--text-muted);
-}
-
-:global(:root[data-theme='dark']) .messageText {
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-:global(:root[data-theme='dark']) .messageCode {
-  font-family: var(--font-family-mono);
-  background: var(--bg);
-}
-
-:global(:root[data-theme='dark']) .voiceVisualizerBarActive {
-  background: var(--primary);
-}
-
-:global(:root[data-theme='dark']) .translationBox,
-:global(:root[data-theme='dark']) .previewBody,
-:global(:root[data-theme='dark']) .previewDoc,
-:global(:root[data-theme='dark']) .messageInput,
-:global(:root[data-theme='dark']) .formatBarOpen,
-:global(:root[data-theme='dark']) .messageContextMenu {
-  background: var(--surface-2);
-}
-
-:global(:root[data-theme='dark']) .messageInput {
-  min-height: 44px;
-  font-size: 16px;
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .messageInput:focus,
-:global(:root[data-theme='dark']) .previewCaption:focus,
-:global(:root[data-theme='dark']) .commentTextarea:focus,
-:global(:root[data-theme='dark']) .searchSelect:focus {
-  border-color: var(--primary);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .attachButton,
-:global(:root[data-theme='dark']) .voiceButton {
-  border: 1px solid var(--border);
-  background: transparent;
-}
-
-:global(:root[data-theme='dark']) .activityDotInbound,
-:global(:root[data-theme='dark']) .activityLegendDotInbound::before {
-  fill: var(--success);
-  background: var(--success);
-}
-
-:global(:root[data-theme='dark']) .activityDotOutbound,
-:global(:root[data-theme='dark']) .activityLegendDotOutbound::before {
-  fill: var(--warning);
-  background: var(--warning);
-}
-
-:global(:root[data-theme='dark']) .activityLegendOnline,
-:global(:root[data-theme='dark']) .activityLegendBusy,
-:global(:root[data-theme='dark']) .activityLegendAway,
-:global(:root[data-theme='dark']) .activityLegendIdle,
-:global(:root[data-theme='dark']) .activityLegendOffline {
-  color: var(--text-muted);
-  background: var(--surface-2);
-}
-
 @media (max-width: 820px) {
-  :global(:root[data-theme='dark']) .container,
-  :global(:root[data-theme='dark']) .containerCollapsed {
-    gap: 0;
-    padding: 0;
-    border-radius: 0;
-  }
-
-  :global(:root[data-theme='dark']) .sidebar,
-  :global(:root[data-theme='dark']) .content {
-    border-radius: 0;
-  }
 }
 
 /* ---- HR Outreach ---- */

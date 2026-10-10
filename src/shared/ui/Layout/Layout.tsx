@@ -1,4 +1,4 @@
-import { ReactNode, Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Area,
   Brush,
@@ -17,60 +17,13 @@ import { NetworkError } from '../../../shared/api/types';
 import { workforceApi } from '@/features/workforce/api/workforceApi';
 import type { WorkforceActivityDto, WorkforceMessageDto } from '@/features/workforce/model/types';
 import { toastEvents } from '@/shared/utils/toast';
-import { getFirefoxModeEnabled, setFirefoxModeEnabled } from '../../utils/firefoxMode';
 import { LAYOUT_TOGGLE_MENU_EVENT } from '../../utils/layoutMenu';
 import { Icon } from '../Icon/Icon';
 import styles from './Layout.module.css';
 
-const Theme3DBackground = lazy(() =>
-  import('../Theme3DBackground/Theme3DBackground').then((module) => ({
-    default: module.Theme3DBackground,
-  }))
-);
-
 interface LayoutProps {
   children: ReactNode;
 }
-
-type ThemeName = 'light' | 'dark' | 'calm-oasis' | 'retro8' | 'barbie-diary' | 'minecraft' | 'minecraft-nether';
-type CrtLevel = 'soft' | 'arcade' | 'crt' | 'vhs';
-type SecretThemeKey = 'retro8' | 'barbie-diary' | 'minecraft' | 'minecraft-nether';
-
-type SecretThemesState = {
-  retro8: boolean;
-  'barbie-diary': boolean;
-  minecraft: boolean;
-  'minecraft-nether': boolean;
-};
-
-const SECRET_THEMES_STORAGE_KEY = 'secret-themes-unlocked';
-const RETRO_UNLOCK_SEQUENCE = ['r', 'e', 't', 'r', 'o'] as const;
-const BARBIE_UNLOCK_SEQUENCE = ['b', 'a', 'r', 'b', 'i', 'e'] as const;
-const MINECRAFT_UNLOCK_SEQUENCE = ['m', 'i', 'n', 'e', 'c', 'r', 'a', 'f', 't'] as const;
-const NETHER_UNLOCK_SEQUENCE = ['n', 'e', 't', 'h', 'e', 'r'] as const;
-
-const readSecretThemesState = (): SecretThemesState => {
-  if (typeof window === 'undefined') {
-    return { retro8: false, 'barbie-diary': false, minecraft: false, 'minecraft-nether': false };
-  }
-
-  const raw = localStorage.getItem(SECRET_THEMES_STORAGE_KEY);
-  if (!raw) {
-    return { retro8: false, 'barbie-diary': false, minecraft: false, 'minecraft-nether': false };
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<SecretThemesState>;
-    return {
-      retro8: parsed.retro8 === true,
-      'barbie-diary': parsed['barbie-diary'] === true,
-      minecraft: parsed.minecraft === true,
-      'minecraft-nether': parsed['minecraft-nether'] === true,
-    };
-  } catch {
-    return { retro8: false, 'barbie-diary': false, minecraft: false, 'minecraft-nether': false };
-  }
-};
 
 type ToastItem = {
   id: number;
@@ -89,136 +42,39 @@ export function Layout({ children }: LayoutProps) {
   const isChatsPage = location.pathname.startsWith('/chats');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPresenceOpen, setIsPresenceOpen] = useState(false);
-  const [isTrackingLossActive, setIsTrackingLossActive] = useState(false);
-  const [isRetroSfxEnabled, setIsRetroSfxEnabled] = useState<boolean>(() => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return localStorage.getItem('retro-sfx') !== 'off';
+    return localStorage.getItem('sidebar-collapsed') !== 'false';
   });
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [crtLevel, setCrtLevel] = useState<CrtLevel>(() => {
-    if (typeof window === 'undefined') return 'crt';
-    const saved = localStorage.getItem('crt-level');
-    return saved === 'soft' || saved === 'arcade' || saved === 'crt' || saved === 'vhs' ? saved : 'crt';
-  });
   const toastTimeoutsRef = useRef<number[]>([]);
-  const trackingLossTimeoutRef = useRef<number | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
-  const [isFirefoxModeEnabled, setIsFirefoxModeEnabledState] = useState<boolean>(() => getFirefoxModeEnabled());
-  const [secretThemes, setSecretThemes] = useState<SecretThemesState>(() => readSecretThemesState());
-  const [theme, setTheme] = useState<ThemeName>(() => {
-    if (typeof window === 'undefined') return 'light';
-    const unlocked = readSecretThemesState();
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    if (saved === 'calm-oasis') return saved;
-    if (saved === 'retro8' && unlocked.retro8) return saved;
-    if (saved === 'barbie-diary' && unlocked['barbie-diary']) return saved;
-    if (saved === 'minecraft' && unlocked.minecraft) return saved;
-    if (saved === 'minecraft-nether' && unlocked['minecraft-nether']) return saved;
-    return 'light';
-  });
-  const comboBufferRef = useRef<string[]>([]);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  useEffect(() => {
-    localStorage.setItem(SECRET_THEMES_STORAGE_KEY, JSON.stringify(secretThemes));
-  }, [secretThemes]);
-
-  useEffect(() => {
-    const isRetroLocked = theme === 'retro8' && !secretThemes.retro8;
-    const isBarbieLocked = theme === 'barbie-diary' && !secretThemes['barbie-diary'];
-    const isMinecraftLocked = theme === 'minecraft' && !secretThemes.minecraft;
-    const isNetherLocked = theme === 'minecraft-nether' && !secretThemes['minecraft-nether'];
-    if (isRetroLocked || isBarbieLocked || isMinecraftLocked || isNetherLocked) {
-      setTheme('light');
-    }
-  }, [secretThemes, theme]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-crt-level', crtLevel);
-    localStorage.setItem('crt-level', crtLevel);
-  }, [crtLevel]);
-
-  useEffect(() => {
-    localStorage.setItem('retro-sfx', isRetroSfxEnabled ? 'on' : 'off');
-  }, [isRetroSfxEnabled]);
-
-  const playRetroTone = (frequency: number, duration = 0.05, type: OscillatorType = 'square', gain = 0.025) => {
-    if (typeof window === 'undefined') return;
-    if (theme !== 'retro8' || !isRetroSfxEnabled) return;
-    const Ctx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new Ctx();
-    }
-
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
-    gainNode.gain.setValueAtTime(gain, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + duration);
-  };
+    localStorage.setItem('sidebar-collapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
 
   useEffect(() => {
     const toggleFromOutside = () => {
       setIsMenuOpen((prev) => !prev);
     };
 
-    window.addEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
-    const handleGlobalClick = (event: Event) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      const interactive = target.closest('button, a, [role="button"], input, select, textarea');
-      if (!interactive) return;
-      playRetroTone(660, 0.045, 'square', 0.02);
-    };
     const handleToast = (event: Event) => {
       const custom = event as CustomEvent<{ message?: string }>;
       const message = custom.detail?.message;
       if (message) showToast(message);
-      playRetroTone(420, 0.09, 'triangle', 0.03);
     };
-    document.addEventListener('click', handleGlobalClick, true);
+    window.addEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
     window.addEventListener(toastEvents.name, handleToast);
 
     return () => {
       window.removeEventListener(LAYOUT_TOGGLE_MENU_EVENT, toggleFromOutside);
-      document.removeEventListener('click', handleGlobalClick, true);
       window.removeEventListener(toastEvents.name, handleToast);
       toastTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       toastTimeoutsRef.current = [];
-      if (trackingLossTimeoutRef.current) {
-        window.clearTimeout(trackingLossTimeoutRef.current);
-        trackingLossTimeoutRef.current = null;
-      }
-      document.documentElement.removeAttribute('data-tracking-loss');
     };
-  }, [theme, isRetroSfxEnabled]);
-
-  useEffect(() => {
-    if (theme === 'retro8') return;
-    setIsTrackingLossActive(false);
-    if (trackingLossTimeoutRef.current) {
-      window.clearTimeout(trackingLossTimeoutRef.current);
-      trackingLossTimeoutRef.current = null;
-    }
-    document.documentElement.removeAttribute('data-tracking-loss');
-  }, [theme]);
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -262,138 +118,6 @@ export function Layout({ children }: LayoutProps) {
     void load();
   }, [user]);
 
-  useEffect(() => {
-    const isEditableTarget = (target: EventTarget | null) => {
-      const el = target as HTMLElement | null;
-      if (!el) return false;
-      if (el.isContentEditable) return true;
-      return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
-    };
-
-    const unlockTheme = (themeKey: SecretThemeKey, message: string) => {
-      setSecretThemes((prev) => {
-        if (prev[themeKey]) return prev;
-        showToast(message);
-        return { ...prev, [themeKey]: true };
-      });
-    };
-
-    const endsWithSequence = (buffer: string[], sequence: readonly string[]) => {
-      if (buffer.length < sequence.length) return false;
-      const start = buffer.length - sequence.length;
-      for (let i = 0; i < sequence.length; i += 1) {
-        if (buffer[start + i] !== sequence[i]) return false;
-      }
-      return true;
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (isEditableTarget(event.target)) return;
-
-      const key = event.key.toLowerCase();
-      if (!key) return;
-
-      comboBufferRef.current.push(key);
-      if (comboBufferRef.current.length > 20) {
-        comboBufferRef.current = comboBufferRef.current.slice(-20);
-      }
-
-      if (endsWithSequence(comboBufferRef.current, RETRO_UNLOCK_SEQUENCE)) {
-        unlockTheme('retro8', 'Секретная тема 8-bit разблокирована');
-        return;
-      }
-
-      if (endsWithSequence(comboBufferRef.current, BARBIE_UNLOCK_SEQUENCE)) {
-        unlockTheme('barbie-diary', 'Секретная тема Barbie Diary разблокирована');
-        return;
-      }
-
-      if (endsWithSequence(comboBufferRef.current, MINECRAFT_UNLOCK_SEQUENCE)) {
-        unlockTheme('minecraft', 'Секретная тема Minecraft разблокирована');
-        setTheme('minecraft');
-        return;
-      }
-
-      if (endsWithSequence(comboBufferRef.current, NETHER_UNLOCK_SEQUENCE)) {
-        unlockTheme('minecraft-nether', 'Секретная тема Minecraft: Nether разблокирована');
-        setTheme('minecraft-nether');
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, []);
-
-  const availableThemes = useMemo<ThemeName[]>(() => {
-    const themes: ThemeName[] = ['light', 'calm-oasis', 'dark'];
-    if (secretThemes.retro8) themes.push('retro8');
-    if (secretThemes['barbie-diary']) themes.push('barbie-diary');
-    if (secretThemes.minecraft) themes.push('minecraft');
-    if (secretThemes['minecraft-nether']) themes.push('minecraft-nether');
-    return themes;
-  }, [secretThemes]);
-
-  const toggleTheme = () => {
-    setTheme((current) => {
-      const index = availableThemes.indexOf(current);
-      const nextIndex = index === -1 ? 0 : (index + 1) % availableThemes.length;
-      return availableThemes[nextIndex];
-    });
-  };
-
-  const nextTheme = useMemo<ThemeName>(() => {
-    const index = availableThemes.indexOf(theme);
-    const nextIndex = index === -1 ? 0 : (index + 1) % availableThemes.length;
-    return availableThemes[nextIndex];
-  }, [availableThemes, theme]);
-
-  const nextThemeLabel =
-    nextTheme === 'light'
-      ? '☀️ Светлая'
-      : nextTheme === 'calm-oasis'
-        ? '🍃 Calm Oasis'
-      : nextTheme === 'dark'
-        ? '🌙 Тёмная'
-        : nextTheme === 'retro8'
-          ? '🕹 8-bit'
-          : nextTheme === 'barbie-diary'
-            ? '💖 Barbie Diary'
-            : nextTheme === 'minecraft'
-              ? '⛏ Minecraft'
-              : '🔥 Nether';
-
-  const toggleFirefoxMode = () => {
-    setIsFirefoxModeEnabledState((prev) => {
-      const next = !prev;
-      setFirefoxModeEnabled(next);
-      showToast(next ? 'Режим фаерфокса включен' : 'Режим фаерфокса выключен');
-      return next;
-    });
-  };
-
-  const triggerTrackingLoss = () => {
-    if (theme !== 'retro8') {
-      showToast('Tracking Loss доступен только в теме 8-bit');
-      return;
-    }
-
-    setIsTrackingLossActive(true);
-    document.documentElement.setAttribute('data-tracking-loss', 'on');
-
-    if (trackingLossTimeoutRef.current) {
-      window.clearTimeout(trackingLossTimeoutRef.current);
-    }
-
-    trackingLossTimeoutRef.current = window.setTimeout(() => {
-      document.documentElement.removeAttribute('data-tracking-loss');
-      setIsTrackingLossActive(false);
-      trackingLossTimeoutRef.current = null;
-    }, 1800);
-  };
-
   const showToast = (message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts((prev) => [...prev, { id, message }]);
@@ -423,6 +147,10 @@ export function Layout({ children }: LayoutProps) {
     void logout();
   };
 
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed((prev) => !prev);
+  };
+
   const menuGroups: { title: string; items: MenuItem[] }[] = [
     {
       title: 'Работа',
@@ -448,21 +176,12 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   const userName = user?.displayName || user?.username || user?.email || 'Пользователь';
-  const isThreeDTheme = theme === 'minecraft' || theme === 'minecraft-nether';
 
   return (
     <div className={styles.layout}>
       <a className={styles.skipLink} href="#main-content">
         Перейти к содержимому
       </a>
-
-      {isThreeDTheme ? (
-        <div className={styles.threeScene} aria-hidden>
-          <Suspense fallback={null}>
-            <Theme3DBackground theme={theme} />
-          </Suspense>
-        </div>
-      ) : null}
 
       {user && (
         <>
@@ -475,14 +194,26 @@ export function Layout({ children }: LayoutProps) {
             />
           )}
 
-          <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarOpen : styles.sidebarClosed}`}>
-            <Link
-              to="/"
-              className={styles.logo}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Messenger
-            </Link>
+          <aside className={`${styles.sidebar} ${isMenuOpen ? styles.sidebarOpen : styles.sidebarClosed} ${isSidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
+            <div className={styles.sidebarHeader}>
+              <Link
+                to="/"
+                className={styles.logo}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <span className={styles.logoFull}>Messenger</span>
+                <span className={styles.logoCompact}>M</span>
+              </Link>
+              <button
+                type="button"
+                className={styles.collapseToggle}
+                onClick={toggleSidebarCollapse}
+                aria-label={isSidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+                aria-expanded={!isSidebarCollapsed}
+              >
+                <Icon name={isSidebarCollapsed ? 'chevron-right' : 'chevron-left'} size={16} />
+              </button>
+            </div>
 
             <nav className={styles.menu}>
               {menuGroups.map((group) => (
@@ -517,80 +248,24 @@ export function Layout({ children }: LayoutProps) {
               </div>
               <button
                 type="button"
-                className={styles.themeToggle}
-                onClick={toggleTheme}
-                aria-label="Сменить тему"
-              >
-                {nextThemeLabel}
-              </button>
-              <button
-                type="button"
-                className={styles.themeToggle}
+                className={styles.footerButton}
                 onClick={() => setIsPresenceOpen((v) => !v)}
                 aria-expanded={isPresenceOpen}
                 aria-controls="presence-popover"
               >
                 Онлайн-активность
               </button>
-              <details className={styles.advancedPanel}>
-                <summary className={styles.advancedSummary}>Дополнительно</summary>
-                <div className={styles.advancedControls}>
-                  <button
-                    type="button"
-                    className={`${styles.firefoxModeButton} ${isFirefoxModeEnabled ? styles.firefoxModeButtonActive : ''}`}
-                    onClick={toggleFirefoxMode}
-                    aria-label="Переключить режим фаерфокса"
-                  >
-                    Режим Firefox: {isFirefoxModeEnabled ? 'ON' : 'OFF'}
-                  </button>
-                  {process.env.NODE_ENV === 'development' ? (
-                    <button
-                      type="button"
-                      className={styles.simulateErrorButton}
-                      onClick={() => {
-                        void handleSimulateError();
-                      }}
-                    >
-                      Симулировать ошибку
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={`${styles.trackingLossButton} ${isTrackingLossActive ? styles.trackingLossButtonActive : ''}`}
-                    onClick={triggerTrackingLoss}
-                    disabled={theme !== 'retro8'}
-                    aria-label="Включить VHS tracking loss"
-                    title={theme === 'retro8' ? 'Срыв синхронизации VHS' : 'Доступно только в теме 8-bit'}
-                  >
-                    VHS: Tracking Loss
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.trackingLossButton} ${isRetroSfxEnabled ? styles.trackingLossButtonActive : ''}`}
-                    onClick={() => setIsRetroSfxEnabled((prev) => !prev)}
-                    disabled={theme !== 'retro8'}
-                    aria-label="Переключить ретро звук"
-                    title={theme === 'retro8' ? 'Ретро звуки UI' : 'Доступно только в теме 8-bit'}
-                  >
-                    SFX: {isRetroSfxEnabled ? 'ON' : 'OFF'}
-                  </button>
-                  <label className={styles.crtLabel}>
-                    Scanline Intensity
-                    <select
-                      className={styles.crtSelect}
-                      value={crtLevel}
-                      onChange={(event) => setCrtLevel(event.target.value as CrtLevel)}
-                      disabled={theme !== 'retro8'}
-                      aria-label="CRT intensity"
-                    >
-                      <option value="soft">Soft</option>
-                      <option value="arcade">Arcade</option>
-                      <option value="crt">CRT</option>
-                      <option value="vhs">VHS Broken</option>
-                    </select>
-                  </label>
-                </div>
-              </details>
+              {process.env.NODE_ENV === 'development' ? (
+                <button
+                  type="button"
+                  className={styles.simulateErrorButton}
+                  onClick={() => {
+                    void handleSimulateError();
+                  }}
+                >
+                  Симулировать ошибку
+                </button>
+              ) : null}
               <button
                 className={styles.userButton}
                 onClick={handleLogout}
@@ -602,32 +277,11 @@ export function Layout({ children }: LayoutProps) {
         </>
       )}
       
-      <div className={styles.mainWrapper}>
+      <div className={`${styles.mainWrapper} ${isSidebarCollapsed ? styles.mainWrapperCollapsed : ''}`}>
         <main id="main-content" tabIndex={-1} className={isChatsPage ? styles.mainFluid : styles.main}>
           {children}
         </main>
       </div>
-
-      {/* {user && (
-        <div className={styles.floatingControls}>
-          <button
-            type="button"
-            className={styles.floatingBurger}
-            aria-label={isMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
-            onClick={() => setIsMenuOpen((v) => !v)}
-          >
-            {isMenuOpen ? '×' : '☰'}
-          </button>
-          <button
-            type="button"
-            className={styles.presenceToggle}
-            aria-label={isPresenceOpen ? 'Скрыть активность' : 'Показать активность'}
-            onClick={() => setIsPresenceOpen((v) => !v)}
-          >
-            Активность1
-          </button>
-        </div>
-      )} */}
 
       {user && isPresenceOpen && (
         <div

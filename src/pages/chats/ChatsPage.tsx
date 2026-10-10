@@ -58,38 +58,6 @@ type MessageContextMenuState = {
   message: Message;
 };
 
-type DamagePopup = {
-  id: number;
-  text: string;
-  kind: 'alert' | 'critical';
-};
-
-type PixelBurst = {
-  id: number;
-  x: number;
-  y: number;
-  tone: 'danger' | 'success' | 'neutral';
-  size: number;
-};
-
-type AchievementToast = {
-  id: number;
-  title: string;
-  tier: 'COMMON' | 'ELITE' | 'BOSS';
-};
-
-type AchievementId =
-  | 'firstReply'
-  | 'messages100'
-  | 'noUnreadChats'
-  | 'bossTicketClosed'
-  | 'voiceRunner'
-  | 'mediaCrafter'
-  | 'translator'
-  | 'questCommander'
-  | 'nightShift'
-  | 'urgentHunter';
-
 type TicketHistoryEntry = {
   id: string;
   action: string;
@@ -161,27 +129,12 @@ const formatChannelLabel = (channel: Chat['channel']) => {
   return channel;
 };
 
-const getQuestStatus = (chat: Chat) => {
-  if (chat.priority === 'urgent') return 'BOSS FIGHT';
-  if ((chat.unreadCount ?? 0) > 0) return 'NEW QUEST';
-  if (chat.assignedUser) return 'IN PROGRESS';
-  return 'COMPLETED';
-};
-
 const getFlowStatus = (chat: Chat) => {
   if (chat.priority === 'urgent') return 'Срочно';
   if ((chat.unreadCount ?? 0) > 0) return 'Новый';
   if (chat.assignedUser) return 'В работе';
   if (chat.status === 'closed') return 'Закрыт';
   return 'Готово';
-};
-
-const getRadarLabel = (id: string) => {
-  if (id === 'urgent') return 'Срочные';
-  if (id === 'unread') return 'Непрочитанные';
-  if (id === 'translated') return 'Переводы';
-  if (id === 'voice') return 'Голос';
-  return id;
 };
 
 const formatLastMessagePreview = (lastMessage: Chat['lastMessage']) => {
@@ -248,13 +201,11 @@ const getNpcRarity = (chat: Chat | null): 'COMMON' | 'ELITE' | 'BOSS' => {
   return 'COMMON';
 };
 
-const toSlug = (value?: string | null) => (value || '').toLowerCase().replace(/\s+/g, '_');
-
 const FIREFOX_SEND_WARNING = 'Воспользуйтесь браузером google chrome';
 const CHAT_ITEM_ESTIMATED_HEIGHT_BY_DENSITY: Record<DensityMode, number> = {
   comfortable: 88,
   compact: 72,
-  ultra: 58,
+  ultra: 46,
 };
 const CHAT_LIST_OVERSCAN = 8;
 const TICKET_STATUS_OPTIONS: Array<TicketStatus | string> = [
@@ -429,6 +380,7 @@ export function ChatsPage() {
   const [selectedChatIds, setSelectedChatIds] = useState<number[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
   const [isHotkeysHelpOpen, setIsHotkeysHelpOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'message' | 'phone'>('all');
@@ -458,28 +410,7 @@ export function ChatsPage() {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [sendError, setSendError] = useState('');
   const [activeVoiceMessageId, setActiveVoiceMessageId] = useState<number | null>(null);
-  const [playedVoiceCount, setPlayedVoiceCount] = useState(0);
   const [messageContextMenu, setMessageContextMenu] = useState<MessageContextMenuState | null>(null);
-  const [isPauseMenuOpen, setIsPauseMenuOpen] = useState(false);
-  const [isSceneTransitioning, setIsSceneTransitioning] = useState(false);
-  const [urgentIncomingMessageId, setUrgentIncomingMessageId] = useState<number | null>(null);
-  const [isRetroMiniMode, setIsRetroMiniMode] = useState(false);
-  const [damagePopups, setDamagePopups] = useState<DamagePopup[]>([]);
-  const [pixelBursts, setPixelBursts] = useState<PixelBurst[]>([]);
-  const [achievementToast, setAchievementToast] = useState<AchievementToast | null>(null);
-  const [bootStepIndex, setBootStepIndex] = useState(0);
-  const [achievements, setAchievements] = useState<Record<AchievementId, boolean>>({
-    firstReply: false,
-    messages100: false,
-    noUnreadChats: false,
-    bossTicketClosed: false,
-    voiceRunner: false,
-    mediaCrafter: false,
-    translator: false,
-    questCommander: false,
-    nightShift: false,
-    urgentHunter: false,
-  });
   const [translationsByMessageId, setTranslationsByMessageId] = useState<Record<number, TranslationState>>({});
   const [pagination, setPagination] = useState({
     total: 0,
@@ -596,34 +527,9 @@ export function ChatsPage() {
     setCallWidgetCalleeVersion((v) => v + 1);
   }, [selectedChatPhone]);
 
-  const statusChipClass = useCallback(
-    (status?: string | null) => {
-      if (!status) return '';
-      const slug = toSlug(status);
-      return [styles.statusChip, styles[`status-${slug}`]].filter(Boolean).join(' ');
-    },
-    []
-  );
-
-  const priorityChipClass = useCallback(
-    (priority?: string | null) => {
-      if (!priority) return '';
-      const slug = toSlug(priority);
-      return [styles.priorityChip, styles[`priority-${slug}`]].filter(Boolean).join(' ');
-    },
-    []
-  );
-
   const [activity, setActivity] = useState<WorkforceActivityDto | null>(null);
   const [isActivityLoading, setIsActivityLoading] = useState(false);
   const [isActivityFullscreen, setIsActivityFullscreen] = useState(false);
-  const isRetroTheme =
-    typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'retro8';
-
-  const bootSequenceSteps = useMemo(
-    () => ['INIT MEMORY', 'LOAD NPC DIALOGUE', 'SYNC QUEST FLAGS', 'READY'],
-    []
-  );
 
   const currentTicketNumber = useMemo(() => {
     if (!selectedChat?.ticketNumber) return '';
@@ -635,110 +541,16 @@ export function ChatsPage() {
     navigate(`/tickets?ticketNumber=${currentTicketNumber}`);
   }, [currentTicketNumber, navigate]);
 
-  const retroQueueCount = useMemo(() => chats.filter((c) => c.unreadCount > 0).length, [chats]);
-  const retroUrgentCount = useMemo(() => chats.filter((c) => c.priority === 'urgent').length, [chats]);
-  const retroUnreadTotal = useMemo(() => chats.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0), [chats]);
-  const retroTranslatedCount = useMemo(
-    () => Object.values(translationsByMessageId).filter((state) => state.status === 'done').length,
-    [translationsByMessageId]
-  );
-  const retroVoiceActiveCount = useMemo(
-    () => messages.filter((msg) => msg.type === 'audio' && Boolean(msg.mediaUrl)).length,
-    [messages]
-  );
-  const retroSelectedQuest = useMemo(() => {
-    if (!selectedChat) return 'NO TARGET';
-    return getQuestStatus(selectedChat);
-  }, [selectedChat]);
+  const unreadChatsCount = useMemo(() => chats.filter((c) => c.unreadCount > 0).length, [chats]);
 
-  const combatBars = useMemo(() => {
-    const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
-    const relationBase = selectedChat ? 48 + (selectedChat.assignedUser ? 16 : 0) + Math.min(26, messages.filter((m) => m.fromMe).length / 2) : 0;
-    const relation = clamp(relationBase);
-
-    const riskBase = selectedChat
-      ? (selectedChat.priority === 'urgent'
-          ? 88
-          : selectedChat.priority === 'high'
-            ? 70
-            : selectedChat.priority === 'medium'
-              ? 48
-              : 30) + Math.min(16, (selectedChat.unreadCount ?? 0) * 2)
-      : 0;
-    const risk = clamp(riskBase);
-
-    const slaBase = currentTicket
-      ? currentTicket.status === 'closed'
-        ? 100
-        : currentTicket.status === 'resolved'
-          ? 84
-          : currentTicket.status === 'in_progress'
-            ? 70
-            : 58
-      : selectedChat
-        ? 62
-        : 0;
-    const sla = clamp(slaBase - Math.min(18, retroUnreadTotal));
-
-    return [
-      { label: 'RELATION', value: relation, tone: 'good' as const },
-      { label: 'RISK', value: risk, tone: 'danger' as const },
-      { label: 'SLA', value: sla, tone: 'neutral' as const },
-    ];
-  }, [currentTicket, messages, retroUnreadTotal, selectedChat]);
-
-  const retroRadarEvents = useMemo(
-    () => [
-      {
-        id: 'urgent',
-        label: 'URGENT',
-        value: retroUrgentCount,
-        active: retroUrgentCount > 0,
-        tone: 'danger' as const,
-      },
-      {
-        id: 'unread',
-        label: 'UNREAD',
-        value: retroUnreadTotal,
-        active: retroUnreadTotal > 0,
-        tone: 'warn' as const,
-      },
-      {
-        id: 'translated',
-        label: 'TRANSLATED',
-        value: retroTranslatedCount,
-        active: retroTranslatedCount > 0,
-        tone: 'good' as const,
-      },
-      {
-        id: 'voice',
-        label: 'VOICE',
-        value: retroVoiceActiveCount,
-        active: retroVoiceActiveCount > 0,
-        tone: 'neutral' as const,
-      },
-    ],
-    [retroTranslatedCount, retroUnreadTotal, retroUrgentCount, retroVoiceActiveCount]
-  );
-
-  const retroQuestProgress = useMemo(() => {
+  const chatProgress = useMemo(() => {
     if (!selectedChat) return 0;
-    const status = getQuestStatus(selectedChat);
-    if (status === 'COMPLETED') return 100;
-    if (status === 'IN PROGRESS') return 65;
-    if (status === 'BOSS FIGHT') return 85;
+    const status = getFlowStatus(selectedChat);
+    if (status === 'Готово' || status === 'Закрыт') return 100;
+    if (status === 'В работе') return 65;
+    if (status === 'Срочно') return 85;
     return 30;
   }, [selectedChat]);
-
-  const retroQuestHistory = useMemo(() => {
-    const latest = messages.slice(-4).map((m) => {
-      const stamp = formatDateTime(m.timestamp) || '--:--';
-      const source = m.fromMe ? 'PLAYER' : 'NPC';
-      return `${stamp} ${source} EVENT`;
-    });
-    if (latest.length > 0) return latest.reverse();
-    return ['NO RECENT EVENTS'];
-  }, [messages]);
 
   const operationalHistory = useMemo(() => {
     const latest = messages.slice(-4).map((m) => {
@@ -750,248 +562,12 @@ export function ChatsPage() {
     return ['Нет недавних событий'];
   }, [messages]);
 
-  const retroAchievementList = useMemo(
-    () => [
-      {
-        id: 'firstReply' as const,
-        label: 'First Response',
-        description: 'Send your first reply',
-        tier: 'COMMON' as const,
-      },
-      {
-        id: 'messages100' as const,
-        label: 'Comms Veteran',
-        description: 'Send 100 replies',
-        tier: 'ELITE' as const,
-      },
-      {
-        id: 'noUnreadChats' as const,
-        label: 'Inbox Zero',
-        description: 'Clear all unread chats',
-        tier: 'ELITE' as const,
-      },
-      {
-        id: 'bossTicketClosed' as const,
-        label: 'Boss Defeated',
-        description: 'Close urgent ticket',
-        tier: 'BOSS' as const,
-      },
-      {
-        id: 'voiceRunner' as const,
-        label: 'Voice Runner',
-        description: 'Play 5 voice logs',
-        tier: 'COMMON' as const,
-      },
-      {
-        id: 'mediaCrafter' as const,
-        label: 'Media Crafter',
-        description: 'Use 3 media types',
-        tier: 'ELITE' as const,
-      },
-      {
-        id: 'translator' as const,
-        label: 'Lore Translator',
-        description: 'Complete 3 translations',
-        tier: 'COMMON' as const,
-      },
-      {
-        id: 'questCommander' as const,
-        label: 'Quest Commander',
-        description: 'Handle 3 assigned chats',
-        tier: 'ELITE' as const,
-      },
-      {
-        id: 'nightShift' as const,
-        label: 'Night Shift',
-        description: 'Send message after 22:00',
-        tier: 'COMMON' as const,
-      },
-      {
-        id: 'urgentHunter' as const,
-        label: 'Urgent Hunter',
-        description: 'Read all urgent chats',
-        tier: 'BOSS' as const,
-      },
-    ],
-    []
-  );
-
-  const achievementMetaById = useMemo(
-    () =>
-      Object.fromEntries(
-        retroAchievementList.map((achievement) => [achievement.id, { label: achievement.label, tier: achievement.tier }])
-      ) as Record<AchievementId, { label: string; tier: 'COMMON' | 'ELITE' | 'BOSS' }>,
-    [retroAchievementList]
-  );
-
   const playedVoiceMessageIdsRef = useRef<Set<number>>(new Set());
-
-  const spawnPixelBurst = useCallback((tone: PixelBurst['tone']) => {
-    const center = tone === 'danger' ? { x: 76, y: 18 } : tone === 'success' ? { x: 72, y: 24 } : { x: 68, y: 20 };
-    const particles: PixelBurst[] = Array.from({ length: 14 }).map((_, idx) => ({
-      id: Date.now() + idx,
-      x: center.x + (Math.random() * 12 - 6),
-      y: center.y + (Math.random() * 10 - 5),
-      tone,
-      size: 4 + Math.floor(Math.random() * 4),
-    }));
-    setPixelBursts((prev) => [...prev, ...particles].slice(-48));
-    window.setTimeout(() => {
-      setPixelBursts((prev) => prev.filter((particle) => !particles.some((item) => item.id === particle.id)));
-    }, 720);
-  }, []);
 
   useEffect(() => {
     // Stop visualizer when switching chat to avoid stale active state.
     setActiveVoiceMessageId(null);
   }, [selectedChatId]);
-
-  const lastIncomingUrgentMessageIdRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (!isRetroTheme || selectedChat?.priority !== 'urgent') {
-      setUrgentIncomingMessageId(null);
-      lastIncomingUrgentMessageIdRef.current = null;
-      return;
-    }
-
-    const latestIncoming = [...messages].reverse().find((message) => !message.fromMe);
-    if (!latestIncoming) return;
-
-    const previousId = lastIncomingUrgentMessageIdRef.current;
-    lastIncomingUrgentMessageIdRef.current = latestIncoming.id;
-    if (previousId === null || previousId === latestIncoming.id) return;
-
-    setUrgentIncomingMessageId(latestIncoming.id);
-    spawnPixelBurst('danger');
-    const timeout = window.setTimeout(() => {
-      setUrgentIncomingMessageId((current) => (current === latestIncoming.id ? null : current));
-    }, 1400);
-    return () => window.clearTimeout(timeout);
-  }, [isRetroTheme, messages, selectedChat?.priority, spawnPixelBurst]);
-
-  useEffect(() => {
-    if (!isLoading || chats.length > 0) return;
-    setBootStepIndex(0);
-    const interval = window.setInterval(() => {
-      setBootStepIndex((prev) => (prev + 1) % bootSequenceSteps.length);
-    }, 420);
-    return () => window.clearInterval(interval);
-  }, [bootSequenceSteps.length, chats.length, isLoading]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('retro-achievements');
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved) as Partial<Record<AchievementId, boolean>>;
-      setAchievements((prev) => ({ ...prev, ...parsed }));
-    } catch {
-      // ignore invalid local storage values
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('retro-achievements', JSON.stringify(achievements));
-  }, [achievements]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('retro-mini-mode');
-    if (!saved) return;
-    setIsRetroMiniMode(saved === '1');
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('retro-mini-mode', isRetroMiniMode ? '1' : '0');
-  }, [isRetroMiniMode]);
-
-  useEffect(() => {
-    setAchievements((prev) => {
-      const next = { ...prev };
-      const sentByMe = messages.filter((m) => m.fromMe).length;
-      const sentByMeHours = messages
-        .filter((m) => m.fromMe)
-        .map((m) => new Date(m.timestamp).getHours())
-        .filter((h) => !Number.isNaN(h));
-      const translatedCount = Object.values(translationsByMessageId).filter((state) => state.status === 'done').length;
-      const assignedCount = chats.filter((c) => c.assignedUser).length;
-      const hasUrgentUnread = chats.some((c) => c.priority === 'urgent' && (c.unreadCount ?? 0) > 0);
-      const mediaTypesUsed = new Set(
-        messages
-          .filter((m) => m.fromMe && (m.type === 'image' || m.type === 'video' || m.type === 'audio' || m.type === 'document'))
-          .map((m) => m.type)
-      );
-
-      if (sentByMe >= 1) next.firstReply = true;
-      if (sentByMe >= 100) next.messages100 = true;
-      if (chats.length > 0 && chats.every((c) => (c.unreadCount ?? 0) === 0)) next.noUnreadChats = true;
-      if (currentTicket?.status === 'closed' && currentTicket?.priority === 'urgent') next.bossTicketClosed = true;
-      if (playedVoiceCount >= 5) next.voiceRunner = true;
-      if (mediaTypesUsed.size >= 3) next.mediaCrafter = true;
-      if (translatedCount >= 3) next.translator = true;
-      if (assignedCount >= 3) next.questCommander = true;
-      if (sentByMeHours.some((h) => h >= 22 || h < 6)) next.nightShift = true;
-      if (!hasUrgentUnread && chats.some((c) => c.priority === 'urgent')) next.urgentHunter = true;
-      return next;
-    });
-  }, [messages, chats, currentTicket?.priority, currentTicket?.status, translationsByMessageId, playedVoiceCount]);
-
-  const achievementSnapshotRef = useRef<Record<AchievementId, boolean>>(achievements);
-  useEffect(() => {
-    const previous = achievementSnapshotRef.current;
-    const unlocked = (Object.keys(achievements) as AchievementId[]).find((id) => achievements[id] && !previous[id]);
-    achievementSnapshotRef.current = achievements;
-    if (!unlocked) return;
-
-    const meta = achievementMetaById[unlocked];
-    setAchievementToast({ id: Date.now(), title: meta.label, tier: meta.tier });
-    spawnPixelBurst('success');
-    const timeout = window.setTimeout(() => setAchievementToast(null), 2200);
-    return () => window.clearTimeout(timeout);
-  }, [achievementMetaById, achievements, spawnPixelBurst]);
-
-  useEffect(() => {
-    if (!isRetroTheme) {
-      setIsPauseMenuOpen(false);
-      return;
-    }
-
-    const handleEscPause = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      const target = event.target as HTMLElement | null;
-      const isInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT';
-      if (isInput && !isPauseMenuOpen) return;
-      event.preventDefault();
-      setIsPauseMenuOpen((prev) => !prev);
-    };
-
-    window.addEventListener('keydown', handleEscPause);
-    return () => window.removeEventListener('keydown', handleEscPause);
-  }, [isPauseMenuOpen, isRetroTheme]);
-
-  const lastRetroCountersRef = useRef({ unread: 0, urgent: 0 });
-  useEffect(() => {
-    const unread = chats.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
-    const urgent = chats.filter((c) => c.priority === 'urgent' && (c.unreadCount ?? 0) > 0).length;
-    const previous = lastRetroCountersRef.current;
-    const popups: DamagePopup[] = [];
-
-    if (unread > previous.unread) {
-      popups.push({ id: Date.now(), text: `+${unread - previous.unread} ALERT`, kind: 'alert' });
-    }
-    if (urgent > previous.urgent) {
-      popups.push({ id: Date.now() + 1, text: 'CRITICAL', kind: 'critical' });
-    }
-
-    if (popups.length > 0) {
-      setDamagePopups((prev) => [...prev, ...popups].slice(-4));
-      popups.forEach((popup) => {
-        window.setTimeout(() => {
-          setDamagePopups((prev) => prev.filter((item) => item.id !== popup.id));
-        }, 1400);
-      });
-    }
-
-    lastRetroCountersRef.current = { unread, urgent };
-  }, [chats]);
 
   useEffect(() => {
     const handleClose = () => setMessageContextMenu(null);
@@ -1039,19 +615,6 @@ export function ChatsPage() {
     },
     [selectedChat]
   );
-
-  const renderRetroTimeRadar = useCallback((timestamp: string) => {
-    const date = new Date(timestamp);
-    const minutes = Number.isNaN(date.getTime()) ? 0 : date.getMinutes();
-    const activeIndex = Math.floor((minutes / 60) * 8);
-    return (
-      <span className={styles.retroTimeRadar} aria-label={formatDateTime(timestamp)}>
-        {Array.from({ length: 8 }).map((_, idx) => (
-          <span key={`rt-${timestamp}-${idx}`} className={`${styles.retroTimeDot} ${idx === activeIndex ? styles.retroTimeDotActive : ''}`} />
-        ))}
-      </span>
-    );
-  }, []);
 
   const handleCopyMessageText = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -1332,10 +895,6 @@ export function ChatsPage() {
 
   const handleChatClick = useCallback(
     (chatId: number) => {
-      if (isRetroTheme) {
-        setIsSceneTransitioning(true);
-        window.setTimeout(() => setIsSceneTransitioning(false), 280);
-      }
       setSelectedChatId(chatId);
       setMessages([]);
       setMessagesError('');
@@ -1350,7 +909,7 @@ export function ChatsPage() {
       setMessagesPagination((prev) => ({ ...prev, offset: 0, hasMore: false, total: 0 }));
       messagesPaginationRef.current = { ...messagesPaginationRef.current, offset: 0, hasMore: false };
     },
-    [isRetroTheme, setSelectedChatId]
+    [setSelectedChatId]
   );
 
   const getFilteredChats = useCallback((): Chat[] => {
@@ -1731,10 +1290,9 @@ export function ChatsPage() {
       }
     );
     if (!success) return;
-    setTicketActionToast('Boss objective closed');
-    spawnPixelBurst('success');
+    setTicketActionToast('Тикет закрыт');
     window.setTimeout(() => setTicketActionToast(''), 2200);
-  }, [currentTicketNumber, spawnPixelBurst, withTicketAction]);
+  }, [currentTicketNumber, withTicketAction]);
 
   const chatsPaginationRef = useRef({ limit: 50, offset: 0, hasMore: false });
   const chatListRef = useRef<HTMLDivElement | null>(null);
@@ -2869,10 +2427,7 @@ export function ChatsPage() {
               src={message.mediaUrl}
               onContextMenu={(event) => openMessageContextMenu(event, message)}
               onPlay={() => {
-                if (!playedVoiceMessageIdsRef.current.has(message.id)) {
-                  playedVoiceMessageIdsRef.current.add(message.id);
-                  setPlayedVoiceCount(playedVoiceMessageIdsRef.current.size);
-                }
+                playedVoiceMessageIdsRef.current.add(message.id);
                 setActiveVoiceMessageId(message.id);
               }}
               onPause={() => setActiveVoiceMessageId((current) => (current === message.id ? null : current))}
@@ -2969,13 +2524,7 @@ export function ChatsPage() {
         </p>
 
         <div
-          className={`${styles.container} ${selectedChatId ? styles.mobileChatSelected : ''} ${isCallPanelCollapsed ? styles.containerCollapsed : ''} ${
-            isRetroTheme && selectedChat?.priority === 'urgent' ? styles.retroGlitchEvent : ''
-          } ${isSceneTransitioning ? styles.sceneTransitioning : ''} ${
-            isRetroTheme && isRetroMiniMode ? styles.retroMiniMode : ''
-          } ${
-            isRetroTheme && selectedChat?.priority === 'urgent' && urgentIncomingMessageId ? styles.panicFlash : ''
-          }`}
+          className={`${styles.container} ${selectedChatId ? styles.mobileChatSelected : ''} ${isCallPanelCollapsed ? styles.containerCollapsed : ''}`}
         >
           <aside className={styles.sidebar}>
             <div className={styles.searchSection}>
@@ -3006,8 +2555,9 @@ export function ChatsPage() {
                   className={styles.searchApplyButton}
                   onClick={handleApplySearch}
                   aria-label="Выполнить поиск"
+                  title="Найти"
                 >
-                  Поиск
+                  <Icon name="search" size={15} />
                 </button>
                 <button
                   type="button"
@@ -3033,267 +2583,195 @@ export function ChatsPage() {
                   </button>
                 ) : null}
               </div>
-              <div className={styles.searchRow}>
-                <select
-                  className={styles.searchSelect}
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                  aria-label="Сортировка"
-                >
-                  <option value="priority">Приоритет</option>
-                  <option value="unreadCount">Непрочитанные</option>
-                  <option value="lastMessageAt">Последнее сообщение</option>
-                  <option value="createdAt">Дата создания</option>
-                  <option value="status">Статус</option>
-                  <option value="name">Имя клиента</option>
-                </select>
 
-                <select
-                  className={styles.searchSelect}
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                  aria-label="Порядок сортировки"
-                >
-                  <option value="desc">Сначала новые</option>
-                  <option value="asc">Сначала старые</option>
-                </select>
-
-                <select
-                  className={styles.searchSelect}
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value as 'all' | 'message' | 'phone')}
-                  aria-label="Тип поиска"
-                >
-                  <option value="all">Везде</option>
-                  <option value="message">По сообщениям</option>
-                  <option value="phone">По телефону</option>
-                </select>
-
-                <select
-                  className={styles.searchSelect}
-                  value={channelFilter}
-                  onChange={(e) => setChannelFilter(e.target.value as '' | 'whatsapp' | 'telegram')}
-                  aria-label="Канал"
-                >
-                  <option value="">Все каналы</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="telegram">Telegram</option>
-                </select>
-
-                <select
-                  className={styles.searchSelect}
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value as '' | ChatPriority)}
-                  aria-label="Приоритет"
-                >
-                  <option value="">Любой приоритет</option>
-                  <option value="low">Низкий</option>
-                  <option value="medium">Средний</option>
-                  <option value="high">Высокий</option>
-                  <option value="urgent">Срочный</option>
-                </select>
-              </div>
-
-              {/* {isActivityVisible && (
-                <div className={styles.activityCard}>
-                  <div className={styles.activityCardHeader}>
-                    <span className={styles.activityCardTitle}>Активность</span>
-                    <button
-                      type="button"
-                      className={styles.activityExpand}
-                      onClick={() => setIsActivityFullscreen(true)}
-                    >
-                      Развернуть
-                    </button>
-                  </div>
-                  <ActivityTimeline isLoading={isActivityLoading} />
-                  <ActivityLegend />
-                  <ActivityMeta />
+              <div className={styles.sidebarTabsRow}>
+                <div className={styles.filterTabs}>
+                  <button
+                    className={`${styles.filterTab} ${activeFilter === 'all' ? styles.filterTabActive : ''}`}
+                    onClick={() => setActiveFilter('all')}
+                  >
+                    Все
+                  </button>
+                  <button
+                    className={`${styles.filterTab} ${activeFilter === 'my' ? styles.filterTabActive : ''}`}
+                    onClick={() => setActiveFilter('my')}
+                  >
+                    Мои
+                  </button>
+                  <button
+                    className={`${styles.filterTab} ${activeFilter === 'unread' ? styles.filterTabActive : ''}`}
+                    onClick={() => setActiveFilter('unread')}
+                  >
+                    Непрочит.
+                  </button>
+                  <button
+                    className={`${styles.filterTab} ${priorityFilter === 'urgent' ? styles.filterTabActive : ''}`}
+                    onClick={() => setPriorityFilter((prev) => (prev === 'urgent' ? '' : 'urgent'))}
+                  >
+                    Срочные
+                  </button>
                 </div>
-              )} */}
-            </div>
-            
-            <div className={styles.sidebarHeader}>
-              <div className={styles.sidebarTitleRow}>
-                <h2 className={styles.sidebarTitle}>Новые</h2>
-                {!isLoading && !error && chats.filter(c => c.unreadCount > 0).length > 0 && (
-                  <span className={styles.newBadge}>{chats.filter(c => c.unreadCount > 0).length}</span>
-                )}
               </div>
-            </div>
-            
-            <div className={styles.filterTabs}>
-              <button
-                className={`${styles.filterTab} ${activeFilter === 'all' ? styles.filterTabActive : ''}`}
-                onClick={() => setActiveFilter('all')}
-              >
-                Все чаты
-              </button>
-              <button
-                className={`${styles.filterTab} ${activeFilter === 'my' ? styles.filterTabActive : ''}`}
-                onClick={() => setActiveFilter('my')}
-              >
-                Мои чаты
-              </button>
-              <button
-                className={`${styles.filterTab} ${activeFilter === 'unread' ? styles.filterTabActive : ''}`}
-                onClick={() => setActiveFilter('unread')}
-              >
-                Непрочитанные
-              </button>
-            </div>
 
-            <div className={styles.quickFiltersRow}>
-              <Button
-                size="small"
-                variant={priorityFilter === 'urgent' ? 'primary' : 'secondary'}
-                onClick={() => setPriorityFilter((prev) => (prev === 'urgent' ? '' : 'urgent'))}
-              >
-                Срочные
-              </Button>
-              {canSeeHrChats ? (
+              <div className={styles.sidebarControlsRow}>
+                <button
+                  type="button"
+                  className={styles.filtersToggle}
+                  onClick={() => setIsFiltersOpen((v) => !v)}
+                  aria-expanded={isFiltersOpen}
+                >
+                  <Icon name="gear" size={13} />
+                  Фильтры
+                </button>
                 <select
                   className={styles.densitySelect}
-                  value={hrFilter}
-                  onChange={(e) => setHrFilter(e.target.value as ChatHrFilter)}
-                  aria-label="Фильтр HR-чатов"
-                  title="Фильтр HR-чатов"
+                  value={densityMode}
+                  onChange={(e) => setDensityMode(e.target.value as DensityMode)}
+                  aria-label="Плотность списка"
+                  title="Плотность списка"
                 >
-                  <option value="all">Все типы</option>
-                  <option value="hr">HR-чаты</option>
-                  <option value="regular">Обычные</option>
+                  <option value="comfortable">Комфорт</option>
+                  <option value="compact">Компакт</option>
+                  <option value="ultra">Ультра</option>
                 </select>
-              ) : null}
-              <select
-                className={styles.densitySelect}
-                value={densityMode}
-                onChange={(e) => setDensityMode(e.target.value as DensityMode)}
-                aria-label="Плотность списка"
-                title="Плотность списка"
-              >
-                <option value="comfortable">Комфорт</option>
-                <option value="compact">Компакт</option>
-                <option value="ultra">Ультра</option>
-              </select>
-              <button
-                type="button"
-                className={styles.hotkeysHintButton}
-                onClick={() => setIsHotkeysHelpOpen(true)}
-                aria-label="Подсказка горячих клавиш"
-                title="Горячие клавиши (Shift+?)"
-              >
-                ⌨
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className={styles.hotkeysHintButton}
+                  onClick={() => setIsHotkeysHelpOpen(true)}
+                  aria-label="Подсказка горячих клавиш"
+                  title="Горячие клавиши (Shift+?)"
+                >
+                  ⌨
+                </button>
+              </div>
 
-            <div className={styles.bulkActionsRow}>
-              <button
-                type="button"
-                className={styles.bulkActionButton}
-                onClick={selectAllFilteredChats}
-                disabled={filteredChats.length === 0 || isBulkActionLoading}
-              >
-                Все ({filteredChats.length})
-              </button>
-              <button
-                type="button"
-                className={styles.bulkActionButton}
-                onClick={clearBulkSelection}
-                disabled={selectedChatIds.length === 0 || isBulkActionLoading}
-              >
-                Снять
-              </button>
-              <button
-                type="button"
-                className={styles.bulkActionButton}
-                onClick={() => void handleBulkMarkRead()}
-                disabled={selectedChatIds.length === 0 || isBulkActionLoading}
-              >
-                Прочесть
-              </button>
-              <button
-                type="button"
-                className={styles.bulkActionButton}
-                onClick={() => void handleBulkAssignToMe()}
-                disabled={selectedChatIds.length === 0 || isBulkActionLoading || !user}
-              >
-                Назначить
-              </button>
-            </div>
+              {isFiltersOpen ? (
+                <div className={styles.filtersPanel}>
+                  <select
+                    className={styles.searchSelect}
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                    aria-label="Сортировка"
+                  >
+                    <option value="priority">Приоритет</option>
+                    <option value="unreadCount">Непрочитанные</option>
+                    <option value="lastMessageAt">Последнее сообщение</option>
+                    <option value="createdAt">Дата создания</option>
+                    <option value="status">Статус</option>
+                    <option value="name">Имя клиента</option>
+                  </select>
 
-            <div className={`${styles.retroRadarCard} ${!isRetroTheme ? styles.overviewCard : ''}`} aria-label="Оперативная сводка">
-                <div className={styles.retroRadarHeader}>
-                  <span>{isRetroTheme ? 'RADAR / QUEUE' : 'ОПЕРАТИВНАЯ СВОДКА'}</span>
-                  {isRetroTheme ? (
-                    <button
-                      type="button"
-                      className={styles.retroMiniToggle}
-                      onClick={() => setIsRetroMiniMode((prev) => !prev)}
-                      aria-label={isRetroMiniMode ? 'Обычный размер HUD' : 'Мини размер HUD'}
-                      title={isRetroMiniMode ? 'HUD: Normal' : 'HUD: Mini'}
+                  <select
+                    className={styles.searchSelect}
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    aria-label="Порядок сортировки"
+                  >
+                    <option value="desc">Сначала новые</option>
+                    <option value="asc">Сначала старые</option>
+                  </select>
+
+                  <select
+                    className={styles.searchSelect}
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value as 'all' | 'message' | 'phone')}
+                    aria-label="Тип поиска"
+                  >
+                    <option value="all">Везде</option>
+                    <option value="message">По сообщениям</option>
+                    <option value="phone">По телефону</option>
+                  </select>
+
+                  <select
+                    className={styles.searchSelect}
+                    value={channelFilter}
+                    onChange={(e) => setChannelFilter(e.target.value as '' | 'whatsapp' | 'telegram')}
+                    aria-label="Канал"
+                  >
+                    <option value="">Все каналы</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="telegram">Telegram</option>
+                  </select>
+
+                  <select
+                    className={styles.searchSelect}
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value as '' | ChatPriority)}
+                    aria-label="Приоритет"
+                  >
+                    <option value="">Любой приоритет</option>
+                    <option value="low">Низкий</option>
+                    <option value="medium">Средний</option>
+                    <option value="high">Высокий</option>
+                    <option value="urgent">Срочный</option>
+                  </select>
+
+                  {canSeeHrChats ? (
+                    <select
+                      className={styles.searchSelect}
+                      value={hrFilter}
+                      onChange={(e) => setHrFilter(e.target.value as ChatHrFilter)}
+                      aria-label="Фильтр HR-чатов"
                     >
-                      {isRetroMiniMode ? 'NORMAL' : 'MINI'}
-                    </button>
+                      <option value="all">Все типы</option>
+                      <option value="hr">HR-чаты</option>
+                      <option value="regular">Обычные</option>
+                    </select>
                   ) : null}
                 </div>
-                <div className={styles.retroRadarGrid}>
-                  {Array.from({ length: Math.max(6, Math.min(10, retroQueueCount + 4)) }).map((_, idx) => (
-                    <span
-                      key={`radar-${idx}`}
-                      className={`${styles.retroRadarDot} ${idx < retroQueueCount ? styles.retroRadarDotActive : ''}`}
-                    />
-                  ))}
-                </div>
-                <div className={styles.retroRadarFooter}>
-                  <div className={styles.retroRadarMeta}>{isRetroTheme ? 'ALERTS' : 'Срочных'}: {retroUrgentCount}</div>
-                  <div className={styles.retroRadarEvents}>
-                    {retroRadarEvents.slice(0, 2).map((event) => (
-                    <span
-                      key={event.id}
-                      className={`${styles.retroRadarEvent} ${
-                        event.active ? styles.retroRadarEventActive : ''
-                      } ${
-                        event.tone === 'danger'
-                          ? styles.retroRadarEventDanger
-                          : event.tone === 'warn'
-                            ? styles.retroRadarEventWarn
-                            : event.tone === 'good'
-                              ? styles.retroRadarEventGood
-                              : styles.retroRadarEventNeutral
-                      }`}
-                    >
-                      {isRetroTheme ? event.label : getRadarLabel(event.id)}:{' '}
-                      <strong>{event.value}</strong>
-                    </span>
-                    ))}
-                  </div>
-                </div>
+              ) : null}
+            </div>
+
+            {selectedChatIds.length > 0 ? (
+              <div className={styles.bulkActionsRow}>
+                <button
+                  type="button"
+                  className={styles.bulkActionButton}
+                  onClick={selectAllFilteredChats}
+                  disabled={filteredChats.length === 0 || isBulkActionLoading}
+                >
+                  Все ({filteredChats.length})
+                </button>
+                <button
+                  type="button"
+                  className={styles.bulkActionButton}
+                  onClick={clearBulkSelection}
+                  disabled={selectedChatIds.length === 0 || isBulkActionLoading}
+                >
+                  Снять
+                </button>
+                <button
+                  type="button"
+                  className={styles.bulkActionButton}
+                  onClick={() => void handleBulkMarkRead()}
+                  disabled={selectedChatIds.length === 0 || isBulkActionLoading}
+                >
+                  Прочесть
+                </button>
+                <button
+                  type="button"
+                  className={styles.bulkActionButton}
+                  onClick={() => void handleBulkAssignToMe()}
+                  disabled={selectedChatIds.length === 0 || isBulkActionLoading || !user}
+                >
+                  Назначить
+                </button>
               </div>
-            
+            ) : null}
+
             <div className={styles.chatList} ref={chatListRef}>
               {isLoading && chats.length === 0 ? (
-                isRetroTheme ? (
-                  <div className={styles.bootSequence} aria-label="Boot sequence">
-                    <div className={styles.bootTitle}>CARTRIDGE BOOT</div>
-                    {bootSequenceSteps.map((step, idx) => (
-                      <div key={step} className={`${styles.bootLine} ${idx <= bootStepIndex ? styles.bootLineActive : ''}`}>
-                        {idx <= bootStepIndex ? '>' : ' '} {step}
+                <div className={styles.skeletonList} aria-label="Загрузка чатов">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <div key={idx} className={styles.skeletonItem}>
+                      <div className={styles.skeletonAvatar} />
+                      <div className={styles.skeletonBody}>
+                        <div className={styles.skeletonLineShort} />
+                        <div className={styles.skeletonLine} />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.skeletonList} aria-label="Загрузка чатов">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <div key={idx} className={styles.skeletonItem}>
-                        <div className={styles.skeletonAvatar} />
-                        <div className={styles.skeletonBody}>
-                          <div className={styles.skeletonLineShort} />
-                          <div className={styles.skeletonLine} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
+                    </div>
+                  ))}
+                </div>
               ) : error ? (
                 <div className={styles.error}>
                   <p className={styles.errorText}>{error}</p>
@@ -3379,82 +2857,66 @@ export function ChatsPage() {
                               ) : null}
                               <span
                                 className={`${styles.chatName} ${chat.unreadCount > 0 ? styles.chatNameUnread : ''}`}
+                                title={displayName}
                               >
                                 {displayName}
                               </span>
-                              {showClientHandle ? (
-                                <span className={styles.chatClientHandle} title={clientHandle}>
-                                  {clientHandle}
-                                </span>
-                              ) : null}
-                              {/* pin badge removed */}
-                              {chat.assignedUser && (
-                                <span className={styles.chatAssignedUser}>
-                                  {chat.assignedUser.name || chat.assignedUser.email}
-                                </span>
-                              )}
-                              {user && chat.assignedUser?.id === user.id ? (
-                                <span className={styles.myBadge}>Мой</span>
-                              ) : null}
-                              <span className={`${styles.questBadge} ${!isRetroTheme ? styles.questBadgeNeutral : ''}`}>
-                                {isRetroTheme ? getQuestStatus(chat) : getFlowStatus(chat)}
-                              </span>
-                              {chat.status === 'closed' || chat.assignedUser || chat.priority === 'high' || chat.priority === 'urgent' ? (
-                                <span className={`${styles.statusEffects} ${!isRetroTheme ? styles.statusEffectsNeutral : ''}`}>
-                                  {chat.status === 'closed' ? (
-                                    <span className={`${styles.statusEffectChip} ${!isRetroTheme ? styles.statusEffectChipNeutral : ''}`}>
-                                      {isRetroTheme ? 'SILENCED' : 'Закрыт'}
-                                    </span>
-                                  ) : null}
-                                  {(chat.priority === 'high' || chat.priority === 'urgent') ? (
-                                    <span className={`${styles.statusEffectChip} ${!isRetroTheme ? styles.statusEffectChipNeutral : ''}`}>
-                                      {isRetroTheme ? 'PRIORITY' : 'Приоритет'}
-                                    </span>
-                                  ) : null}
-                                  {chat.assignedUser ? (
-                                    <span className={`${styles.statusEffectChip} ${!isRetroTheme ? styles.statusEffectChipNeutral : ''}`}>
-                                      {isRetroTheme ? 'ASSIGNED' : 'Назначен'}
-                                    </span>
-                                  ) : null}
-                                </span>
-                              ) : null}
+                              <span className={styles.chatTime}>{timeAgo}</span>
                             </div>
                             <div className={styles.chatSubtitleRow}>
                               <span className={styles.channelBadge}>{formatChannelLabel(chat.channel)}</span>
-                              {webSessionLabel ? <span className={styles.metaDot}>•</span> : null}
+                              {showClientHandle ? (
+                                <span className={styles.chatSubtitle} title={clientHandle}>
+                                  {clientHandle}
+                                </span>
+                              ) : null}
+                              {telegramHandle && clientPhone ? (
+                                <span className={styles.chatSubtitle}>· {clientPhone}</span>
+                              ) : null}
+                              {orgPhoneLabel ? (
+                                <span className={styles.chatSubtitle}>· {orgPhoneLabel}{orgConnLabel ? ` (${orgConnLabel})` : ''}</span>
+                              ) : null}
                               {webSessionLabel ? (
                                 <span className={styles.webSessionBadge} title={`Сайт-сессия: ${webSessionLabel}\nПоследняя активность: ${formatDateTime(webSession!.lastSeenAt)}`}>
                                   🌐 {webSessionLabel}
                                 </span>
                               ) : null}
-                              {clientPhone ? <span className={styles.metaDot}>•</span> : null}
-                              {clientPhone ? <span className={styles.chatSubtitle}>{clientPhone}</span> : null}
-                              {orgPhoneLabel ? <span className={styles.chatSubtitle}>• {orgPhoneLabel}</span> : null}
-                              {orgConnLabel ? <span className={styles.chatSubtitle}> ({orgConnLabel})</span> : null}
+                            </div>
+                            <div className={styles.chatBadgesRow}>
+                              <span
+                                className={`${styles.slaBadge} ${
+                                  slaMeta.level === 'critical'
+                                    ? styles.slaBadgeCritical
+                                    : slaMeta.level === 'warning'
+                                      ? styles.slaBadgeWarning
+                                      : styles.slaBadgeOk
+                                }`}
+                                title="SLA по времени без ответа"
+                              >
+                                {slaMeta.label}
+                              </span>
+                              <span className={`${styles.questBadge} ${styles.questBadgeNeutral}`}>
+                                {getFlowStatus(chat)}
+                              </span>
+                              {chat.assignedUser ? (
+                                <span
+                                  className={styles.chatAssignedUser}
+                                  title={`Назначен: ${chat.assignedUser.name || chat.assignedUser.email}`}
+                                >
+                                  {chat.assignedUser.name || chat.assignedUser.email}
+                                </span>
+                              ) : null}
+                              {user && chat.assignedUser?.id === user.id ? (
+                                <span className={styles.myBadge}>Мой</span>
+                              ) : null}
+                              {chat.priority === 'urgent' && (
+                                <span className={styles.urgentBadge}>URGENT</span>
+                              )}
                             </div>
                           </div>
-                          <div className={styles.chatMeta}>
-                            <span className={styles.chatTime}>{timeAgo}</span>
-                            <span
-                              className={`${styles.slaBadge} ${
-                                slaMeta.level === 'critical'
-                                  ? styles.slaBadgeCritical
-                                  : slaMeta.level === 'warning'
-                                    ? styles.slaBadgeWarning
-                                    : styles.slaBadgeOk
-                              }`}
-                              title="SLA по времени без ответа"
-                            >
-                              {slaMeta.label}
-                            </span>
-                            {chat.priority === 'urgent' && (
-                              <span className={styles.urgentBadge}>URGENT</span>
-                            )}
-                            {/* pin button removed */}
-                            {chat.unreadCount > 0 && (
-                              <span className={styles.unreadBubble}>{chat.unreadCount}</span>
-                            )}
-                          </div>
+                          {chat.unreadCount > 0 && (
+                            <span className={styles.unreadBubble}>{chat.unreadCount}</span>
+                          )}
                         </div>
                         <p
                           className={`${styles.chatLastMessage} ${
@@ -3478,7 +2940,7 @@ export function ChatsPage() {
 
           <main className={styles.content}>
             {selectedChatId ? (
-              <div className={`${styles.chatWindow} ${isSceneTransitioning ? styles.chatWindowSceneTransition : ''}`}>
+              <div className={styles.chatWindow}>
                 <div className={styles.chatHeaderPanel}>
                   <div className={styles.chatTopBar}>
                     <button
@@ -3510,176 +2972,121 @@ export function ChatsPage() {
                           return (
                             <>
                               <div className={styles.chatTopTitleRow}>
-                                <div className={styles.chatTopTitle}>{title}</div>
+                                <div className={styles.chatTopTitle} title={title}>{title}</div>
                                 {currentChat?.isHr === true ? (
                                   <span className={styles.hrBadge}>HR</span>
+                                ) : null}
+                                {currentChat?.unreadCount ? (
+                                  <span className={styles.chatTopUnread}>Непрочитано: {currentChat.unreadCount}</span>
                                 ) : null}
                               </div>
                               <div className={styles.chatTopSubtitle}>
                                 {currentChat ? formatChannelLabel(currentChat.channel) : ''}
-                                {webSessionLabel ? ` • 🌐 ${webSessionLabel}` : ''}
                                 {clientPhone ? ` • ${clientPhone}` : ''}
                                 {orgPhoneLabel ? ` • ${orgPhoneLabel}` : ''}
                                 {orgConnLabel ? ` (${orgConnLabel})` : ''}
+                                {webSessionLabel ? ` • 🌐 ${webSessionLabel}` : ''}
                               </div>
-                              {currentChat?.unreadCount ? (
-                                <div className={styles.chatTopUnread}>Непрочитано: {currentChat.unreadCount}</div>
-                              ) : null}
-                              {isRetroTheme ? (
-                                <div className={styles.combatBars}>
-                                  {combatBars.map((bar) => (
-                                    <div key={bar.label} className={styles.combatBarRow}>
-                                      <span className={styles.combatBarLabel}>{bar.label}</span>
-                                      <div className={styles.combatBarTrack}>
-                                        <div
-                                          className={`${styles.combatBarFill} ${
-                                            bar.tone === 'danger'
-                                              ? styles.combatBarFillDanger
-                                              : bar.tone === 'good'
-                                                ? styles.combatBarFillGood
-                                                : styles.combatBarFillNeutral
-                                          }`}
-                                          style={{ width: `${bar.value}%` }}
-                                        />
-                                      </div>
-                                      <span className={styles.combatBarValue}>{bar.value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : null}
-                              {currentTicketNumber && (
-                                <div className={styles.chatTopTicketMeta}>
-                                  Тикет #{currentTicketNumber}
-                                  {currentTicket?.status ? ` • ${formatTicketStatusLabel(currentTicket.status)}` : ''}
-                                  {currentTicket?.priority ? ` • ${formatTicketPriorityLabel(currentTicket.priority)}` : ''}
-                                  {currentTicket?.createdAt ? ` • ${formatTicketDuration(currentTicket.createdAt)}` : ''}
-                                </div>
-                              )}
                             </>
                           );
                         })()}
                       </div>
                     </div>
 
-                  <div className={styles.chatTopRight}>
                     {currentTicketNumber && (
-                      <div className={styles.ticketInlineGroup}>
-                        <button
-                          type="button"
-                          className={styles.chatTopTicketBadge}
-                          onClick={handleOpenTicketPage}
-                          title="Открыть тикет"
-                        >
-                          #{currentTicketNumber}
-                        </button>
-                        {currentTicket?.status ? (
-                          <span className={statusChipClass(currentTicket.status)} title={`Статус: ${formatTicketStatusLabel(currentTicket.status)}`}>
-                            {formatTicketStatusLabel(currentTicket.status)}
-                          </span>
-                        ) : null}
-                        {currentTicket?.priority ? (
-                          <span
-                            className={priorityChipClass(currentTicket.priority)}
-                            title={`Приоритет: ${formatTicketPriorityLabel(currentTicket.priority)}`}
-                          >
-                            {formatTicketPriorityLabel(currentTicket.priority)}
-                          </span>
-                        ) : null}
-                      </div>
+                      <button
+                        type="button"
+                        className={styles.chatTopTicketBadge}
+                        onClick={handleOpenTicketPage}
+                        title={
+                          `Открыть тикет #${currentTicketNumber}` +
+                          (currentTicket?.status ? ` • ${formatTicketStatusLabel(currentTicket.status)}` : '') +
+                          (currentTicket?.priority ? ` • ${formatTicketPriorityLabel(currentTicket.priority)}` : '') +
+                          (currentTicket?.createdAt ? ` • ${formatTicketDuration(currentTicket.createdAt)}` : '')
+                        }
+                      >
+                        #{currentTicketNumber}
+                      </button>
                     )}
+                  </div>
 
-                    {currentTicketNumber && (
+                  <div className={styles.chatToolbar}>
+                    {currentTicketNumber && isLoadingTicket ? (
+                      <span className={styles.chatTopTicketState}>
+                        <span className={styles.spinner} aria-label="Загрузка" />
+                      </span>
+                    ) : currentTicketNumber && ticketError ? (
+                      <span className={styles.chatTopTicketError}>{ticketError}</span>
+                    ) : currentTicketNumber && currentTicket ? (
                       <>
-                        {isLoadingTicket ? (
-                          isRetroTheme ? (
-                            <span className={styles.chatTopTicketSkeleton} aria-label="Loading ticket data">
-                              <span className={styles.chatTopTicketSkeletonLine} />
-                              <span className={styles.chatTopTicketSkeletonLineShort} />
-                            </span>
-                          ) : (
-                            <span className={styles.chatTopTicketState}>
-                              <span className={styles.spinner} aria-label="Загрузка" />
-                            </span>
-                          )
-                        ) : ticketError ? (
-                          <span className={styles.chatTopTicketError}>{ticketError}</span>
-                        ) : currentTicket ? (
-                          <>
-                            <select
-                              className={styles.ticketSelect}
-                              value={String(currentTicket.status || '')}
-                              onChange={(e) => void handleSetTicketStatus(e.target.value)}
-                              disabled={isTicketActionLoading}
-                              aria-label="Статус тикета"
-                            >
-                              {TICKET_STATUS_OPTIONS.map((item) => (
-                                <option key={item} value={item}>
-                                  {formatTicketStatusLabel(String(item))}
-                                </option>
-                              ))}
-                            </select>
+                        <select
+                          className={styles.ticketSelect}
+                          value={String(currentTicket.status || '')}
+                          onChange={(e) => void handleSetTicketStatus(e.target.value)}
+                          disabled={isTicketActionLoading}
+                          aria-label="Статус тикета"
+                        >
+                          {TICKET_STATUS_OPTIONS.map((item) => (
+                            <option key={item} value={item}>
+                              {formatTicketStatusLabel(String(item))}
+                            </option>
+                          ))}
+                        </select>
 
-                            <select
-                              className={styles.ticketSelect}
-                              value={String(currentTicket.priority || '')}
-                              onChange={(e) => void handleSetTicketPriority(e.target.value)}
-                              disabled={isTicketActionLoading}
-                              aria-label="Приоритет тикета"
-                            >
-                              {TICKET_PRIORITY_OPTIONS.map((item) => (
-                                <option key={item} value={item}>
-                                  {formatTicketPriorityLabel(String(item))}
-                                </option>
-                              ))}
-                            </select>
+                        <select
+                          className={styles.ticketSelect}
+                          value={String(currentTicket.priority || '')}
+                          onChange={(e) => void handleSetTicketPriority(e.target.value)}
+                          disabled={isTicketActionLoading}
+                          aria-label="Приоритет тикета"
+                        >
+                          {TICKET_PRIORITY_OPTIONS.map((item) => (
+                            <option key={item} value={item}>
+                              {formatTicketPriorityLabel(String(item))}
+                            </option>
+                          ))}
+                        </select>
 
-                            <Button
-                              size="small"
-                              variant="secondary"
-                              onClick={() => void handleAssignTicketToMe()}
-                              disabled={!user || isTicketActionLoading}
-                            >
-                              {renderIconLabel('user', 'Мне')}
-                            </Button>
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() => void handleAssignTicketToMe()}
+                          disabled={!user || isTicketActionLoading}
+                        >
+                          {renderIconLabel('user', 'Мне')}
+                        </Button>
 
-                            <Button
-                              size="small"
-                              variant="secondary"
-                              onClick={() => void handleCloseTicket()}
-                              disabled={isTicketActionLoading || currentTicket.status === 'closed'}
-                            >
-                              {renderIconLabel('close', 'Закрыть')}
-                            </Button>
-
-                            {ticketActionError ? (
-                              <span className={styles.chatTopTicketError}>{ticketActionError}</span>
-                            ) : null}
-                            {ticketActionToast ? (
-                              <span className={styles.chatTopTicketToast} role="status">{ticketActionToast}</span>
-                            ) : null}
-                          </>
-                        ) : (
-                          <span className={styles.chatTopTicketState}>Тикет не найден</span>
-                        )}
+                        <Button
+                          size="small"
+                          variant="secondary"
+                          onClick={() => void handleCloseTicket()}
+                          disabled={isTicketActionLoading || currentTicket.status === 'closed'}
+                        >
+                          {renderIconLabel('close', 'Закрыть')}
+                        </Button>
                       </>
-                    )}
+                    ) : currentTicketNumber ? (
+                      <span className={styles.chatTopTicketState}>Тикет не найден</span>
+                    ) : null}
 
                     <button
-                      className={styles.chatTopAction}
+                      className={`${styles.chatTopAction} ${styles.chatTopIconOnly}`}
                       type="button"
                       onClick={handleOpenCallPanel}
                       disabled={!selectedChatPhone}
+                      aria-label={selectedChatPhone ? `Позвонить: ${selectedChatPhone}` : 'Нет номера для звонка'}
                       title={selectedChatPhone ? `Позвонить: ${selectedChatPhone}` : 'Нет номера для звонка'}
                     >
-                      {renderIconLabel('call', 'Звонок')}
+                      {renderPixelIcon('call')}
                     </button>
                     <button
-                      className={`${styles.chatTopAction} ${styles.chatTopGhost}`}
+                      className={`${styles.chatTopAction} ${styles.chatTopGhost} ${styles.chatTopIconOnly}`}
                       type="button"
                       onClick={handleMarkChatRead}
+                      aria-label="Отметить чат прочитанным"
                       title="Отметить чат прочитанным"
                     >
-                      {renderIconLabel('check', 'Прочесть')}
+                      {renderPixelIcon('check')}
                     </button>
 
                     {canManageHrChats && selectedChat ? (
@@ -3707,13 +3114,19 @@ export function ChatsPage() {
                         chats.find((c) => c.id === selectedChatId)?.assignedUser ? 'Снять' : 'Взять'
                       )}
                     </button>
-                  </div>
-                  </div>
 
-                  <div className={`${styles.retroHudBar} ${!isRetroTheme ? styles.overviewHudBar : ''}`}>
-                    <span>{isRetroTheme ? 'FOCUS' : 'Фокус'}: {selectedChat ? 100 - Math.min(95, selectedChat.unreadCount * 8) : 0}%</span>
-                    <span>{isRetroTheme ? 'QUEUE' : 'В очереди'}: {retroQueueCount}</span>
-                    <span>{isRetroTheme ? 'MODE' : 'Состояние'}: {isRetroTheme ? retroSelectedQuest : (selectedChat ? getFlowStatus(selectedChat) : 'Нет')}</span>
+                    {ticketActionError ? (
+                      <span className={styles.chatTopTicketError}>{ticketActionError}</span>
+                    ) : null}
+                    {ticketActionToast ? (
+                      <span className={styles.chatTopTicketToast} role="status">{ticketActionToast}</span>
+                    ) : null}
+
+                    <div className={styles.chatToolbarMeta}>
+                      <span>Фокус: {selectedChat ? 100 - Math.min(95, selectedChat.unreadCount * 8) : 0}%</span>
+                      <span>В очереди: {unreadChatsCount}</span>
+                      <span>Состояние: {selectedChat ? getFlowStatus(selectedChat) : 'Нет'}</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -3730,23 +3143,9 @@ export function ChatsPage() {
                     </button>
                   )}
                   {isLoadingMessages ? (
-                    isRetroTheme ? (
-                      <div className={styles.retroMessageSkeletonList} aria-label="Loading messages">
-                        {Array.from({ length: 6 }).map((_, idx) => (
-                          <div
-                            key={`rmsg-sk-${idx}`}
-                            className={`${styles.retroMessageSkeleton} ${idx % 2 === 0 ? styles.retroMessageSkeletonOwn : ''}`}
-                          >
-                            <span className={styles.retroMessageSkeletonLine} />
-                            <span className={styles.retroMessageSkeletonLineShort} />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className={styles.empty}>
-                        <div className={styles.loading}>Загрузка сообщений...</div>
-                      </div>
-                    )
+                    <div className={styles.empty}>
+                      <div className={styles.loading}>Загрузка сообщений...</div>
+                    </div>
                   ) : messagesError ? (
                     <div className={styles.empty}>
                       <div className={styles.error}>
@@ -3806,22 +3205,11 @@ export function ChatsPage() {
                             <div
                               className={`${styles.message} ${
                                 message.fromMe ? styles.messageOwn : styles.messageOther
-                              } ${resolveMessageRarityClass(message)} ${isRetroTheme ? styles.messageAppear : styles.messageAppearSmooth} ${
-                                urgentIncomingMessageId === message.id ? styles.messageUrgentPulse : ''
-                              }`}
-                              style={
-                                isRetroTheme
-                                  ? { animationDelay: `${Math.min(idx, 12) * 18}ms` }
-                                  : ({ '--message-index': Math.min(idx, 20) } as CSSProperties)
-                              }
+                              } ${resolveMessageRarityClass(message)} ${styles.messageAppearSmooth}`}
+                              style={{ '--message-index': Math.min(idx, 20) } as CSSProperties}
                               onContextMenu={(event) => openMessageContextMenu(event, message)}
                             >
                               <div className={styles.messageContent}>
-                                {isRetroTheme && !message.fromMe ? (
-                                  <div className={styles.messageNpcNameplate}>
-                                    {senderLabel || selectedChat?.displayName || 'NPC UNIT'}
-                                  </div>
-                                ) : null}
                                 {senderLabel && (
                                   <div className={styles.messageSender}>{senderLabel}</div>
                                 )}
@@ -3843,7 +3231,7 @@ export function ChatsPage() {
                                   </div>
                                 ) : null}
                                 <span className={styles.messageTime}>
-                                  {isRetroTheme ? renderRetroTimeRadar(message.timestamp) : time}
+                                  {time}
                                 </span>
                               </div>
                             </div>
@@ -3896,11 +3284,6 @@ export function ChatsPage() {
                 )}
                 
                 <div className={styles.messageInputContainer}>
-                  {isRetroTheme && (
-                    <div className={styles.retroSpeakerBox}>
-                      PLAYER &gt; {(user?.displayName || user?.username || 'OPERATOR').toUpperCase()}
-                    </div>
-                  )}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -4146,37 +3529,6 @@ export function ChatsPage() {
             )}
           </main>
 
-          {isRetroTheme && selectedChatId && (
-            <aside className={styles.retroQuestSidebar} aria-label="Quest log">
-              <div className={styles.retroQuestTitle}>QUEST LOG</div>
-              <div className={styles.retroQuestActive}>ACTIVE: {retroSelectedQuest}</div>
-              <div className={styles.retroQuestProgressTrack}>
-                <div className={styles.retroQuestProgressFill} style={{ width: `${retroQuestProgress}%` }} />
-              </div>
-              <div className={styles.retroQuestProgressLabel}>{retroQuestProgress}%</div>
-              <div className={styles.retroQuestHistory}>
-                {retroQuestHistory.map((entry, idx) => (
-                  <div key={`qh-${idx}-${entry}`} className={styles.retroQuestHistoryLine}>
-                    {entry}
-                  </div>
-                ))}
-              </div>
-              <div className={styles.retroAchievements}>
-                <div className={styles.retroAchievementsTitle}>ACHIEVEMENTS</div>
-                {retroAchievementList.map((achievement) => (
-                  <div
-                    key={achievement.id}
-                    className={`${styles.retroAchievementItem} ${achievements[achievement.id] ? styles.retroAchievementUnlocked : ''}`}
-                  >
-                    <span>{achievements[achievement.id] ? '★' : '☆'} {achievement.label}</span>
-                    <span className={styles.retroAchievementMeta}>{achievement.description}</span>
-                    <span className={styles.retroAchievementTier}>{achievement.tier}</span>
-                  </div>
-                ))}
-              </div>
-            </aside>
-          )}
-
           <aside
             className={`${styles.callPanel} ${isCallPanelCollapsed ? styles.callPanelCollapsed : ''}`}
             aria-label="Звонки"
@@ -4224,16 +3576,16 @@ export function ChatsPage() {
             </div>
 
             <div className={styles.callPanelContent}>
-              {!isRetroTheme && selectedChatId ? (
+              {selectedChatId ? (
                 <section className={styles.overviewQuestCard} aria-label="Сводка чата">
                   <div className={styles.overviewQuestTitle}>Сводка чата</div>
                   <div className={styles.overviewQuestState}>
                     Статус: {selectedChat ? getFlowStatus(selectedChat) : 'Нет данных'}
                   </div>
                   <div className={styles.overviewQuestProgressTrack}>
-                    <div className={styles.overviewQuestProgressFill} style={{ width: `${retroQuestProgress}%` }} />
+                    <div className={styles.overviewQuestProgressFill} style={{ width: `${chatProgress}%` }} />
                   </div>
-                  <div className={styles.overviewQuestProgressLabel}>Прогресс: {retroQuestProgress}%</div>
+                  <div className={styles.overviewQuestProgressLabel}>Прогресс: {chatProgress}%</div>
                   <div className={styles.overviewQuestHistory}>
                     {operationalHistory.slice(0, 3).map((entry, idx) => (
                       <div key={`oh-${idx}-${entry}`} className={styles.overviewQuestHistoryLine}>
@@ -4377,76 +3729,6 @@ export function ChatsPage() {
               </section>
             </div>
           </aside>
-
-          {isRetroTheme && damagePopups.length > 0 && (
-            <div className={styles.damagePopupLayer} aria-hidden="true">
-              {damagePopups.map((popup) => (
-                <div
-                  key={popup.id}
-                  className={`${styles.damagePopup} ${popup.kind === 'critical' ? styles.damagePopupCritical : styles.damagePopupAlert}`}
-                >
-                  {popup.text}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {isRetroTheme && pixelBursts.length > 0 && (
-            <div className={styles.pixelBurstLayer} aria-hidden="true">
-              {pixelBursts.map((particle) => (
-                <span
-                  key={particle.id}
-                  className={`${styles.pixelBurst} ${
-                    particle.tone === 'danger'
-                      ? styles.pixelBurstDanger
-                      : particle.tone === 'success'
-                        ? styles.pixelBurstSuccess
-                        : styles.pixelBurstNeutral
-                  }`}
-                  style={{ left: `${particle.x}%`, top: `${particle.y}%`, width: particle.size, height: particle.size }}
-                />
-              ))}
-            </div>
-          )}
-
-          {isRetroTheme && achievementToast && (
-            <div className={styles.achievementToast} role="status" aria-live="polite">
-              <div className={styles.achievementToastTitle}>ACHIEVEMENT UNLOCKED</div>
-              <div className={styles.achievementToastName}>{achievementToast.title}</div>
-              <div className={styles.achievementToastTier}>{achievementToast.tier}</div>
-            </div>
-          )}
-
-          {isRetroTheme && isPauseMenuOpen && (
-            <div className={styles.pauseMenuOverlay} role="dialog" aria-label="Pause menu">
-              <div className={styles.pauseMenuCard}>
-                <div className={styles.pauseMenuTitle}>PAUSE MENU</div>
-                <button type="button" className={styles.pauseMenuButton} onClick={() => setIsPauseMenuOpen(false)}>
-                  RESUME
-                </button>
-                <button
-                  type="button"
-                  className={styles.pauseMenuButton}
-                  onClick={() => {
-                    setIsPauseMenuOpen(false);
-                    navigate('/settings');
-                  }}
-                >
-                  SETTINGS
-                </button>
-                <button
-                  type="button"
-                  className={styles.pauseMenuButton}
-                  onClick={() => {
-                    setIsPauseMenuOpen(false);
-                    setSelectedChatId(null);
-                  }}
-                >
-                  EXIT CHAT
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
       {isActivityFullscreen && <ActivityFullscreen />}

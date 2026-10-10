@@ -2,17 +2,10 @@
   width: 100%;
   margin: 0;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--danger);
-  background: var(--surface-2);
-  color: var(--danger);
+  border-bottom: none;
+  background: var(--danger);
+  color: var(--on-danger);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
-}
-
-:global(:root[data-theme='dark']) .browserWarning {
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
 }

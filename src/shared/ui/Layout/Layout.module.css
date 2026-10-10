@@ -5,23 +5,17 @@
   isolation: isolate;
 }
 
-.threeScene {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
 .skipLink {
   position: fixed;
   top: 8px;
   left: 8px;
   z-index: 120;
   padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
   background: var(--surface-solid);
   color: var(--text);
+  font-weight: 600;
   text-decoration: none;
   box-shadow: var(--shadow-md);
   transform: translateY(-130%);
@@ -31,95 +25,347 @@
   transform: translateY(0);
 }
 
-.burgerButton {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 22px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
-}
-
-.burgerButton:hover {
-  background: var(--surface-2);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.topBar {
-  position: sticky;
-  top: 0;
-  z-index: 45;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: var(--s-3) var(--s-4);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-
-.floatingControls {
+.backdrop {
   position: fixed;
-  top: 14px;
-  right: 14px;
-  display: flex;
-  gap: 8px;
-  z-index: 70;
-}
-
-.floatingBurger,
-.presenceToggle {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 10px;
-  padding: 10px 12px;
-  box-shadow: var(--shadow-sm);
+  inset: 0;
+  z-index: 40;
+  background: rgba(22, 24, 29, 0.45);
+  border: 0;
+  padding: 0;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.floatingBurger {
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
+.sidebar {
+  width: 240px;
+  background: var(--surface-solid);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-2) 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  transition: width 180ms ease, transform 180ms ease;
+  will-change: width, transform;
+}
+
+.sidebarClosed {
+  transform: translateX(0);
+}
+
+.sidebarOpen {
+  transform: translateX(0);
+}
+
+.sidebarCollapsed {
+  width: 64px;
+}
+
+.sidebarCollapsed .logoFull,
+.sidebarCollapsed .menuLabel,
+.sidebarCollapsed .menuGroupTitle,
+.sidebarCollapsed .profileCard,
+.sidebarCollapsed .sidebarFooter > *:not(.collapseToggle) {
+  display: none;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--s-2);
+  margin-bottom: var(--s-2);
+}
+
+.logo {
+  font-family: var(--font-family-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+  text-align: center;
+  padding: var(--s-1) var(--s-2);
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  gap: 8px;
 }
 
-.presenceToggle {
-  font-size: 12px;
+.logoCompact {
+  display: none;
+}
+
+.sidebarCollapsed .logo {
+  padding: var(--s-1) 0;
+  justify-content: center;
+}
+
+.sidebarCollapsed .logoCompact {
+  display: block;
+  font-size: 18px;
+}
+
+.sidebarCollapsed .logoFull {
+  display: none;
+}
+
+.menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 var(--s-2);
+  overflow-y: auto;
+}
+
+.menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+.menu::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
+}
+
+.menuGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menuGroupTitle {
+  font-size: 11px;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 var(--s-1);
+}
+
+.menuItemsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.3;
+  border: 1px solid transparent;
+}
+
+.menuItem:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.menuItemActive {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--primary);
   font-weight: 600;
 }
 
-.floatingBurger:hover,
-.presenceToggle:hover {
+.menuItem:hover {
+  color: var(--text);
+}
+
+.menuItemIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.menuLabel {
+  font-size: 12px;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.collapseToggle {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+  flex-shrink: 0;
+}
+
+.collapseToggle:hover {
   background: var(--surface-2);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+}
+
+.sidebarCollapsed .collapseToggle {
+  margin: 0 auto;
+}
+
+.sidebarFooter {
+  padding: var(--s-2);
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profileCard {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.profileLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.profileName {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.footerButton {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.footerButton:hover {
+  background: var(--surface-2);
+}
+
+.simulateErrorButton {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  background: var(--surface);
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.simulateErrorButton:hover {
+  background: rgba(213, 68, 46, 0.06);
+}
+
+.userButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.18s ease, color 0.18s ease;
+  font-size: 11px;
+}
+
+.userButton:hover {
+  background: var(--surface-2);
+  color: var(--danger);
+}
+
+.userName {
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.mainWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+  margin-left: var(--sidebar-width, 240px);
+  transition: margin-left 180ms ease;
+}
+
+.mainWrapperCollapsed {
+  --sidebar-width: 64px;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--s-3) var(--s-3);
+}
+
+.mainFluid {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .presencePopover {
   position: fixed;
   top: 66px;
   right: 14px;
-  width: 260px;
+  width: 280px;
   max-width: calc(100vw - 28px);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   padding: 10px 12px;
   z-index: 70;
@@ -148,16 +394,14 @@
   color: var(--text);
 }
 
-
 .presenceCard {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: linear-gradient(120deg, rgba(31, 111, 235, 0.08), rgba(31, 111, 235, 0.02));
-  box-shadow: var(--shadow-sm);
+  background: var(--primary-soft);
   min-width: 220px;
 }
 
@@ -178,7 +422,7 @@
 .presenceSkeleton {
   width: 100%;
   height: 60px;
-  border-radius: 10px;
+  border-radius: var(--radius-xs);
   background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
@@ -198,36 +442,15 @@
 .tooltipBox {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   padding: 8px 10px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   color: var(--text);
   font-size: 11px;
 }
 
 .tooltipLine {
   line-height: 1.4;
-}
-
-.presenceAxisLabel {
-  font-size: 10px;
-  fill: var(--text-subtle);
-}
-
-.statusBarBg {
-  fill: var(--surface-2);
-}
-
-.dotInbound {
-  fill: var(--success, #16a34a);
-  stroke: var(--surface);
-  stroke-width: 1.5;
-}
-
-.dotOutbound {
-  fill: var(--warning, #f59e0b);
-  stroke: var(--surface);
-  stroke-width: 1.5;
 }
 
 .presenceLegend {
@@ -255,12 +478,12 @@
 }
 
 .legendSwatchOnline {
-  background: rgba(22, 163, 74, 0.12);
+  background: rgba(31, 157, 85, 0.14);
   color: var(--success, #16a34a);
 }
 
 .legendSwatchOffline {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(213, 68, 46, 0.14);
   color: var(--danger, #ef4444);
 }
 
@@ -297,376 +520,6 @@
   }
 }
 
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(0, 0, 0, 0.35);
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-}
-
-.sidebar {
-  --surface: var(--surface-solid);
-  --surface-2: var(--surface-2-solid);
-  width: 240px;
-  background: var(--surface-solid);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: var(--s-3) 0;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 50;
-  transition: transform 180ms ease;
-  will-change: transform;
-}
-
-.sidebarClosed {
-  transform: translateX(0);
-}
-
-.sidebarOpen {
-  transform: translateX(0);
-}
-
-.logo {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
-  text-decoration: none;
-  text-align: center;
-  padding: var(--s-2) var(--s-3);
-  margin-bottom: var(--s-2);
-}
-
-.menu {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0 var(--s-2);
-  overflow-y: auto;
-}
-
-.menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.menu::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 8px;
-}
-
-.menu::-webkit-scrollbar-thumb:hover {
-  background: var(--text-subtle);
-}
-
-.menuGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.menuGroupTitle {
-  font-size: 11px;
-  color: var(--text-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 0 var(--s-1);
-}
-
-.menuItemsBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.menuItem {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  color: var(--text);
-  text-decoration: none;
-  border-radius: var(--radius-sm);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
-  text-align: left;
-  font-size: 13px;
-  line-height: 1.3;
-  border: 1px solid transparent;
-}
-
-.menuItem:hover {
-  background: var(--surface-2);
-  color: var(--text);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.menuItemActive {
-  background: rgba(31, 111, 235, 0.10);
-  border-color: var(--primary);
-  font-weight: 700;
-  color: var(--primary);
-  box-shadow: 0 10px 24px rgba(31, 111, 235, 0.18);
-}
-
-.menuItemIcon {
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-}
-
-.menuLabel {
-  font-size: 12px;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.sidebarFooter {
-  padding: var(--s-2);
-  border-top: 1px solid var(--border);
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.profileCard {
-  display: grid;
-  gap: 3px;
-  padding: 9px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
-}
-
-.profileLabel {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-subtle);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.profileName {
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-
-.themeToggle {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.themeToggle:hover {
-  background: var(--surface);
-  border-color: var(--primary);
-}
-
-.firefoxModeButton {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text);
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.firefoxModeButton:hover {
-  background: var(--surface);
-  border-color: var(--primary);
-}
-
-.firefoxModeButtonActive {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--surface);
-}
-
-.simulateErrorButton {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--danger);
-  background: var(--surface-2);
-  color: var(--danger);
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.simulateErrorButton:hover {
-  background: var(--surface);
-  border-color: var(--danger-hover);
-}
-
-.trackingLossButton {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--primary);
-  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
-  color: var(--primary);
-  cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.trackingLossButton:hover:enabled {
-  background: var(--surface);
-  border-color: var(--primary-hover);
-}
-
-.trackingLossButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.trackingLossButtonActive {
-  background: color-mix(in srgb, var(--primary) 22%, var(--surface) 78%);
-  color: var(--text);
-  border-color: var(--primary);
-}
-
-.crtLabel {
-  width: 100%;
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--text-subtle);
-}
-
-.crtSelect {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--text);
-  padding: 8px 10px;
-  font-size: 12px;
-}
-
-.crtSelect:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.advancedPanel {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
-  color: var(--text);
-}
-
-.advancedSummary {
-  min-height: 34px;
-  padding: 9px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  list-style-position: inside;
-}
-
-.advancedControls {
-  display: grid;
-  gap: 6px;
-  padding: 0 8px 8px;
-}
-
-.starRating {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px;
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-}
-
-.starCount {
-  color: var(--text);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.userButton {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 10px;
-  background: none;
-  border: none;
-  color: var(--text);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: background-color 0.2s ease;
-  font-size: 11px;
-}
-
-.userButton:hover {
-  background: var(--surface-2);
-}
-
-.userName {
-  font-size: 11px;
-  text-align: center;
-  line-height: 1.2;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.mainWrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 3;
-  min-width: 0;
-  margin-left: 240px;
-}
-
-.main {
-  flex: 1;
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: var(--s-5) var(--s-4);
-}
-
-.mainFluid {
-  flex: 1;
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 0;
-}
-
 .toastContainer {
   position: fixed;
   left: 16px;
@@ -679,13 +532,14 @@
 }
 
 .toastError {
-  border: 1px solid var(--danger);
-  background: var(--surface-2);
-  color: var(--danger);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
   padding: 10px 12px;
   font-size: 12px;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -702,6 +556,36 @@
     transform: translateX(-100%);
   }
 
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  /* On mobile, collapsed state is ignored - sidebar slides in/out */
+  .sidebarCollapsed {
+    width: 220px;
+  }
+
+  .sidebarCollapsed .logoFull,
+  .sidebarCollapsed .menuLabel,
+  .sidebarCollapsed .menuGroupTitle,
+  .sidebarCollapsed .profileCard,
+  .sidebarCollapsed .sidebarFooter > *:not(.collapseToggle) {
+    display: block;
+  }
+
+  .sidebarCollapsed .logoCompact {
+    display: none;
+  }
+
+  .sidebarCollapsed .logoFull {
+    display: block;
+  }
+
+  .sidebarCollapsed .logo {
+    padding: var(--s-1) var(--s-2);
+    justify-content: center;
+  }
+
   .mainWrapper {
     margin-left: 0;
   }
@@ -710,228 +594,5 @@
 @media (min-width: 901px) {
   .backdrop {
     display: none;
-  }
-}
-
-:global(:root[data-theme='dark']) .layout {
-  background: var(--bg);
-}
-
-:global(:root[data-theme='dark']) .skipLink,
-:global(:root[data-theme='dark']) .burgerButton,
-:global(:root[data-theme='dark']) .floatingBurger,
-:global(:root[data-theme='dark']) .presenceToggle,
-:global(:root[data-theme='dark']) .presencePopover,
-:global(:root[data-theme='dark']) .presenceCard,
-:global(:root[data-theme='dark']) .tooltipBox,
-:global(:root[data-theme='dark']) .sidebar,
-:global(:root[data-theme='dark']) .menuItem,
-:global(:root[data-theme='dark']) .themeToggle,
-:global(:root[data-theme='dark']) .firefoxModeButton,
-:global(:root[data-theme='dark']) .simulateErrorButton,
-:global(:root[data-theme='dark']) .trackingLossButton,
-:global(:root[data-theme='dark']) .crtSelect,
-:global(:root[data-theme='dark']) .starRating,
-:global(:root[data-theme='dark']) .profileCard,
-:global(:root[data-theme='dark']) .advancedPanel,
-:global(:root[data-theme='dark']) .userButton,
-:global(:root[data-theme='dark']) .toastError {
-  border-radius: 0;
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .skipLink {
-  font-family: var(--font-family-mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .burgerButton,
-:global(:root[data-theme='dark']) .floatingBurger,
-:global(:root[data-theme='dark']) .presenceToggle {
-  background: var(--surface);
-}
-
-:global(:root[data-theme='dark']) .burgerButton:hover,
-:global(:root[data-theme='dark']) .floatingBurger:hover,
-:global(:root[data-theme='dark']) .presenceToggle:hover {
-  background: var(--surface-2);
-  border-color: var(--primary);
-  box-shadow: none;
-  transform: none;
-}
-
-:global(:root[data-theme='dark']) .topBar {
-  background: var(--surface);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .presencePopover,
-:global(:root[data-theme='dark']) .presenceCard {
-  background: var(--surface);
-}
-
-:global(:root[data-theme='dark']) .presencePopoverHeader,
-:global(:root[data-theme='dark']) .presenceHeader {
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .presenceSkeleton {
-  border-radius: 0;
-  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface) 50%, var(--surface-2) 75%);
-}
-
-:global(:root[data-theme='dark']) .legendSwatchOnline,
-:global(:root[data-theme='dark']) .legendSwatchOffline,
-:global(:root[data-theme='dark']) .legendDotInbound::before,
-:global(:root[data-theme='dark']) .legendDotOutbound::before {
-  border-radius: 0;
-}
-
-:global(:root[data-theme='dark']) .backdrop {
-  background: rgba(10, 10, 10, 0.76);
-}
-
-:global(:root[data-theme='dark']) .sidebar {
-  --surface: var(--surface-solid);
-  --surface-2: var(--surface-2-solid);
-  width: 240px;
-  background: var(--surface-solid);
-  border-right: 1px solid var(--border);
-  padding: 18px 0;
-}
-
-:global(:root[data-theme='dark']) .logo {
-  position: relative;
-  padding: 8px 18px 22px;
-  margin-bottom: 14px;
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -0.06em;
-  line-height: 1;
-  text-align: left;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .logo::after {
-  content: '';
-  position: absolute;
-  left: 18px;
-  bottom: 0;
-  width: 64px;
-  height: 3px;
-  background: var(--primary);
-}
-
-:global(:root[data-theme='dark']) .menu {
-  gap: 18px;
-  padding: 0 12px;
-}
-
-:global(:root[data-theme='dark']) .menuGroup {
-  gap: 8px;
-}
-
-:global(:root[data-theme='dark']) .menuGroupTitle {
-  font-family: var(--font-family-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--text-subtle);
-}
-
-:global(:root[data-theme='dark']) .menuItem {
-  padding: 11px 10px;
-  color: var(--text-muted);
-  background: transparent;
-  border-color: transparent;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: color 150ms cubic-bezier(0.25, 0, 0, 1), background-color 150ms cubic-bezier(0.25, 0, 0, 1), border-color 150ms cubic-bezier(0.25, 0, 0, 1);
-}
-
-:global(:root[data-theme='dark']) .menuItem:hover {
-  color: var(--text);
-  background: var(--surface-2);
-  border-color: var(--border);
-  box-shadow: none;
-  transform: none;
-}
-
-:global(:root[data-theme='dark']) .menuItemActive {
-  color: var(--primary);
-  background: transparent;
-  border-color: var(--border);
-  border-left-color: var(--primary);
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .menuLabel {
-  font-size: 11px;
-  font-weight: 700;
-}
-
-:global(:root[data-theme='dark']) .sidebarFooter {
-  gap: 8px;
-}
-
-:global(:root[data-theme='dark']) .themeToggle,
-:global(:root[data-theme='dark']) .firefoxModeButton,
-:global(:root[data-theme='dark']) .simulateErrorButton,
-:global(:root[data-theme='dark']) .trackingLossButton,
-:global(:root[data-theme='dark']) .crtSelect,
-:global(:root[data-theme='dark']) .advancedSummary,
-:global(:root[data-theme='dark']) .userButton {
-  min-height: 36px;
-  background: transparent;
-  font-family: var(--font-family-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .themeToggle:hover,
-:global(:root[data-theme='dark']) .firefoxModeButton:hover,
-:global(:root[data-theme='dark']) .trackingLossButton:hover:enabled,
-:global(:root[data-theme='dark']) .userButton:hover {
-  color: var(--primary);
-  background: transparent;
-  border-color: var(--primary);
-}
-
-:global(:root[data-theme='dark']) .starRating {
-  background: transparent;
-  border: 1px solid var(--border);
-}
-
-:global(:root[data-theme='dark']) .profileCard,
-:global(:root[data-theme='dark']) .advancedPanel {
-  background: transparent;
-  border-color: var(--border);
-}
-
-:global(:root[data-theme='dark']) .profileLabel {
-  font-family: var(--font-family-mono);
-  letter-spacing: 0.12em;
-}
-
-:global(:root[data-theme='dark']) .main {
-  max-width: 1200px;
-  padding: 48px 64px;
-}
-
-:global(:root[data-theme='dark']) .toastError {
-  background: var(--surface);
-  color: var(--danger);
-}
-
-@media (max-width: 900px) {
-  :global(:root[data-theme='dark']) .main {
-    padding: 32px 24px;
   }
 }

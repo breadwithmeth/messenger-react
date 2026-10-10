@@ -14,7 +14,10 @@ type IconName =
   | 'api'
   | 'send'
   | 'mic'
-  | 'plus';
+  | 'plus'
+  | 'search'
+  | 'chevron-left'
+  | 'chevron-right';
 
 interface IconProps {
   name: IconName;
@@ -169,6 +172,28 @@ export function Icon({ name, size = 20, color = 'currentColor', className, style
           <circle cx="12" cy="12" r="9" />
           <path d="M9.5 9a2.5 2.5 0 015 0c0 2-2.5 2-2.5 4" />
           <path d="M12 17h.01" />
+        </svg>
+      );
+    case 'search':
+      return (
+        <svg {...props} aria-hidden={!title} role={title ? 'img' : 'presentation'}>
+          {title ? <title>{title}</title> : null}
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      );
+    case 'chevron-left':
+      return (
+        <svg {...props} aria-hidden={!title} role={title ? 'img' : 'presentation'}>
+          {title ? <title>{title}</title> : null}
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      );
+    case 'chevron-right':
+      return (
+        <svg {...props} aria-hidden={!title} role={title ? 'img' : 'presentation'}>
+          {title ? <title>{title}</title> : null}
+          <path d="M9 6l6 6-6 6" />
         </svg>
       );
     default:

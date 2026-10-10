@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(26, 29, 35, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,9 +13,9 @@
   width: min(720px, 100%);
   max-height: min(80vh, 760px);
   background: var(--surface);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
 }
 
 .header {
@@ -23,26 +23,27 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border);
 }
 
 .title {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text);
 }
 
 .close {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   cursor: pointer;
   color: var(--text);
   font-size: 18px;
   line-height: 1;
+  transition: background-color 0.18s ease;
 }
 
 .close:hover {
@@ -50,45 +51,7 @@
 }
 
 .body {
-  padding: 14px;
+  padding: 16px;
   overflow: auto;
-  max-height: calc(80vh - 54px);
-}
-
-:global(:root[data-theme='dark']) .backdrop {
-  background: rgba(10, 10, 10, 0.82);
-}
-
-:global(:root[data-theme='dark']) .modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0;
-  box-shadow: none;
-}
-
-:global(:root[data-theme='dark']) .header {
-  padding: 16px 18px;
-}
-
-:global(:root[data-theme='dark']) .title {
-  font-family: var(--font-family-mono);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-:global(:root[data-theme='dark']) .close {
-  border-radius: 0;
-  background: transparent;
-}
-
-:global(:root[data-theme='dark']) .close:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: transparent;
-}
-
-:global(:root[data-theme='dark']) .body {
-  padding: 18px;
+  max-height: calc(80vh - 55px);
 }
